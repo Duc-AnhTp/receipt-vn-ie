@@ -50,6 +50,60 @@ class TestMetrics(unittest.TestCase):
         # store_name: 1 mẫu khớp hoàn toàn ("MINI"), 1 mẫu lệch ("ANAN" vs "ANAM") -> EM = 0.5
         self.assertEqual(results["store_name"]["EM"], 0.5)
 
+    def test_evaluate_predictions_by_id_counts_missing_as_wrong(self):
+        ground_truths = [
+            {
+                "id": "a",
+                "target": {
+                    "store_name": "Store A",
+                    "date": "2026-05-21",
+                    "total": "100000",
+                    "address": "Ha Noi",
+                },
+            },
+            {
+                "id": "b",
+                "target": {
+                    "store_name": "Store B",
+                    "date": "2026-05-22",
+                    "total": "200000",
+                    "address": "HCM",
+                },
+            },
+        ]
+        predictions = [
+            {
+                "id": "b",
+                "status": "ok",
+                "normalized_prediction": {
+                    "store_name": "Store B",
+                    "date": "2026-05-22",
+                    "total": "200000",
+                    "address": "HCM",
+                },
+            },
+            {
+                "id": "a",
+                "status": "error",
+                "normalized_prediction": {
+                    "store_name": "Store A",
+                    "date": "2026-05-21",
+                    "total": "100000",
+                    "address": "Ha Noi",
+                },
+            },
+        ]
+
+        results = evaluate_predictions(predictions, ground_truths)
+
+        self.assertEqual(results["n_evaluated"], 2)
+        self.assertEqual(results["n_skipped_error"], 1)
+        self.assertEqual(results["missing_prediction_ids"], ["a"])
+        self.assertEqual(results["store_name"]["EM"], 0.5)
+        self.assertEqual(results["date"]["EM"], 0.5)
+        self.assertEqual(results["total"]["EM"], 0.5)
+        self.assertEqual(results["address"]["EM"], 0.5)
+
     def test_structure_validity(self):
         task_token = "<s_receipt_ie>"
         

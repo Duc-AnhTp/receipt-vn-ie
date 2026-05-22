@@ -94,11 +94,14 @@ def convert_labelstudio(json_path: str, images_dir: str, output_jsonl: str, proj
             # 2. Transcription (TextArea) có parent_id trỏ tới box hoặc cùng id
             # Ta sẽ gom nhóm theo id của box
             boxes_info = {}
-            texts_info = {}
+            textareas = []
+            texts_by_id = {}
+            texts_by_parent = {}
             
             for res in results:
                 res_type = res.get("type")
                 res_id = res.get("id")
+                from_name = res.get("from_name", "")
                 
                 if res_type == "rectanglelabels":
                     val = res.get("value", {})
@@ -124,21 +127,33 @@ def convert_labelstudio(json_path: str, images_dir: str, output_jsonl: str, proj
                     val = res.get("value", {})
                     texts = val.get("text", [])
                     if texts:
-                        # Label Studio TextArea có thể có set_name hoặc link to box qua toName
-                        # Hoặc share cùng id nếu vẽ chung
-                        texts_info[res_id] = texts[0]
+                        text = texts[0]
+                        parent_id = res.get("parentID") or res.get("parent_id")
+                        textarea = {
+                            "id": res_id,
+                            "parent_id": parent_id,
+                            "from_name": from_name,
+                            "to_name": res.get("to_name", ""),
+                            "text": text
+                        }
+                        textareas.append(textarea)
+                        if res_id:
+                            texts_by_id[res_id] = textarea
+                        if parent_id:
+                            texts_by_parent[parent_id] = textarea
                         
             # Kết hợp Box và Text
+            linked_textarea_ids = set()
             for box_id, box_data in boxes_info.items():
                 label = box_data["label"]
                 bbox = box_data["bbox"]
                 poly = box_data["poly"]
                 
                 # Tìm text tương ứng
-                text = texts_info.get(box_id, "")
-                
-                # Nếu không tìm thấy bằng id, tìm theo TextArea có toName khớp với box_id hoặc ngược lại
-                # (Với template tiêu chuẩn, text share cùng id với box)
+                textarea = texts_by_parent.get(box_id) or texts_by_id.get(box_id)
+                text = textarea["text"] if textarea else ""
+                if textarea and textarea.get("id"):
+                    linked_textarea_ids.add(textarea["id"])
                 
                 if label in raw_target:
                     # Ghép chuỗi thô
@@ -158,6 +173,24 @@ def convert_labelstudio(json_path: str, images_dir: str, output_jsonl: str, proj
                     # Thêm boxes
                     field_boxes[label].append(bbox)
                     field_polygons[label].append(poly)
+            
+            # Xử lý các textarea độc lập (json_only)
+            for ta in textareas:
+                if ta["id"] not in linked_textarea_ids:
+                    field_name = ta["from_name"]
+                    if field_name in raw_target:
+                        text = ta["text"]
+                        if raw_target[field_name]:
+                            raw_target[field_name] += " " + text
+                        else:
+                            raw_target[field_name] = text
+                            
+                        norm_val = normalize_field(field_name, text)
+                        if norm_val:
+                            if target[field_name]:
+                                target[field_name] += " " + norm_val
+                            else:
+                                target[field_name] = norm_val
                     
             # Chuẩn hóa lại target sau khi ghép
             for field in ["date", "total"]:
@@ -168,9 +201,10 @@ def convert_labelstudio(json_path: str, images_dir: str, output_jsonl: str, proj
             has_boxes = any(len(v) > 0 for v in field_boxes.values())
             annotation_level = "json_and_boxes" if has_boxes else "json_only"
             
+            stem_id = f"self_{Path(filename).stem}"
             sample = {
-                "id": Path(filename).stem,
-                "group_id": Path(filename).stem,
+                "id": stem_id,
+                "group_id": stem_id,
                 "store_group": normalize_store_name(raw_target["store_name"]) or "self_unknown",
                 "source": "self_collected",
                 "image_path": os.path.relpath(img_path, project_root).replace("\\", "/"),
@@ -181,7 +215,7 @@ def convert_labelstudio(json_path: str, images_dir: str, output_jsonl: str, proj
                 "target": target,
                 "field_boxes": field_boxes,
                 "field_polygons": field_polygons,
-                "ocr_cache_path": f"data/interim/ocr_cache/{Path(filename).stem}.json"
+                "ocr_cache_path": f"data/interim/ocr_cache/{stem_id}.json"
             }
             
             f.write(json.dumps(sample, ensure_ascii=False) + "\n")

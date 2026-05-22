@@ -9,6 +9,7 @@ import time
 import argparse
 import logging
 import yaml
+import uuid
 from pathlib import Path
 from tqdm import tqdm
 from PIL import Image
@@ -22,6 +23,20 @@ from receipt_ie.data.schemas import BaseExtractor
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
+
+EMPTY_FIELDS = {"store_name": "", "date": "", "total": "", "address": ""}
+
+
+def _empty_fields() -> Dict[str, str]:
+    return EMPTY_FIELDS.copy()
+
+
+def _cleanup_temp_file(path: Path) -> None:
+    try:
+        path.unlink(missing_ok=True)
+    except (PermissionError, OSError) as exc:
+        logger.warning("Could not remove temporary OCR file %s: %s", path, exc)
+
 
 class BaselineExtractor(BaseExtractor):
     """
@@ -67,22 +82,26 @@ class BaselineExtractor(BaseExtractor):
 
     def predict(self, image: Image.Image) -> Dict[str, Any]:
         start_e2e = time.time()
-        
-        # Tạo file ảnh tạm
-        temp_dir = self.project_root / "data/temp"
-        temp_dir.mkdir(parents=True, exist_ok=True)
-        temp_img_path = temp_dir / "temp_baseline.png"
-        image.save(temp_img_path)
+        temp_img_path = None
         
         try:
+            # Use a unique file name to avoid stale locks/collisions on Windows.
+            temp_dir = self.project_root / "data/temp"
+            temp_dir.mkdir(parents=True, exist_ok=True)
+            temp_img_path = temp_dir / f"baseline_{uuid.uuid4().hex}.png"
+            image.save(temp_img_path)
+
             regions = detect_text_regions(self.detector, str(temp_img_path))
             if not regions:
                 return {
-                    "prediction": {"store_name": "", "date": "", "total": "", "address": ""},
-                    "normalized_prediction": {"store_name": "", "date": "", "total": "", "address": ""},
+                    "method": "baseline",
+                    "prediction": _empty_fields(),
+                    "normalized_prediction": _empty_fields(),
+                    "raw_output": None,
                     "latency_cached_ms": 0.0,
                     "latency_e2e_ms": (time.time() - start_e2e) * 1000,
                     "status": "ok",
+                    "error": None,
                     "words": []
                 }
                 
@@ -94,11 +113,14 @@ class BaselineExtractor(BaseExtractor):
             
             if not regions:
                 return {
-                    "prediction": {"store_name": "", "date": "", "total": "", "address": ""},
-                    "normalized_prediction": {"store_name": "", "date": "", "total": "", "address": ""},
+                    "method": "baseline",
+                    "prediction": _empty_fields(),
+                    "normalized_prediction": _empty_fields(),
+                    "raw_output": None,
                     "latency_cached_ms": 0.0,
                     "latency_e2e_ms": (time.time() - start_e2e) * 1000,
                     "status": "ok",
+                    "error": None,
                     "words": []
                 }
                 
@@ -121,16 +143,32 @@ class BaselineExtractor(BaseExtractor):
             latency_e2e = (end_time - start_e2e) * 1000
             
             return {
+                "method": "baseline",
                 "prediction": extracted,
                 "normalized_prediction": extracted,
+                "raw_output": None,
                 "latency_cached_ms": latency_cached,
                 "latency_e2e_ms": latency_e2e,
                 "status": "ok",
+                "error": None,
                 "words": flat_words
             }
+        except Exception as exc:
+            logger.exception("Baseline prediction failed")
+            return {
+                "method": "baseline",
+                "prediction": _empty_fields(),
+                "normalized_prediction": _empty_fields(),
+                "raw_output": None,
+                "latency_cached_ms": 0.0,
+                "latency_e2e_ms": (time.time() - start_e2e) * 1000,
+                "status": "error",
+                "error": str(exc),
+                "words": []
+            }
         finally:
-            if temp_img_path.exists():
-                os.remove(temp_img_path)
+            if temp_img_path is not None:
+                _cleanup_temp_file(temp_img_path)
 
 
 def parse_args():

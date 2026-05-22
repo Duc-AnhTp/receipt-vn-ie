@@ -171,6 +171,11 @@ def convert_mcocr(csv_path: str, images_dir: str, output_jsonl: str, project_roo
                     if bbox:
                         field_boxes[unified_field].append(bbox)
                         field_polygons[unified_field].append(poly)
+
+            # Chuẩn hóa lại sau khi ghép nhiều span, đặc biệt với date/total bị tách dòng.
+            for field in ["date", "total"]:
+                if target[field]:
+                    target[field] = normalize_field(field, target[field])
                         
             # Thu thập toàn bộ ground-truth OCR cho chế độ oracle_ocr
             oracle_ocr = []
@@ -185,11 +190,12 @@ def convert_mcocr(csv_path: str, images_dir: str, output_jsonl: str, project_roo
                         })
 
             # MC-OCR có đầy đủ nhãn và polygon
+            stem_id = f"mcocr_{Path(img_id).stem}"
             sample = {
-                "id": Path(img_id).stem,
+                "id": stem_id,
                 # Gom nhóm theo cửa hàng nếu có thể đoán qua store_name, 
                 # tạm thời dùng tên ảnh làm group_id vì MC-OCR không cung cấp group_id rõ ràng
-                "group_id": Path(img_id).stem,
+                "group_id": stem_id,
                 "store_group": normalize_store_name(raw_target["store_name"]) or "mcocr_unknown",
                 "source": "mc_ocr_2021",
                 "image_path": os.path.relpath(img_path, project_root).replace("\\", "/"),
@@ -201,7 +207,7 @@ def convert_mcocr(csv_path: str, images_dir: str, output_jsonl: str, project_roo
                 "field_boxes": field_boxes,
                 "field_polygons": field_polygons,
                 "oracle_ocr": oracle_ocr,
-                "ocr_cache_path": f"data/interim/ocr_cache/{Path(img_id).stem}.json"
+                "ocr_cache_path": f"data/interim/ocr_cache/{stem_id}.json"
             }
             
             f.write(json.dumps(sample, ensure_ascii=False) + "\n")

@@ -80,5 +80,10 @@ class DonutExtractor(BaseExtractor):
             "prediction": raw_pred,
             "normalized_prediction": norm_pred,
             "raw_output": seq,
-            "latency_ms": latency_ms
+            "method": "donut",
+            "latency_cached_ms": latency_ms,
+            "latency_e2e_ms": latency_ms,
+            "latency_ms": latency_ms,
+            "status": "ok",
+            "error": None
         }

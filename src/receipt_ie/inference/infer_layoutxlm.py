@@ -2,6 +2,7 @@ import torch
 # Đảm bảo import torch đầu tiên trên Windows để tránh DLL collision
 import time
 import yaml
+import uuid
 from pathlib import Path
 from typing import Dict, Any, List, Optional
 from PIL import Image
@@ -13,6 +14,20 @@ from receipt_ie.ocr.recognize_vietocr import load_vietocr_model, recognize_regio
 from receipt_ie.ocr.reading_order import sort_reading_order
 from receipt_ie.data.build_layoutxlm_labels import normalize_bbox
 from receipt_ie.inference.postprocess_json import postprocess_extracted_fields
+
+EMPTY_FIELDS = {"store_name": "", "date": "", "total": "", "address": ""}
+
+
+def _empty_fields() -> Dict[str, str]:
+    return EMPTY_FIELDS.copy()
+
+
+def _cleanup_temp_file(path: Path) -> None:
+    try:
+        path.unlink(missing_ok=True)
+    except (PermissionError, OSError):
+        pass
+
 
 class LayoutXLMExtractor(BaseExtractor):
     """
@@ -93,46 +108,61 @@ class LayoutXLMExtractor(BaseExtractor):
         # Lưu vào thư mục tạm trong workspace
         temp_dir = self.project_root / "data/temp"
         temp_dir.mkdir(parents=True, exist_ok=True)
-        temp_img_path = temp_dir / "temp_inference.png"
+        temp_img_path = temp_dir / f"layoutxlm_{uuid.uuid4().hex}.png"
         image.save(temp_img_path)
         
-        regions = detect_text_regions(self.detector, str(temp_img_path))
-        
-        if not regions:
-            # Dọn dẹp file tạm
-            if temp_img_path.exists():
-                os.remove(temp_img_path)
+        try:
+            regions = detect_text_regions(self.detector, str(temp_img_path))
+            
+            if not regions:
+                return {
+                    "method": "layoutxlm",
+                    "prediction": _empty_fields(),
+                    "normalized_prediction": _empty_fields(),
+                    "raw_output": None,
+                    "latency_cached_ms": 0.0,
+                    "latency_e2e_ms": (time.time() - start_e2e) * 1000,
+                    "status": "ok",
+                    "error": None,
+                    "words": [],
+                    "word_labels": []
+                }
+                
+            cropped_imgs = [crop_region(image, r["bbox"], padding=2) for r in regions]
+            # Sử dụng batch size 16 để recognizer chạy nhanh
+            texts = recognize_regions(self.recognizer, cropped_imgs, batch_size=16)
+            
+            for r, text in zip(regions, texts):
+                r["text"] = text.strip()
+                
+            # Lọc bỏ text rỗng
+            regions = [r for r in regions if r["text"]]
+        except Exception as exc:
             return {
-                "prediction": {"store_name": "", "date": "", "total": "", "address": ""},
-                "normalized_prediction": {"store_name": "", "date": "", "total": "", "address": ""},
+                "method": "layoutxlm",
+                "prediction": _empty_fields(),
+                "normalized_prediction": _empty_fields(),
+                "raw_output": None,
                 "latency_cached_ms": 0.0,
                 "latency_e2e_ms": (time.time() - start_e2e) * 1000,
-                "status": "ok",
+                "status": "error",
+                "error": str(exc),
                 "words": [],
                 "word_labels": []
             }
-            
-        cropped_imgs = [crop_region(image, r["bbox"], padding=2) for r in regions]
-        # Sử dụng batch size 16 để recognizer chạy nhanh
-        texts = recognize_regions(self.recognizer, cropped_imgs, batch_size=16)
-        
-        for r, text in zip(regions, texts):
-            r["text"] = text.strip()
-            
-        # Lọc bỏ text rỗng
-        regions = [r for r in regions if r["text"]]
-        
-        # Dọn dẹp file tạm ngay khi xong OCR
-        if temp_img_path.exists():
-            os.remove(temp_img_path)
+        finally:
+            _cleanup_temp_file(temp_img_path)
             
         if not regions:
             return {
-                "prediction": {"store_name": "", "date": "", "total": "", "address": ""},
-                "normalized_prediction": {"store_name": "", "date": "", "total": "", "address": ""},
+                "method": "layoutxlm",
+                "prediction": _empty_fields(),
+                "normalized_prediction": _empty_fields(),
+                "raw_output": None,
                 "latency_cached_ms": 0.0,
                 "latency_e2e_ms": (time.time() - start_e2e) * 1000,
                 "status": "ok",
+                "error": None,
                 "words": [],
                 "word_labels": []
             }
@@ -238,11 +268,14 @@ class LayoutXLMExtractor(BaseExtractor):
         latency_e2e = (end_time - start_e2e) * 1000
         
         return {
+            "method": "layoutxlm",
             "prediction": raw_pred,
             "normalized_prediction": norm_pred,
+            "raw_output": None,
             "latency_cached_ms": latency_cached,
             "latency_e2e_ms": latency_e2e,
             "status": "ok",
+            "error": None,
             "words": flat_words,
             "word_labels": word_predictions
         }

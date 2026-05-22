@@ -34,24 +34,92 @@ def compute_cer(pred: str, gold: str) -> float:
     dist = Levenshtein.distance(pred, gold)
     return dist / len(gold)
 
-def evaluate_predictions(predictions: List[Dict[str, str]], ground_truths: List[Dict[str, str]]) -> Dict[str, Any]:
+def evaluate_predictions(predictions: List[Dict[str, Any]], ground_truths: List[Dict[str, Any]]) -> Dict[str, Any]:
     """
     Đánh giá danh sách dự đoán so với ground truth cho 4 trường thông tin.
     Tính toán EM, NES, CER cho từng trường và Macro Average.
+    Sử dụng Map theo ID nếu các bản ghi chứa ID, ngược lại zip trực tiếp.
+    Lọc bỏ các mẫu có status == "error".
     """
     fields = ["store_name", "date", "total", "address"]
     
     # Khởi tạo lưu trữ metrics
     metrics = {f: {"em": [], "nes": [], "cer": []} for f in fields}
     
-    for pred, gold in zip(predictions, ground_truths):
-        for f in fields:
-            pred_val = pred.get(f, "") or ""
-            gold_val = gold.get(f, "") or ""
+    # Kiểm tra xem các bản ghi có chứa trường 'id' hay không
+    has_ids = any("id" in p for p in predictions) and any("id" in g for g in ground_truths)
+    
+    n_evaluated = 0
+    n_skipped_error = 0
+    missing_prediction_ids = []
+    
+    if has_ids:
+        valid_pred_map = {}
+        for pred in predictions:
+            if pred.get("status") == "error":
+                n_skipped_error += 1
+                continue
+            pred_id = pred.get("id")
+            if pred_id:
+                valid_pred_map[pred_id] = pred
+
+        for gold in ground_truths:
+            gold_id = gold.get("id")
+            if not gold_id:
+                continue
+
+            pred = valid_pred_map.get(gold_id)
+            if pred is None:
+                missing_prediction_ids.append(gold_id)
+                pred_data = {}
+            else:
+                pred_data = pred.get("normalized_prediction") or pred
             
-            metrics[f]["em"].append(compute_em(pred_val, gold_val))
-            metrics[f]["nes"].append(compute_nes(pred_val, gold_val))
-            metrics[f]["cer"].append(compute_cer(pred_val, gold_val))
+            # Hỗ trợ cả unified schema lồng nhau và phẳng
+            gold_data = gold.get("target") or gold
+            
+            for f in fields:
+                pred_val = pred_data.get(f, "")
+                if pred_val is None:
+                    pred_val = ""
+                gold_val = gold_data.get(f, "")
+                if gold_val is None:
+                    gold_val = ""
+                    
+                pred_val = str(pred_val)
+                gold_val = str(gold_val)
+                
+                metrics[f]["em"].append(compute_em(pred_val, gold_val))
+                metrics[f]["nes"].append(compute_nes(pred_val, gold_val))
+                metrics[f]["cer"].append(compute_cer(pred_val, gold_val))
+                
+            n_evaluated += 1
+    else:
+        # Fallback về zip
+        for pred, gold in zip(predictions, ground_truths):
+            if pred.get("status") == "error":
+                n_skipped_error += 1
+                continue
+                
+            pred_data = pred.get("normalized_prediction") or pred
+            gold_data = gold.get("target") or gold
+            
+            for f in fields:
+                pred_val = pred_data.get(f, "")
+                if pred_val is None:
+                    pred_val = ""
+                gold_val = gold_data.get(f, "")
+                if gold_val is None:
+                    gold_val = ""
+                    
+                pred_val = str(pred_val)
+                gold_val = str(gold_val)
+                
+                metrics[f]["em"].append(compute_em(pred_val, gold_val))
+                metrics[f]["nes"].append(compute_nes(pred_val, gold_val))
+                metrics[f]["cer"].append(compute_cer(pred_val, gold_val))
+                
+            n_evaluated += 1
             
     # Tính trung bình cho từng trường và Macro Average
     results = {}
@@ -79,5 +147,10 @@ def evaluate_predictions(predictions: List[Dict[str, str]], ground_truths: List[
         "NES": round(sum(macro_nes) / len(macro_nes), 4),
         "CER": round(sum(macro_cer) / len(macro_cer), 4)
     }
+    
+    # Bổ sung metadata
+    results["n_evaluated"] = n_evaluated
+    results["n_skipped_error"] = n_skipped_error
+    results["missing_prediction_ids"] = missing_prediction_ids
     
     return results

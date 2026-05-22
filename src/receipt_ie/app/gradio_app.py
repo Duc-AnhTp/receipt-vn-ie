@@ -79,36 +79,58 @@ def load_application_config() -> dict:
 # Load cấu hình ứng dụng
 app_config = load_application_config()
 
-# Khởi tạo extractor
-logger.info("Initializing extractors...")
-baseline_extractor = get_extractor("baseline", project_root=str(project_root))
-baseline_extractor.load()
+# Tránh nạp model tại top-level khi import (Lazy-loading)
+EXTRACTORS = {"baseline": None, "donut": None, "layoutxlm": None}
+MOCK_FLAGS = {"donut": False, "layoutxlm": False}
 
-# Nạp Donut
-donut_path = project_root / app_config["models"]["donut_checkpoint"]
-is_donut_mock = False
-try:
-    if not donut_path.exists() or not os.listdir(donut_path):
-        raise FileNotFoundError("Donut checkpoint folder empty or not exists.")
-    donut_extractor = get_extractor("donut", checkpoint_path=str(donut_path), project_root=str(project_root))
-    donut_extractor.load(str(donut_path))
-except Exception as e:
-    logger.warning(f"Không thể nạp Donut checkpoint thực tế ({e}). Sử dụng Mock Donut.")
-    donut_extractor = MockExtractor("donut", baseline_extractor)
-    is_donut_mock = True
+def get_baseline_extractor() -> BaseExtractor:
+    if EXTRACTORS["baseline"] is None:
+        logger.info("Initializing baseline extractor (lazy)...")
+        baseline = get_extractor("baseline", project_root=str(project_root))
+        EXTRACTORS["baseline"] = baseline
+    return EXTRACTORS["baseline"]
 
-# Nạp LayoutXLM
-layoutxlm_path = project_root / app_config["models"]["layoutxlm_checkpoint"]
-is_layoutxlm_mock = False
-try:
-    if not layoutxlm_path.exists() or not os.listdir(layoutxlm_path):
-        raise FileNotFoundError("LayoutXLM checkpoint folder empty or not exists.")
-    layoutxlm_extractor = get_extractor("layoutxlm", checkpoint_path=str(layoutxlm_path), project_root=str(project_root))
-    layoutxlm_extractor.load(str(layoutxlm_path))
-except Exception as e:
-    logger.warning(f"Không thể nạp LayoutXLM checkpoint thực tế ({e}). Sử dụng Mock LayoutXLM.")
-    layoutxlm_extractor = MockExtractor("layoutxlm", baseline_extractor)
-    is_layoutxlm_mock = True
+def get_donut_extractor() -> BaseExtractor:
+    if EXTRACTORS["donut"] is None:
+        logger.info("Initializing donut extractor (lazy)...")
+        donut_path = project_root / app_config["models"]["donut_checkpoint"]
+        try:
+            if not donut_path.exists() or not os.listdir(donut_path):
+                raise FileNotFoundError("Donut checkpoint folder empty or not exists.")
+            donut = get_extractor("donut", checkpoint_path=str(donut_path), project_root=str(project_root))
+            MOCK_FLAGS["donut"] = False
+        except Exception as e:
+            logger.warning(f"Không thể nạp Donut checkpoint thực tế ({e}). Sử dụng Mock Donut.")
+            baseline = get_baseline_extractor()
+            donut = MockExtractor("donut", baseline)
+            MOCK_FLAGS["donut"] = True
+        EXTRACTORS["donut"] = donut
+    return EXTRACTORS["donut"]
+
+def get_layoutxlm_extractor() -> BaseExtractor:
+    if EXTRACTORS["layoutxlm"] is None:
+        logger.info("Initializing layoutxlm extractor (lazy)...")
+        layoutxlm_path = project_root / app_config["models"]["layoutxlm_checkpoint"]
+        try:
+            if not layoutxlm_path.exists() or not os.listdir(layoutxlm_path):
+                raise FileNotFoundError("LayoutXLM checkpoint folder empty or not exists.")
+            layoutxlm = get_extractor("layoutxlm", checkpoint_path=str(layoutxlm_path), project_root=str(project_root))
+            MOCK_FLAGS["layoutxlm"] = False
+        except Exception as e:
+            logger.warning(f"Không thể nạp LayoutXLM checkpoint thực tế ({e}). Sử dụng Mock LayoutXLM.")
+            baseline = get_baseline_extractor()
+            layoutxlm = MockExtractor("layoutxlm", baseline)
+            MOCK_FLAGS["layoutxlm"] = True
+        EXTRACTORS["layoutxlm"] = layoutxlm
+    return EXTRACTORS["layoutxlm"]
+
+# Kiểm tra mockup ban đầu dựa trên sự tồn tại của checkpoint (không load model)
+def check_checkpoint_exists(checkpoint_key: str) -> bool:
+    checkpoint_path = project_root / app_config["models"][checkpoint_key]
+    return checkpoint_path.exists() and len(os.listdir(checkpoint_path)) > 0
+
+is_donut_mock_initial = not check_checkpoint_exists("donut_checkpoint")
+is_layoutxlm_mock_initial = not check_checkpoint_exists("layoutxlm_checkpoint")
 
 
 def handle_demo_run(image: Image.Image, model_name: str, ocr_mode: str) -> Tuple[Dict[str, Any], str]:
@@ -116,12 +138,19 @@ def handle_demo_run(image: Image.Image, model_name: str, ocr_mode: str) -> Tuple
     if image is None:
         return {}, "Vui lòng tải ảnh lên."
         
-    # Cấu hình OCR Mode động cho các extractor dùng OCR
+    # Lazy load extractor tương ứng trước
+    if model_name == "Baseline (Rule-based)":
+        extractor = get_baseline_extractor()
+    elif model_name == "Donut (OCR-free)":
+        extractor = get_donut_extractor()
+    else: # VietOCR + LayoutXLM
+        extractor = get_layoutxlm_extractor()
+
+    # Cấu hình OCR Mode động cho các extractor dùng OCR đã nạp
     rec_model = "vgg_seq2seq" if ocr_mode == "Fast (vgg_seq2seq)" else "vgg_transformer"
-    
-    # Cập nhật config của baseline và layoutxlm (nếu là thật)
-    for ext in [baseline_extractor, layoutxlm_extractor]:
-        if hasattr(ext, "recognizer") and ext.recognizer is not None:
+    for name in ["baseline", "layoutxlm"]:
+        ext = EXTRACTORS.get(name)
+        if ext is not None and hasattr(ext, "recognizer") and ext.recognizer is not None:
             # Nếu config hiện tại khác với yêu cầu, ta chuyển đổi model của VietOCR
             from receipt_ie.ocr.recognize_vietocr import load_vietocr_model
             current_config = getattr(ext.recognizer, "config_name", None)
@@ -132,14 +161,7 @@ def handle_demo_run(image: Image.Image, model_name: str, ocr_mode: str) -> Tuple
                 ext.recognizer.config_name = rec_model
                 
     start_time = time.time()
-    
-    if model_name == "Baseline (Rule-based)":
-        res = baseline_extractor.predict(image)
-    elif model_name == "Donut (OCR-free)":
-        res = donut_extractor.predict(image)
-    else: # LayoutXLM
-        res = layoutxlm_extractor.predict(image)
-        
+    res = extractor.predict(image)
     e2e_time = (time.time() - start_time) * 1000
     
     # Lấy thông tin hiển thị latency
@@ -161,16 +183,22 @@ def handle_demo_run(image: Image.Image, model_name: str, ocr_mode: str) -> Tuple
     return res.get("normalized_prediction", {}), latency_info
 
 
-def handle_compare_run(image: Image.Image, ocr_mode: str) -> Tuple[Image.Image, Image.Image, str, str, str, str, str]:
+def handle_compare_run(image: Image.Image, ocr_mode: str) -> Tuple[Image.Image, Image.Image, str, str, str, str]:
     """Xử lý so sánh side-by-side và trích xuất debug cho tab Debug & Compare."""
     if image is None:
         empty_img = Image.new("RGB", (200, 200), color="white")
-        return empty_img, empty_img, "", "", "", "", "Vui lòng tải ảnh lên."
+        return empty_img, empty_img, "", "", "", "Vui lòng tải ảnh lên."
         
+    # Lazy load tất cả extractors phục vụ debug & so sánh
+    baseline_extractor = get_baseline_extractor()
+    donut_extractor = get_donut_extractor()
+    layoutxlm_extractor = get_layoutxlm_extractor()
+
     # Cấu hình OCR Mode
     rec_model = "vgg_seq2seq" if ocr_mode == "Fast (vgg_seq2seq)" else "vgg_transformer"
-    for ext in [baseline_extractor, layoutxlm_extractor]:
-        if hasattr(ext, "recognizer") and ext.recognizer is not None:
+    for name in ["baseline", "layoutxlm"]:
+        ext = EXTRACTORS.get(name)
+        if ext is not None and hasattr(ext, "recognizer") and ext.recognizer is not None:
             from receipt_ie.ocr.recognize_vietocr import load_vietocr_model
             current_config = getattr(ext.recognizer, "config_name", None)
             if current_config != rec_model:
@@ -236,7 +264,7 @@ def handle_compare_run(image: Image.Image, ocr_mode: str) -> Tuple[Image.Image, 
     if status_info:
         status_str += f"Đang chạy mockup cho: {', '.join(status_info)}."
 
-    return ocr_visualized, bio_visualized, donut_raw, compare_table, latency_table, status_str, ""
+    return ocr_visualized, bio_visualized, donut_raw, compare_table, latency_table, status_str
 
 
 # Tạo giao diện Blocks Gradio
@@ -257,10 +285,10 @@ with gr.Blocks(theme=theme, title="Receipt VN Information Extraction") as demo:
     )
     
     # Hiển thị cảnh báo mockup nếu có
-    if is_donut_mock or is_layoutxlm_mock:
+    if is_donut_mock_initial or is_layoutxlm_mock_initial:
         mocks = []
-        if is_donut_mock: mocks.append("Donut")
-        if is_layoutxlm_mock: mocks.append("LayoutXLM")
+        if is_donut_mock_initial: mocks.append("Donut")
+        if is_layoutxlm_mock_initial: mocks.append("LayoutXLM")
         gr.Markdown(
             f"⚠️ **Lưu ý:** Không tìm thấy checkpoints huấn luyện cho **{', '.join(mocks)}**. "
             f"Hệ thống tự động kích hoạt **Chế độ Mock Model** (sử dụng baseline OCR làm backend mô phỏng) để đảm bảo giao diện hoạt động bình thường."
