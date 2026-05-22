@@ -172,11 +172,18 @@ def convert_mcocr(csv_path: str, images_dir: str, output_jsonl: str, project_roo
                         field_boxes[unified_field].append(bbox)
                         field_polygons[unified_field].append(poly)
                         
-            # Chuẩn hóa lại target sau khi ghép (đặc biệt là total và date cần parse lại)
-            for field in ["date", "total"]:
-                if target[field]:
-                    target[field] = normalize_field(field, target[field])
-            
+            # Thu thập toàn bộ ground-truth OCR cho chế độ oracle_ocr
+            oracle_ocr = []
+            for t_idx, text in enumerate(texts):
+                if t_idx < len(polygons):
+                    poly = polygons[t_idx]
+                    bbox = polygon_to_bbox(poly)
+                    if bbox:
+                        oracle_ocr.append({
+                            "text": text,
+                            "box": bbox
+                        })
+
             # MC-OCR có đầy đủ nhãn và polygon
             sample = {
                 "id": Path(img_id).stem,
@@ -193,6 +200,7 @@ def convert_mcocr(csv_path: str, images_dir: str, output_jsonl: str, project_roo
                 "target": target,
                 "field_boxes": field_boxes,
                 "field_polygons": field_polygons,
+                "oracle_ocr": oracle_ocr,
                 "ocr_cache_path": f"data/interim/ocr_cache/{Path(img_id).stem}.json"
             }
             

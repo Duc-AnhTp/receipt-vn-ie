@@ -1,0 +1,150 @@
+import json
+import os
+import logging
+from pathlib import Path
+from typing import Dict, List, Tuple, Any, Optional
+import torch
+from torch.utils.data import Dataset
+from transformers import AutoTokenizer
+
+from receipt_ie.data.build_layoutxlm_labels import assign_word_labels, align_tokens_layoutxlm
+from receipt_ie.ocr.reading_order import sort_reading_order
+
+logger = logging.getLogger(__name__)
+
+class LayoutXLMDataset(Dataset):
+    """
+    Custom Dataset cho LayoutXLM (đọc từ unified JSONL).
+    Hỗ trợ hai chế độ nạp dữ liệu:
+    - 'ocr_cache': Đọc kết quả detect+recognize từ file OCR cache cục bộ.
+    - 'oracle_ocr': Đọc trực tiếp ground-truth OCR (texts & bboxes) từ dữ liệu gốc.
+    """
+    def __init__(
+        self,
+        jsonl_path: str,
+        tokenizer: AutoTokenizer,
+        mode: str = "ocr_cache",
+        max_length: int = 512,
+        project_root: str = ".",
+        annotation_level_filter: str = "json_and_boxes"
+    ):
+        self.tokenizer = tokenizer
+        self.mode = mode.lower()
+        self.max_length = max_length
+        self.project_root = Path(project_root)
+        self.annotation_level_filter = annotation_level_filter
+        
+        if self.mode not in ["ocr_cache", "oracle_ocr"]:
+            raise ValueError("mode phải là 'ocr_cache' hoặc 'oracle_ocr'")
+            
+        self.samples: List[Dict[str, Any]] = []
+        
+        jsonl_file = Path(jsonl_path)
+        if not jsonl_file.is_absolute():
+            jsonl_file = self.project_root / jsonl_file
+            
+        if not jsonl_file.exists():
+            logger.warning(f"Không tìm thấy file JSONL tại {jsonl_file}")
+            return
+            
+        with open(jsonl_file, "r", encoding="utf-8") as f:
+            for line in f:
+                if not line.strip():
+                    continue
+                sample = json.loads(line.strip())
+                
+                # Lọc dữ liệu theo annotation_level
+                if self.annotation_level_filter:
+                    if sample.get("annotation_level") != self.annotation_level_filter:
+                        continue
+                        
+                # Nếu là chế độ oracle_ocr, yêu cầu phải có trường oracle_ocr
+                if self.mode == "oracle_ocr":
+                    if "oracle_ocr" not in sample or not sample["oracle_ocr"]:
+                        continue
+                        
+                self.samples.append(sample)
+                
+        logger.info(f"Đã load {len(self.samples)} mẫu LayoutXLM (mode: {self.mode}) từ {jsonl_path}")
+
+    def __len__(self) -> int:
+        return len(self.samples)
+
+    def __getitem__(self, idx: int) -> Dict[str, Any]:
+        sample = self.samples[idx]
+        sample_id = sample["id"]
+        
+        width = sample["width"]
+        height = sample["height"]
+        
+        words: List[str] = []
+        word_boxes: List[List[int]] = []
+        
+        if self.mode == "ocr_cache":
+            # Nạp từ file OCR cache
+            cache_rel_path = sample.get("ocr_cache_path")
+            if not cache_rel_path:
+                raise ValueError(f"Mẫu {sample_id} thiếu ocr_cache_path")
+                
+            cache_path = self.project_root / cache_rel_path
+            if not cache_path.exists():
+                # Ném lỗi cảnh báo rõ ràng nếu thiếu cache khi train
+                raise FileNotFoundError(f"Không tìm thấy file OCR cache tại: {cache_path}. Vui lòng chạy build_ocr_cache trước.")
+                
+            with open(cache_path, "r", encoding="utf-8") as cf:
+                cache_data = json.load(cf)
+                
+            # Đọc danh sách words đã được sắp xếp từ cache
+            cache_words = cache_data.get("words", [])
+            words = [w["text"] for w in cache_words]
+            word_boxes = [w["bbox"] for w in cache_words]
+            
+        elif self.mode == "oracle_ocr":
+            # Nạp từ ground-truth OCR trong sample
+            oracle_ocr_data = sample.get("oracle_ocr", [])
+            
+            # Sắp xếp thứ tự đọc tự nhiên cho oracle ocr
+            regions = [{"bbox": w["box"], "text": w["text"]} for w in oracle_ocr_data]
+            sorted_words, _ = sort_reading_order(regions, y_threshold=12)
+            
+            words = [w["text"] for w in sorted_words]
+            word_boxes = [w["bbox"] for w in sorted_words]
+            
+        # 1. Gán nhãn BIO viết hoa cho từng word dựa trên overlap với field_boxes
+        field_boxes = sample.get("field_boxes", {})
+        word_labels = assign_word_labels(words, word_boxes, field_boxes)
+        
+        # 2. Tokenize và alignment tokens/boxes/labels
+        aligned = align_tokens_layoutxlm(
+            words=words,
+            word_boxes=word_boxes,
+            word_labels=word_labels,
+            tokenizer=self.tokenizer,
+            max_length=self.max_length,
+            image_size=(width, height)
+        )
+        
+        # Trả về định dạng tensor PyTorch
+        return {
+            "input_ids": torch.tensor(aligned["input_ids"], dtype=torch.long),
+            "bbox": torch.tensor(aligned["bbox"], dtype=torch.long),
+            "attention_mask": torch.tensor(aligned["attention_mask"], dtype=torch.long),
+            "labels": torch.tensor(aligned["labels"], dtype=torch.long),
+            "id": sample_id
+        }
+
+def layoutxlm_collate_fn(batch: List[Dict[str, Any]]) -> Dict[str, torch.Tensor]:
+    """
+    Collate function ghép các sample LayoutXLM thành batch.
+    """
+    input_ids = torch.stack([item["input_ids"] for item in batch])
+    bbox = torch.stack([item["bbox"] for item in batch])
+    attention_mask = torch.stack([item["attention_mask"] for item in batch])
+    labels = torch.stack([item["labels"] for item in batch])
+    
+    return {
+        "input_ids": input_ids,
+        "bbox": bbox,
+        "attention_mask": attention_mask,
+        "labels": labels
+    }

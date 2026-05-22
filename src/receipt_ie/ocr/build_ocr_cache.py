@@ -2,6 +2,7 @@
 Script offline chạy PaddleOCR detect + VietOCR recognize để tạo OCR cache.
 Lưu kết quả dưới dạng JSON cho từng ảnh, sắp xếp theo thứ tự đọc tự nhiên.
 """
+import torch
 import os
 import json
 import argparse
