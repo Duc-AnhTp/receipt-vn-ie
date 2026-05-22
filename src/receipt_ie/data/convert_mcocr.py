@@ -58,14 +58,29 @@ def safe_split(val, delimiter="|||") -> list:
         return []
     return [x.strip() for x in val.split(delimiter) if x.strip()]
 
-def polygon_to_bbox(poly: list) -> list:
+def extract_points(poly: dict) -> list:
     """
-    Chuyển đổi một polygon [[x1, y1], [x2, y2], [x3, y3], [x4, y4]] sang bbox [x0, y0, x1, y1].
+    Trích xuất list các điểm [[x1, y1], [x2, y2], ...] từ dict poly của MC-OCR.
     """
-    if not poly or len(poly) < 3:
+    if not isinstance(poly, dict):
         return []
-    xs = [pt[0] for pt in poly]
-    ys = [pt[1] for pt in poly]
+    seg = poly.get("segmentation", [])
+    if not seg or not isinstance(seg, list):
+        return []
+    flat_coords = seg[0]
+    if not flat_coords or len(flat_coords) < 6:
+        return []
+    return [[int(flat_coords[i]), int(flat_coords[i+1])] for i in range(0, len(flat_coords) - 1, 2)]
+
+def polygon_to_bbox(poly: dict) -> list:
+    """
+    Chuyển đổi một polygon từ COCO format trong MC-OCR sang bbox [x0, y0, x1, y1].
+    """
+    pts = extract_points(poly)
+    if not pts:
+        return []
+    xs = [pt[0] for pt in pts]
+    ys = [pt[1] for pt in pts]
     return [int(min(xs)), int(min(ys)), int(max(xs)), int(max(ys))]
 
 def convert_mcocr(csv_path: str, images_dir: str, output_jsonl: str, project_root: str = "."):
@@ -89,6 +104,12 @@ def convert_mcocr(csv_path: str, images_dir: str, output_jsonl: str, project_roo
         for idx, row in tqdm(df.iterrows(), total=len(df)):
             img_id = row["img_id"]
             img_path = Path(images_dir) / img_id
+            
+            # Nếu không tìm thấy ảnh trực tiếp, thử tìm trong thư mục con trùng tên (do giải nén bị lồng)
+            if not img_path.exists():
+                img_path_nested = Path(images_dir) / Path(images_dir).name / img_id
+                if img_path_nested.exists():
+                    img_path = img_path_nested
             
             # Bỏ qua dòng không có annotation nhãn (ví dụ MC-OCR public test)
             raw_labels = row.get("anno_labels", "")
@@ -170,7 +191,7 @@ def convert_mcocr(csv_path: str, images_dir: str, output_jsonl: str, project_roo
                     bbox = polygon_to_bbox(poly)
                     if bbox:
                         field_boxes[unified_field].append(bbox)
-                        field_polygons[unified_field].append(poly)
+                        field_polygons[unified_field].append(extract_points(poly))
 
             # Chuẩn hóa lại sau khi ghép nhiều span, đặc biệt với date/total bị tách dòng.
             for field in ["date", "total"]:

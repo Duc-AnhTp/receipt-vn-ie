@@ -233,14 +233,15 @@ def main():
             det_config = ocr_config.get("detection", {})
             rec_config = ocr_config.get("recognition", {})
             
+            has_cuda = torch.cuda.is_available()
             detector = load_paddle_detector(
-                use_gpu=det_config.get("gpu", True),
+                use_gpu=det_config.get("gpu", True) and has_cuda,
                 use_angle_cls=det_config.get("use_angle_cls", True),
                 lang=det_config.get("lang", "vi")
             )
             recognizer = load_vietocr_model(
                 config_name=rec_config.get("default_config", "vgg_transformer"),
-                use_gpu=rec_config.get("gpu", True)
+                use_gpu=rec_config.get("gpu", True) and has_cuda
             )
         return detector, recognizer
 

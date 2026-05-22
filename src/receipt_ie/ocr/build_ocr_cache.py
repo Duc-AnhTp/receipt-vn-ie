@@ -75,12 +75,13 @@ def main():
     rec_config = config.get("recognition", {})
     cache_config = config.get("cache", {})
     
-    use_gpu = det_config.get("gpu", True)
+    has_cuda = torch.cuda.is_available()
+    use_gpu = det_config.get("gpu", True) and has_cuda
     use_angle_cls = det_config.get("use_angle_cls", True)
     lang = det_config.get("lang", "vi")
     
     rec_engine_config = rec_config.get("default_config", "vgg_transformer")
-    rec_gpu = rec_config.get("gpu", True)
+    rec_gpu = rec_config.get("gpu", True) and has_cuda
     
     cache_dir = Path(cache_config.get("dir", "data/interim/ocr_cache"))
     cache_dir.mkdir(parents=True, exist_ok=True)
