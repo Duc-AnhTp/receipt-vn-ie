@@ -1,0 +1,20 @@
+# Cấu hình OCR Engines
+detection:
+  engine: "paddleocr"
+  det_model_dir: null # Sử dụng mặc định nếu để null
+  use_angle_cls: true
+  lang: "vi"
+  gpu: true
+
+recognition:
+  engine: "vietocr"
+  # Accurate mode: vgg_transformer, Fast mode: vgg_seq2seq
+  default_config: "vgg_transformer"
+  fast_config: "vgg_seq2seq"
+  beamsearch: false
+  gpu: true
+
+cache:
+  version: "ocr_paddle27_vietocr_transformer_v1"
+  dir: "data/interim/ocr_cache"
+  reading_order_y_threshold: 12

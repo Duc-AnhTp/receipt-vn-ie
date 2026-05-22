@@ -1,0 +1,15 @@
+pyproject.toml
+src/receipt_ie.egg-info/PKG-INFO
+src/receipt_ie.egg-info/SOURCES.txt
+src/receipt_ie.egg-info/dependency_links.txt
+src/receipt_ie.egg-info/requires.txt
+src/receipt_ie.egg-info/top_level.txt
+src/receipt_ie/data/convert_cord.py
+src/receipt_ie/data/convert_labelstudio.py
+src/receipt_ie/data/convert_mcocr.py
+src/receipt_ie/data/download_cord.py
+src/receipt_ie/data/normalize_text.py
+src/receipt_ie/data/schemas.py
+src/receipt_ie/data/split_data.py
+src/receipt_ie/data/validate_dataset.py
+tests/test_normalize_text.py

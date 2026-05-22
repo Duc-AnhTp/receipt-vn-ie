@@ -1,0 +1,31 @@
+Metadata-Version: 2.4
+Name: receipt_ie
+Version: 1.0.0
+Summary: Donut vs VietOCR + LayoutXLM for Vietnamese Receipt Information Extraction
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.10
+Classifier: Programming Language :: Python :: 3.11
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Operating System :: OS Independent
+Requires-Python: >=3.10
+Description-Content-Type: text/markdown
+Requires-Dist: torch
+Requires-Dist: torchvision
+Requires-Dist: transformers<5,>=4.44
+Requires-Dist: datasets<5,>=2.20
+Requires-Dist: accelerate>=0.33
+Requires-Dist: evaluate>=0.4
+Requires-Dist: sentencepiece
+Requires-Dist: protobuf
+Requires-Dist: timm
+Requires-Dist: numpy
+Requires-Dist: pandas
+Requires-Dist: scikit-learn
+Requires-Dist: Pillow
+Requires-Dist: opencv-python-headless
+Requires-Dist: albumentations
+Requires-Dist: rapidfuzz
+Requires-Dist: seqeval
+Requires-Dist: tqdm
+Requires-Dist: pyyaml
+Requires-Dist: python-dotenv

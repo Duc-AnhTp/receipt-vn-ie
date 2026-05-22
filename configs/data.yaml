@@ -1,0 +1,17 @@
+# Cấu hình đường dẫn dữ liệu
+raw:
+  cord_v2_dir: "data/raw/cord_v2"
+  mc_ocr_2021_dir: "data/raw/mc_ocr_2021"
+  self_collected_dir: "data/raw/self_collected"
+
+interim:
+  cord_v2_unified: "data/interim/cord_v2_unified.jsonl"
+  mcocr_unified: "data/interim/mcocr_unified.jsonl"
+  self_unified: "data/interim/self_unified.jsonl"
+  ocr_cache_dir: "data/interim/ocr_cache"
+
+processed:
+  train_jsonl: "data/processed/train.jsonl"
+  val_jsonl: "data/processed/val.jsonl"
+  test_jsonl: "data/processed/test.jsonl"
+  donut_warmup_train: "data/processed/donut/cord_warmup_train.jsonl"

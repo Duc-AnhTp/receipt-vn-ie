@@ -1,0 +1,43 @@
+[build-system]
+requires = ["setuptools>=61.0.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "receipt_ie"
+version = "1.0.0"
+description = "Donut vs VietOCR + LayoutXLM for Vietnamese Receipt Information Extraction"
+readme = "README.md"
+requires-python = ">=3.10"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "torch",
+    "torchvision",
+    "transformers>=4.44,<5",
+    "datasets>=2.20,<5",
+    "accelerate>=0.33",
+    "evaluate>=0.4",
+    "sentencepiece",
+    "protobuf",
+    "timm",
+    "numpy",
+    "pandas",
+    "scikit-learn",
+    "Pillow",
+    "opencv-python-headless",
+    "albumentations",
+    "rapidfuzz",
+    "seqeval",
+    "tqdm",
+    "pyyaml",
+    "python-dotenv",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["receipt_ie*"]

@@ -1,0 +1,17 @@
+# Quản lý thiết lập thực nghiệm
+seed: 42
+dataset_version: "v1.0"
+split_version: "split_70_15_15_group_v1"
+ocr_cache_version: "ocr_paddle27_vietocr_transformer_v1"
+
+paths:
+  train_jsonl: "data/processed/train.jsonl"
+  val_jsonl: "data/processed/val.jsonl"
+  test_jsonl: "data/processed/test.jsonl"
+  donut_warmup_train: "data/processed/donut/cord_warmup_train.jsonl"
+  
+evaluation:
+  main_metrics_output: "outputs/metrics/main_metrics.json"
+  upper_bound_metrics_output: "outputs/metrics/upper_bound_metrics.json"
+  predictions_dir: "outputs/predictions"
+  error_analysis_dir: "outputs/error_analysis"

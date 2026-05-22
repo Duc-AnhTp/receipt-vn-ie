@@ -1,0 +1,2 @@
+vietocr==0.3.13
+paddleocr>=2.7,<3.0

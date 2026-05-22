@@ -1,0 +1,31 @@
+# Cấu hình huấn luyện LayoutXLM
+model:
+  name: "microsoft/layoutxlm-base"
+  max_length: 512
+  doc_stride: 128
+  labels:
+    - "O"
+    - "B-STORE_NAME"
+    - "I-STORE_NAME"
+    - "B-DATE"
+    - "I-DATE"
+    - "B-TOTAL"
+    - "I-TOTAL"
+    - "B-ADDRESS"
+    - "I-ADDRESS"
+
+training:
+  output_dir: "checkpoints/layoutxlm/receipt_ie"
+  epochs: 15
+  train_batch_size: 4
+  eval_batch_size: 4
+  learning_rate: 2.0e-5
+  weight_decay: 0.01
+  warmup_ratio: 0.1
+  lr_scheduler_type: "linear"
+  fp16: true
+  logging_steps: 20
+  eval_steps: 200
+  save_steps: 200
+  save_total_limit: 3
+  early_stopping_patience: 5

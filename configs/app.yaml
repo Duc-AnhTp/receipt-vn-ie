@@ -1,0 +1,15 @@
+# Cấu hình ứng dụng Gradio Web Demo
+server:
+  host: "127.0.0.1"
+  port: 7860
+  share: false
+
+models:
+  donut_checkpoint: "checkpoints/donut/receipt_ie/final"
+  layoutxlm_checkpoint: "checkpoints/layoutxlm/receipt_ie/final"
+  baseline_rules: "configs/baseline.yaml"
+
+app:
+  title: "Receipt VN IE - Trích xuất thông tin hóa đơn tiếng Việt"
+  description: "Hệ thống so sánh hai kiến trúc Donut (End-to-End OCR-free) và VietOCR + LayoutXLM (OCR-based) để trích xuất 4 trường thông tin của biên lai."
+  fast_ocr_by_default: false

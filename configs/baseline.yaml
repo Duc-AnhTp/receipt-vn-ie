@@ -1,0 +1,20 @@
+# Cấu hình luật cho Baseline OCR + Rule-based
+heuristics:
+  store_name:
+    max_lines_to_search: 4
+    ignore_prefixes: ["cửa hàng", "cua hang", "siêu thị", "sieu thi", "mst", "mã số thuế"]
+  
+  date:
+    regex_patterns:
+      - '(\d{1,2})[/-](\d{1,2})[/-](\d{4})'
+      - '(\d{1,2})[/-](\d{1,2})[/-](\d{2})'
+      - '(\d{4})[/-](\d{1,2})[/-](\d{1,2})'
+    ignore_keywords: ["ngày", "ngay", "date", "time", "lúc", "luc", "giờ", "gio"]
+
+  total:
+    keywords: ["tổng cộng", "tong cong", "thanh toán", "thanh toan", "total", "amount", "phải trả", "phai tra", "thành tiền", "thanh tien"]
+    regex_money: '\d[\d\.,\s]*'
+    max_distance_from_keyword: 2 # Số dòng tìm kiếm xung quanh từ khóa
+
+  address:
+    keywords: ["địa chỉ", "dia chi", "address", "đường", "duong", "phường", "phuong", "quận", "quan", "huyện", "huyen", "tỉnh", "tinh", "thành phố", "thanh pho", "tp"]

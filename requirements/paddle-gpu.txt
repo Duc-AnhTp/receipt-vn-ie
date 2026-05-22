@@ -1,0 +1,4 @@
+# Hãy tự cài đặt phiên bản paddlepaddle-gpu phù hợp với CUDA cục bộ
+# Ví dụ:
+# paddlepaddle-gpu==2.6.1 -f https://www.paddlepaddle.org.cn/whl/windows/mkl/avx/stable.html
+paddlepaddle-gpu

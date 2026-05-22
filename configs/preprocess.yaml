@@ -1,0 +1,27 @@
+# Cấu hình tiền xử lý ảnh và tăng cường dữ liệu (Augmentation)
+image:
+  donut:
+    max_size: [1280, 960]
+    keep_aspect_ratio: true
+  ocr:
+    max_side: 2048
+    denoise: true
+    clahe: true
+
+augmentation:
+  rotate:
+    limit: 2
+    p: 0.4
+  brightness_contrast:
+    brightness_limit: 0.2
+    contrast_limit: 0.2
+    p: 0.4
+  compression:
+    quality_range: [60, 100]
+    p: 0.3
+  blur:
+    blur_limit: [3, 3]
+    p: 0.15
+  perspective:
+    scale: [0.01, 0.03]
+    p: 0.2
