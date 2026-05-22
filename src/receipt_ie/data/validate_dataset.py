@@ -6,10 +6,6 @@ import unicodedata
 from PIL import Image
 import pandas as pd
 from collections import defaultdict
-import sys
-
-# Thêm src vào path để import
-sys.path.append(str(Path(__file__).parent.parent.parent))
 
 from receipt_ie.data.schemas import FIELDS
 

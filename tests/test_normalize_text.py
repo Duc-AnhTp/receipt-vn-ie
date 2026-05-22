@@ -1,9 +1,4 @@
 import unittest
-import sys
-from pathlib import Path
-
-# Thêm src vào path để import
-sys.path.append(str(Path(__file__).parent.parent / "src"))
 
 from receipt_ie.data.normalize_text import (
     normalize_vietnamese_text,

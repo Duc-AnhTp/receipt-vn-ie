@@ -5,10 +5,6 @@ from pathlib import Path
 from sklearn.model_selection import train_test_split
 import numpy as np
 from collections import defaultdict
-import sys
-
-# Thêm src vào path để import
-sys.path.append(str(Path(__file__).parent.parent.parent))
 
 def get_image_md5(path_str: str) -> str:
     path = Path(path_str)

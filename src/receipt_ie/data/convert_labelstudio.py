@@ -1,11 +1,8 @@
 import json
 import argparse
-import sys
+import os
 from pathlib import Path
 from PIL import Image
-
-# Thêm src vào path để import
-sys.path.append(str(Path(__file__).parent.parent.parent))
 
 from receipt_ie.data.normalize_text import (
     normalize_store_name,
@@ -26,9 +23,10 @@ def normalize_field(field: str, value: str) -> str:
         return normalize_money(value)
     return normalize_vietnamese_text(value)
 
-def convert_labelstudio(json_path: str, images_dir: str, output_jsonl: str):
+def convert_labelstudio(json_path: str, images_dir: str, output_jsonl: str, project_root: str = "."):
     """
     Convert file JSON xuất ra từ Label Studio sang unified JSONL.
+    Lưu image_path dạng tương đối so với project_root.
     """
     json_file = Path(json_path)
     if not json_file.exists():
@@ -175,7 +173,7 @@ def convert_labelstudio(json_path: str, images_dir: str, output_jsonl: str):
                 "group_id": Path(filename).stem,
                 "store_group": normalize_store_name(raw_target["store_name"]) or "self_unknown",
                 "source": "self_collected",
-                "image_path": str(img_path.as_posix()),
+                "image_path": os.path.relpath(img_path, project_root).replace("\\", "/"),
                 "width": width,
                 "height": height,
                 "annotation_level": annotation_level,
@@ -196,6 +194,7 @@ if __name__ == "__main__":
     parser.add_argument("--json_path", type=str, default="data/raw/self_collected/label_studio.json", help="Đường dẫn file JSON xuất ra từ LS")
     parser.add_argument("--images_dir", type=str, default="data/raw/self_collected/images", help="Thư mục chứa ảnh")
     parser.add_argument("--output_jsonl", type=str, default="data/interim/self_unified.jsonl", help="File JSONL đầu ra")
+    parser.add_argument("--project_root", type=str, default=".", help="Gốc project để tính đường dẫn tương đối")
     args = parser.parse_args()
     
-    convert_labelstudio(args.json_path, args.images_dir, args.output_jsonl)
+    convert_labelstudio(args.json_path, args.images_dir, args.output_jsonl, args.project_root)

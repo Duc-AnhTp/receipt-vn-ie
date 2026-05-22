@@ -1,12 +1,9 @@
 import json
 import argparse
+import os
 from pathlib import Path
 from datasets import load_from_disk
 from tqdm import tqdm
-import sys
-
-# Thêm src vào path để import
-sys.path.append(str(Path(__file__).parent.parent.parent))
 
 from receipt_ie.data.normalize_text import normalize_money
 
@@ -31,10 +28,11 @@ def extract_cord_total(ground_truth_str: str) -> str:
     except Exception:
         return ""
 
-def convert_cord(cord_dir: str, output_jsonl: str, images_dir: str):
+def convert_cord(cord_dir: str, output_jsonl: str, images_dir: str, project_root: str = "."):
     """
     Đọc CORD v2 và ghi nhận ảnh cùng nhãn total đã được chuẩn hóa.
     Chỉ lấy tập 'train' và 'validation' để warm-up.
+    Lưu image_path dạng tương đối so với project_root.
     """
     cord_path = Path(cord_dir)
     if not cord_path.exists():
@@ -76,7 +74,7 @@ def convert_cord(cord_dir: str, output_jsonl: str, images_dir: str):
                     "group_id": f"cord_group_{split}_{idx:06d}",
                     "store_group": "cord_unknown",
                     "source": "cord_v2",
-                    "image_path": str(img_path.as_posix()),
+                    "image_path": os.path.relpath(img_path, project_root).replace("\\", "/"),
                     "width": width,
                     "height": height,
                     "annotation_level": "json_only",
@@ -117,6 +115,7 @@ if __name__ == "__main__":
     parser.add_argument("--cord_dir", type=str, default="data/raw/cord_v2", help="Đường dẫn dữ liệu CORD v2")
     parser.add_argument("--output_jsonl", type=str, default="data/processed/donut/cord_warmup_train.jsonl", help="Đường dẫn file JSONL đầu ra")
     parser.add_argument("--images_dir", type=str, default="data/interim/cord_v2_images", help="Thư mục lưu ảnh CORD v2")
+    parser.add_argument("--project_root", type=str, default=".", help="Gốc project để tính đường dẫn tương đối")
     args = parser.parse_args()
     
-    convert_cord(args.cord_dir, args.output_jsonl, args.images_dir)
+    convert_cord(args.cord_dir, args.output_jsonl, args.images_dir, args.project_root)

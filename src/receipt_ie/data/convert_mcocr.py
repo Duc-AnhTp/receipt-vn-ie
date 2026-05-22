@@ -6,10 +6,6 @@ import pandas as pd
 from pathlib import Path
 from tqdm import tqdm
 from PIL import Image
-import sys
-
-# Thêm src vào path để import
-sys.path.append(str(Path(__file__).parent.parent.parent))
 
 from receipt_ie.data.normalize_text import (
     normalize_vietnamese_text,
@@ -93,6 +89,11 @@ def convert_mcocr(csv_path: str, images_dir: str, output_jsonl: str, project_roo
         for idx, row in tqdm(df.iterrows(), total=len(df)):
             img_id = row["img_id"]
             img_path = Path(images_dir) / img_id
+            
+            # Bỏ qua dòng không có annotation nhãn (ví dụ MC-OCR public test)
+            raw_labels = row.get("anno_labels", "")
+            if pd.isna(raw_labels) or not str(raw_labels).strip():
+                continue
             
             if not img_path.exists():
                 # Bỏ qua nếu không tìm thấy ảnh
