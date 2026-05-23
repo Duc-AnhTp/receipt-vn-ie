@@ -279,3 +279,108 @@ class LayoutXLMExtractor(BaseExtractor):
             "words": flat_words,
             "word_labels": word_predictions
         }
+
+
+def parse_args():
+    import argparse
+    parser = argparse.ArgumentParser(description="Chạy suy luận LayoutXLM trên tập test.")
+    parser.add_argument(
+        "--checkpoint",
+        type=str,
+        default="checkpoints/layoutxlm/receipt_ie/ocr_cache/best_model",
+        help="Đường dẫn đến checkpoint tốt nhất của LayoutXLM"
+    )
+    parser.add_argument(
+        "--test_jsonl",
+        type=str,
+        default="data/processed/test.jsonl",
+        help="Đường dẫn file test.jsonl"
+    )
+    parser.add_argument(
+        "--output_jsonl",
+        type=str,
+        default="outputs/predictions/layoutxlm_test.jsonl",
+        help="Đường dẫn file JSONL đầu ra"
+    )
+    parser.add_argument(
+        "--limit",
+        type=int,
+        default=None,
+        help="Giới hạn số mẫu chạy"
+    )
+    return parser.parse_args()
+
+
+def main():
+    import json
+    import os
+    from pathlib import Path
+    from tqdm import tqdm
+    
+    args = parse_args()
+    
+    test_file = Path(args.test_jsonl)
+    if not test_file.exists():
+        print(f"Không tìm thấy file test: {test_file}")
+        return
+        
+    out_file = Path(args.output_jsonl)
+    out_file.parent.mkdir(parents=True, exist_ok=True)
+    
+    extractor = LayoutXLMExtractor()
+    extractor.load(args.checkpoint)
+    
+    samples = []
+    with open(test_file, "r", encoding="utf-8") as f:
+        for line in f:
+            if line.strip():
+                samples.append(json.loads(line.strip()))
+                
+    if args.limit is not None:
+        samples = samples[:args.limit]
+        
+    print(f"Running LayoutXLM inference on {len(samples)} samples...")
+    count = 0
+    with open(out_file, "w", encoding="utf-8") as out_f:
+        for sample in tqdm(samples, desc="LayoutXLM Inference"):
+            sample_id = sample.get("id")
+            image_path_str = sample.get("image_path")
+            
+            prediction_record = {
+                "id": sample_id,
+                "method": "layoutxlm",
+                "prediction": {},
+                "normalized_prediction": {},
+                "raw_output": None,
+                "latency_cached_ms": 0.0,
+                "latency_e2e_ms": 0.0,
+                "status": "ok",
+                "error": None
+            }
+            
+            try:
+                if not image_path_str or not os.path.exists(image_path_str):
+                    raise FileNotFoundError(f"Image not found at {image_path_str}")
+                    
+                img = Image.open(image_path_str).convert("RGB")
+                res = extractor.predict(img)
+                
+                prediction_record["prediction"] = res["prediction"]
+                prediction_record["normalized_prediction"] = res["normalized_prediction"]
+                prediction_record["raw_output"] = res["raw_output"]
+                prediction_record["latency_cached_ms"] = round(res["latency_cached_ms"], 2)
+                prediction_record["latency_e2e_ms"] = round(res["latency_e2e_ms"], 2)
+                
+            except Exception as e:
+                print(f"Error evaluating sample {sample_id}: {e}")
+                prediction_record["status"] = "error"
+                prediction_record["error"] = str(e)
+                
+            out_f.write(json.dumps(prediction_record, ensure_ascii=False) + "\n")
+            count += 1
+            
+    print(f"LayoutXLM inference completed. Saved {count} predictions to {args.output_jsonl}")
+
+
+if __name__ == "__main__":
+    main()

@@ -5,7 +5,8 @@ from typing import Tuple
 def setup_donut_model_and_processor(
     model_name: str = "naver-clova-ix/donut-base",
     task_token: str = "<s_receipt_ie>",
-    cord_task_token: str = "<s_cord_receipt_parse>"
+    cord_task_token: str = "<s_cord_receipt_parse>",
+    image_size: Tuple[int, int] = None
 ) -> Tuple[VisionEncoderDecoderModel, DonutProcessor]:
     """
     Khởi tạo và cấu hình mô hình Donut cùng Processor.
@@ -13,6 +14,8 @@ def setup_donut_model_and_processor(
     """
     # 1. Load processor và model
     processor = DonutProcessor.from_pretrained(model_name)
+    if image_size is not None:
+        processor.image_processor.size = {"height": image_size[0], "width": image_size[1]}
     model = VisionEncoderDecoderModel.from_pretrained(model_name)
     
     # 2. Định nghĩa các tokens đặc biệt mới cần thêm

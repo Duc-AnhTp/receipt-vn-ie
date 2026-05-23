@@ -128,6 +128,8 @@ def main():
         num_train_epochs=t_cfg["epochs"],
         per_device_train_batch_size=t_cfg["train_batch_size"],
         per_device_eval_batch_size=t_cfg["eval_batch_size"],
+        gradient_accumulation_steps=t_cfg.get("gradient_accumulation_steps", 1),
+        gradient_checkpointing=t_cfg.get("gradient_checkpointing", False),
         learning_rate=float(t_cfg["learning_rate"]),
         weight_decay=t_cfg["weight_decay"],
         warmup_ratio=t_cfg["warmup_ratio"],

@@ -4,15 +4,15 @@ model:
   task_token: "<s_receipt_ie>"
   cord_task_token: "<s_cord_receipt_parse>"
   max_length: 192
-  image_size: [1280, 960]
+  image_size: [960, 640]
 
 training:
   output_dir: "checkpoints/donut/receipt_ie"
   epochs: 20
   warmup_epochs: 3
-  train_batch_size: 2
-  eval_batch_size: 2
-  gradient_accumulation_steps: 8
+  train_batch_size: 1
+  eval_batch_size: 1
+  gradient_accumulation_steps: 16
   learning_rate: 3.0e-5
   weight_decay: 0.01
   warmup_ratio: 0.05

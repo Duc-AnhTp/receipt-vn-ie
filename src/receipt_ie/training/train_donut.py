@@ -42,10 +42,12 @@ def train_stage(
     print(f"Task token: {task_token}")
     
     # 1. Setup Model và Processor
+    image_size = donut_config["model"].get("image_size", None)
     model, processor = setup_donut_model_and_processor(
         model_name=model_name,
         task_token=task_token,
-        cord_task_token=cord_task_token
+        cord_task_token=cord_task_token,
+        image_size=image_size
     )
     
     # Cập nhật decoder_start_token_id cho giai đoạn huấn luyện hiện tại
