@@ -165,12 +165,13 @@ def main():
     print(f"Bắt đầu huấn luyện...")
     trainer.train()
     
-    # 6. Lưu mô hình và tokenizer tốt nhất
+    # 6. Lưu mô hình và tokenizer tốt nhất (chỉ tiến hành ở luồng chính để tránh xung đột ghi trong DDP)
     best_model_dir = os.path.join(output_dir, "best_model")
-    os.makedirs(best_model_dir, exist_ok=True)
-    model.save_pretrained(best_model_dir)
-    tokenizer.save_pretrained(best_model_dir)
-    print(f"Đã lưu mô hình tốt nhất vào: {best_model_dir}")
+    if trainer.is_world_process_zero():
+        os.makedirs(best_model_dir, exist_ok=True)
+        trainer.save_model(best_model_dir)
+        tokenizer.save_pretrained(best_model_dir)
+        print(f"Đã lưu mô hình tốt nhất vào: {best_model_dir}")
 
 if __name__ == "__main__":
     main()

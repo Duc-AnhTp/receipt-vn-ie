@@ -5,7 +5,8 @@ from pathlib import Path
 from typing import Dict, List, Tuple, Any, Optional
 import torch
 from torch.utils.data import Dataset
-from transformers import AutoTokenizer
+from transformers import AutoTokenizer, LayoutLMv2ImageProcessor
+from PIL import Image
 
 from receipt_ie.data.build_layoutxlm_labels import assign_word_labels, align_tokens_layoutxlm
 from receipt_ie.ocr.reading_order import sort_reading_order
@@ -36,6 +37,13 @@ class LayoutXLMDataset(Dataset):
         
         if self.mode not in ["ocr_cache", "oracle_ocr"]:
             raise ValueError("mode phải là 'ocr_cache' hoặc 'oracle_ocr'")
+            
+        # Khởi tạo Image Processor cho LayoutXLM
+        try:
+            model_path = tokenizer.name_or_path if hasattr(tokenizer, "name_or_path") else "microsoft/layoutxlm-base"
+            self.image_processor = LayoutLMv2ImageProcessor.from_pretrained(model_path)
+        except Exception:
+            self.image_processor = LayoutLMv2ImageProcessor.from_pretrained("microsoft/layoutxlm-base")
             
         self.samples: List[Dict[str, Any]] = []
         
@@ -124,12 +132,30 @@ class LayoutXLMDataset(Dataset):
             image_size=(width, height)
         )
         
+        # 3. Tải và xử lý ảnh (bắt buộc đối với LayoutLMv2 / LayoutXLM)
+        img_rel_path = sample.get("image_path")
+        img_path = self.project_root / img_rel_path if img_rel_path else Path("")
+        
+        # Fallback nếu ảnh không tồn tại
+        if not img_path.exists() or not img_path.is_file():
+            image = Image.new("RGB", (224, 224), color="white")
+        else:
+            try:
+                image = Image.open(img_path).convert("RGB")
+            except Exception as e:
+                logger.warning(f"Lỗi đọc ảnh {img_path}: {e}")
+                image = Image.new("RGB", (224, 224), color="white")
+                
+        # Tiền xử lý ảnh qua processor
+        pixel_values = self.image_processor(image, return_tensors="pt").pixel_values[0]
+        
         # Trả về định dạng tensor PyTorch
         return {
             "input_ids": torch.tensor(aligned["input_ids"], dtype=torch.long),
             "bbox": torch.tensor(aligned["bbox"], dtype=torch.long),
             "attention_mask": torch.tensor(aligned["attention_mask"], dtype=torch.long),
             "labels": torch.tensor(aligned["labels"], dtype=torch.long),
+            "image": pixel_values,
             "id": sample_id
         }
 
@@ -141,10 +167,12 @@ def layoutxlm_collate_fn(batch: List[Dict[str, Any]]) -> Dict[str, torch.Tensor]
     bbox = torch.stack([item["bbox"] for item in batch])
     attention_mask = torch.stack([item["attention_mask"] for item in batch])
     labels = torch.stack([item["labels"] for item in batch])
+    images = torch.stack([item["image"] for item in batch])
     
     return {
         "input_ids": input_ids,
         "bbox": bbox,
         "attention_mask": attention_mask,
-        "labels": labels
+        "labels": labels,
+        "image": images
     }

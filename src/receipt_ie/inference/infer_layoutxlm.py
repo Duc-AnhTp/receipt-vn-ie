@@ -62,6 +62,14 @@ class LayoutXLMExtractor(BaseExtractor):
         self.model = LayoutLMv2ForTokenClassification.from_pretrained(checkpoint_path)
         self.model.to(self.device)
         self.model.eval()
+        
+        # Nạp Image Processor cho LayoutXLM
+        from transformers import LayoutLMv2ImageProcessor
+        try:
+            self.image_processor = LayoutLMv2ImageProcessor.from_pretrained(checkpoint_path)
+        except Exception:
+            self.image_processor = LayoutLMv2ImageProcessor.from_pretrained("microsoft/layoutxlm-base")
+            
         print("LayoutXLM model loaded successfully.")
         
         # Tự động nạp bộ OCR nếu chưa được truyền từ ngoài
@@ -215,11 +223,15 @@ class LayoutXLMExtractor(BaseExtractor):
         tensor_bbox = torch.tensor([bbox], dtype=torch.long).to(self.device)
         tensor_attention_mask = torch.tensor([attention_mask], dtype=torch.long).to(self.device)
         
+        # Tiền xử lý ảnh cho model (chuyển đổi sang BGR 224x224 và chuẩn hóa)
+        tensor_image = self.image_processor(image, return_tensors="pt").pixel_values.to(self.device)
+        
         # 4. Chạy mô hình LayoutXLM dự đoán
         with torch.no_grad():
             outputs = self.model(
                 input_ids=tensor_input_ids,
                 bbox=tensor_bbox,
+                image=tensor_image,
                 attention_mask=tensor_attention_mask
             )
             logits = outputs.logits
