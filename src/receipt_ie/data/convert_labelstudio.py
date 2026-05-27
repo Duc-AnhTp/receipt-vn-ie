@@ -53,10 +53,9 @@ def convert_labelstudio(json_path: str, images_dir: str, output_jsonl: str, proj
                 continue
                 
             # Trích xuất filename từ url/path
-            filename = Path(image_url).name
-            # Giải mã ký tự đặc biệt nếu Label Studio encode URL (ví dụ khoảng trắng %20)
             from urllib.parse import unquote
-            filename = unquote(filename)
+            decoded_url = unquote(image_url)
+            filename = os.path.basename(decoded_url.replace("\\", "/"))
             
             # Xóa các hash prefix mà Label Studio sinh ra (ví dụ: b8a927c3-image.jpg -> image.jpg)
             # Label Studio thường thêm 8-10 ký tự hash đầu và dấu gạch ngang
@@ -66,7 +65,7 @@ def convert_labelstudio(json_path: str, images_dir: str, output_jsonl: str, proj
             img_path = Path(images_dir) / filename
             if not img_path.exists():
                 # Thử tìm với filename gốc (giữ cả hash)
-                img_path = Path(images_dir) / unquote(Path(image_url).name)
+                img_path = Path(images_dir) / os.path.basename(decoded_url.replace("\\", "/"))
                 if not img_path.exists():
                     # Nếu vẫn không thấy, bỏ qua
                     continue
