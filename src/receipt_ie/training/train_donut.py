@@ -95,7 +95,7 @@ def train_stage(
         fp16=use_fp16,
         gradient_checkpointing=t_cfg["gradient_checkpointing"],
         logging_steps=t_cfg["logging_steps"],
-        evaluation_strategy="steps" if val_dataset else "no",
+        eval_strategy="steps" if val_dataset else "no",
         eval_steps=t_cfg["eval_steps"] if val_dataset else None,
         save_strategy="steps" if val_dataset else "epoch",
         save_steps=t_cfg["save_steps"] if val_dataset else None,

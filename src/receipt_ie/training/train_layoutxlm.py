@@ -136,7 +136,7 @@ def main():
         lr_scheduler_type=t_cfg["lr_scheduler_type"],
         fp16=use_fp16,
         logging_steps=t_cfg["logging_steps"],
-        evaluation_strategy="steps",
+        eval_strategy="steps",
         eval_steps=t_cfg["eval_steps"],
         save_strategy="steps",
         save_steps=t_cfg["save_steps"],
