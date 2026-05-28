@@ -2,7 +2,7 @@
 server:
   host: "127.0.0.1"
   port: 7860
-  share: false
+  share: true
 
 models:
   donut_checkpoint: "checkpoints/donut/receipt_ie/final"
