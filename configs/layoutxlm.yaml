@@ -20,7 +20,7 @@ training:
   train_batch_size: 1
   eval_batch_size: 1
   gradient_accumulation_steps: 4
-  gradient_checkpointing: true
+  gradient_checkpointing: false
   learning_rate: 2.0e-5
   weight_decay: 0.01
   warmup_ratio: 0.1
@@ -29,5 +29,5 @@ training:
   logging_steps: 20
   eval_steps: 200
   save_steps: 200
-  save_total_limit: 3
+  save_total_limit: 1
   early_stopping_patience: 5

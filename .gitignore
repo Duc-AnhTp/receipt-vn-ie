@@ -70,6 +70,8 @@ data/interim/*
 !data/interim/.gitkeep
 data/processed/*
 !data/processed/.gitkeep
+data/*.zip
+*.zip
 checkpoints/*
 !checkpoints/.gitkeep
 outputs/*

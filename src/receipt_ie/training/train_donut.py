@@ -124,7 +124,14 @@ def train_stage(
     )
     
     # 5. Huấn luyện
-    trainer.train()
+    resume_checkpoint = None
+    if os.path.exists(output_dir):
+        checkpoints = [os.path.join(output_dir, d) for d in os.listdir(output_dir) if d.startswith("checkpoint-")]
+        if checkpoints:
+            resume_checkpoint = max(checkpoints, key=os.path.getmtime)
+            print(f"Phát hiện checkpoint cũ tại: {resume_checkpoint}. Tiếp tục huấn luyện nối tiếp từ đây...")
+            
+    trainer.train(resume_from_checkpoint=resume_checkpoint)
     
     # 6. Lưu mô hình và processor tốt nhất (chỉ tiến hành ở luồng chính để tránh xung đột ghi trong DDP)
     best_model_dir = os.path.join(output_dir, "best_model")
