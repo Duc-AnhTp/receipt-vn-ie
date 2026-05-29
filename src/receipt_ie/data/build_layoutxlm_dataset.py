@@ -29,7 +29,8 @@ class LayoutXLMDataset(Dataset):
         max_length: int = 512,
         project_root: str = ".",
         annotation_level_filter: str = "json_and_boxes",
-        is_train: bool = False
+        is_train: bool = False,
+        overlap_threshold: float = 0.5
     ):
         self.tokenizer = tokenizer
         self.mode = mode.lower()
@@ -37,6 +38,7 @@ class LayoutXLMDataset(Dataset):
         self.project_root = Path(project_root)
         self.annotation_level_filter = annotation_level_filter
         self.is_train = is_train
+        self.overlap_threshold = overlap_threshold
         
         if self.is_train:
             self.transform = get_layoutxlm_transforms()
@@ -126,7 +128,7 @@ class LayoutXLMDataset(Dataset):
             
         # 1. Gán nhãn BIO viết hoa cho từng word dựa trên overlap với field_boxes
         field_boxes = sample.get("field_boxes", {})
-        word_labels = assign_word_labels(words, word_boxes, field_boxes)
+        word_labels = assign_word_labels(words, word_boxes, field_boxes, overlap_threshold=self.overlap_threshold)
         
         # 2. Tokenize và alignment tokens/boxes/labels
         aligned = align_tokens_layoutxlm(

@@ -1,4 +1,5 @@
 # Quản lý thiết lập thực nghiệm
+# CORD v2 chỉ là optional/future work, không dùng trong main result hiện tại.
 seed: 42
 dataset_version: "v1.0"
 split_version: "split_70_15_15_group_v1"
@@ -8,6 +9,7 @@ paths:
   train_jsonl: "data/processed/train.jsonl"
   val_jsonl: "data/processed/val.jsonl"
   test_jsonl: "data/processed/test.jsonl"
+  # Optional CORD warm-up path; không dùng trong scripts main.
   donut_warmup_train: "data/processed/donut/cord_warmup_train.jsonl"
   
 evaluation:

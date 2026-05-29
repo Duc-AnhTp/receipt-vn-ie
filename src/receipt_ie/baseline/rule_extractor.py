@@ -14,6 +14,40 @@ from receipt_ie.data.normalize_text import (
 logger = logging.getLogger(__name__)
 
 
+PHONE_OR_CODE_RE = re.compile(
+    r"\b(tel|phone|đt|sđt|dt|sdt|fax|mst|tax|tax_code|mã số thuế|ma so thue|mã hđ|ma hd|invoice|bill no)\b",
+    re.IGNORECASE,
+)
+
+
+TOTAL_KEYWORDS = [
+    r"tổng cộng", r"tong cong", r"tổng tiền", r"tong tien", r"tổng thanh toán", r"tong thanh toan",
+    r"thanh toán", r"thanh toan", r"total", r"amount", r"cần trả", r"can tra",
+    r"thành tiền", r"thanh tien", r"phải trả", r"phai tra", r"tổng", r"tong"
+]
+
+
+def _money_candidates(text: str) -> list[str]:
+    values = []
+    for match in re.finditer(r"\d[\d\.,\s]*", text):
+        raw = match.group(0)
+        normalized = normalize_money(raw)
+        if normalized and normalized.isdigit():
+            values.append(normalized)
+    return values
+
+
+def _is_bad_money_context(text: str) -> bool:
+    if normalize_date(text):
+        return True
+    if PHONE_OR_CODE_RE.search(text):
+        return True
+    digits = re.sub(r"\D", "", text)
+    if len(digits) >= 9 and not re.search("|".join(TOTAL_KEYWORDS), text, re.IGNORECASE):
+        return True
+    return False
+
+
 def extract_fields_from_ocr(ocr_data: dict) -> dict:
     """
     Trích xuất 4 trường thông tin từ dữ liệu OCR cache của một hóa đơn.
@@ -55,7 +89,7 @@ def extract_fields_from_ocr(ocr_data: dict) -> dict:
     candidate_store = ""
     for i, text in enumerate(line_texts[:5]):
         # Bỏ qua dòng chứa số điện thoại, MST, email, website
-        if re.search(r"\b(tel|phone|đt|sđt|fax|lh|mst|tax|tax_code|mã số thuế|email|website|web|www)\b", text, re.IGNORECASE):
+        if re.search(r"\b(tel|phone|đt|sđt|dt|sdt|fax|lh|mst|tax|tax_code|mã số thuế|email|website|web|www)\b", text, re.IGNORECASE):
             continue
         # Bỏ qua dòng chứa quá nhiều chữ số (như mã hóa đơn, ngày tháng)
         digit_ratio = sum(c.isdigit() for c in text) / len(text) if len(text) > 0 else 0
@@ -75,13 +109,15 @@ def extract_fields_from_ocr(ocr_data: dict) -> dict:
     prediction["store_name"] = normalize_store_name(candidate_store)
 
     # --- 2. TRÍCH XUẤT DATE ---
-    # Duyệt từ trên xuống dưới tìm dòng khớp regex ngày tháng
     date_val = ""
-    for text in line_texts:
+    date_candidates = []
+    for idx, text in enumerate(line_texts):
         norm_d = normalize_date(text)
         if norm_d:
-            date_val = norm_d
-            break
+            score = 0 if re.search(r"\b(ngày|ngay|date|time|giờ|gio|bán hàng|ban hang)\b", text, re.IGNORECASE) else 1
+            date_candidates.append((score, idx, norm_d))
+    if date_candidates:
+        date_val = sorted(date_candidates, key=lambda x: (x[0], x[1]))[0][2]
     prediction["date"] = date_val
 
     # --- 3. TRÍCH XUẤT ADDRESS ---
@@ -116,12 +152,7 @@ def extract_fields_from_ocr(ocr_data: dict) -> dict:
 
     # --- 4. TRÍCH XUẤT TOTAL ---
     # Duyệt từ dưới lên trên tìm dòng chứa từ khóa tổng cộng
-    total_keywords = [
-        r"tổng cộng", r"tong cong", r"tổng tiền", r"tong tien", r"thanh toán", r"thanh toan",
-        r"total", r"amount", r"cần trả", r"can tra", r"thành tiền", r"thanh tien",
-        r"tiền mặt", r"tien mat", r"phải trả", r"phai tra", r"tổng", r"tong"
-    ]
-    total_pattern = re.compile(r"\b(" + "|".join(total_keywords) + r")\b", re.IGNORECASE)
+    total_pattern = re.compile(r"\b(" + "|".join(TOTAL_KEYWORDS) + r")\b", re.IGNORECASE)
     
     total_val = ""
     found_total = False
@@ -129,43 +160,34 @@ def extract_fields_from_ocr(ocr_data: dict) -> dict:
     for idx in range(len(line_texts) - 1, -1, -1):
         text = line_texts[idx]
         if total_pattern.search(text):
-            # Tìm cụm số trên chính dòng đó
-            norm_money = normalize_money(text)
-            if norm_money and norm_money.isdigit() and int(norm_money) > 0:
-                total_val = norm_money
+            window = [text]
+            if idx + 1 < len(line_texts):
+                window.append(line_texts[idx + 1])
+            if idx - 1 >= 0:
+                window.append(line_texts[idx - 1])
+
+            candidates = []
+            for candidate_text in window:
+                if _is_bad_money_context(candidate_text):
+                    continue
+                for money in _money_candidates(candidate_text):
+                    value = int(money)
+                    if value > 0:
+                        candidates.append(money)
+            if candidates:
+                total_val = max(candidates, key=lambda x: int(x))
                 found_total = True
                 break
-            
-            # Nếu dòng từ khóa không chứa số, kiểm tra dòng ngay sau nó
-            if idx + 1 < len(line_texts):
-                next_text = line_texts[idx + 1]
-                norm_money = normalize_money(next_text)
-                if norm_money and norm_money.isdigit() and int(norm_money) > 0:
-                    total_val = norm_money
-                    found_total = True
-                    break
-                    
-            # Hoặc kiểm tra dòng ngay trước nó
-            if idx - 1 >= 0:
-                prev_text = line_texts[idx - 1]
-                norm_money = normalize_money(prev_text)
-                if norm_money and norm_money.isdigit() and int(norm_money) > 0:
-                    total_val = norm_money
-                    found_total = True
-                    break
 
     # Fallback: Nếu không tìm thấy qua từ khóa, tìm cụm số lớn nhất ở nửa cuối hóa đơn
     if not found_total:
         candidates = []
-        half_idx = int(len(line_texts) * 0.5)
-        for text in line_texts[half_idx:]:
-            # Bỏ qua dòng ngày tháng hoặc số điện thoại dài ngoằng
-            if normalize_date(text) or re.search(r"\b(tel|phone|đt|sđt|fax|mst|tax|ngày|ngay)\b", text, re.IGNORECASE):
+        start_idx = int(len(line_texts) * 0.66)
+        for text in line_texts[start_idx:]:
+            if _is_bad_money_context(text):
                 continue
-            norm_money = normalize_money(text)
-            if norm_money and norm_money.isdigit():
+            for norm_money in _money_candidates(text):
                 val = int(norm_money)
-                # Giới hạn số tiền hợp lý cho biên lai (1,000đ đến 1,000,000,000đ)
                 if 1000 <= val <= 1000000000:
                     candidates.append(norm_money)
         if candidates:

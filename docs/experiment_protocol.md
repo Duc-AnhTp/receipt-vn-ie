@@ -31,9 +31,9 @@ So sánh công bằng 3 phương pháp trích xuất thông tin biên lai tiến
 3. Ghi predictions → `outputs/predictions/baseline_test.jsonl`
 
 ### Donut
-1. (Tùy chọn) Warm-up với CORD v2 dùng task token `<s_cord_receipt_parse>`
-2. Fine-tune trên dữ liệu tiếng Việt với task token `<s_receipt_ie>`
-3. Inference trên test → `outputs/predictions/donut_test.jsonl`
+1. Fine-tune trên dữ liệu tiếng Việt với task token `<s_receipt_ie>`
+2. Inference trên test → `outputs/predictions/donut_test.jsonl`
+3. CORD v2 warm-up chỉ là nhánh optional/future work, không thuộc kết quả chính hiện tại.
 
 ### VietOCR + LayoutXLM
 1. Build OCR cache (dùng chung với Baseline)
@@ -56,7 +56,9 @@ So sánh công bằng 3 phương pháp trích xuất thông tin biên lai tiến
   "prediction": { "store_name": "...", "date": "...", "total": "...", "address": "..." },
   "normalized_prediction": { "store_name": "...", "date": "...", "total": "...", "address": "..." },
   "raw_output": "<s_store_name>...",
-  "latency_cached_ms": 120.5,
+  "latency_ocr_ms": 0.0,
+  "latency_model_ms": 120.5,
+  "latency_postprocess_ms": 2.0,
   "latency_e2e_ms": 750.5,
   "status": "ok",
   "error": null

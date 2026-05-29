@@ -1,4 +1,5 @@
 # Cấu hình huấn luyện và sinh chuỗi của Donut
+# Main run dùng mode=finetune trên dữ liệu tiếng Việt. CORD warm-up là optional/future work.
 model:
   name: "naver-clova-ix/donut-base"
   task_token: "<s_receipt_ie>"
@@ -9,6 +10,7 @@ model:
 training:
   output_dir: "checkpoints/donut/receipt_ie"
   epochs: 20
+  # Chỉ dùng khi chạy optional mode=warmup/full với CORD v2.
   warmup_epochs: 3
   train_batch_size: 1
   eval_batch_size: 1

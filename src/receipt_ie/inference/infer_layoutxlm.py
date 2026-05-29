@@ -30,6 +30,42 @@ def _cleanup_temp_file(path: Path) -> None:
         pass
 
 
+def aggregate_bio_spans(words: List[str], labels: List[str]) -> Dict[str, str]:
+    fields = {"store_name": [], "date": [], "total": [], "address": []}
+    current_field = None
+    current_tokens: List[str] = []
+
+    def flush():
+        nonlocal current_field, current_tokens
+        if current_field and current_tokens:
+            fields[current_field].append(" ".join(current_tokens))
+        current_field = None
+        current_tokens = []
+
+    for word, label in zip(words, labels):
+        if label == "O" or "-" not in label:
+            flush()
+            continue
+
+        prefix, field_label = label.split("-", 1)
+        field = field_label.lower()
+        if field not in fields:
+            flush()
+            continue
+
+        if prefix == "B" or current_field != field:
+            flush()
+            current_field = field
+            current_tokens = [word]
+        elif prefix == "I" and current_field == field:
+            current_tokens.append(word)
+        else:
+            flush()
+
+    flush()
+    return {field: max(spans, key=len) if spans else "" for field, spans in fields.items()}
+
+
 class LayoutXLMExtractor(BaseExtractor):
     """
     Bộ trích xuất thông tin biên lai sử dụng mô hình LayoutXLM (OCR-based).
@@ -53,7 +89,7 @@ class LayoutXLMExtractor(BaseExtractor):
         self.max_length = 512
         self.y_threshold = 12
 
-    def load(self, checkpoint_path: str) -> None:
+    def load(self, checkpoint_path: str, init_ocr: bool = True) -> None:
         """
         Nạp mô hình LayoutXLM và Tokenizer từ checkpoint.
         Đồng thời khởi tạo luôn bộ máy OCR nếu chưa có.
@@ -74,7 +110,7 @@ class LayoutXLMExtractor(BaseExtractor):
         print("LayoutXLM model loaded successfully.")
         
         # Tự động nạp bộ OCR nếu chưa được truyền từ ngoài
-        if self.detector is None or self.recognizer is None:
+        if init_ocr and (self.detector is None or self.recognizer is None):
             self._init_ocr()
 
     def _init_ocr(self):
@@ -101,6 +137,116 @@ class LayoutXLMExtractor(BaseExtractor):
             self.recognizer = load_vietocr_model(config_name=rec_config, use_gpu=rec_gpu)
         print("OCR engines initialized.")
 
+    def predict_from_ocr(
+        self,
+        image: Image.Image,
+        ocr_words: List[Dict[str, Any]],
+        latency_ocr_ms: float = 0.0,
+        start_e2e: float | None = None,
+    ) -> Dict[str, Any]:
+        if self.model is None or self.tokenizer is None:
+            raise RuntimeError("Mô hình chưa được nạp. Vui lòng gọi hàm load() trước.")
+
+        if not ocr_words:
+            latency_e2e = (time.time() - start_e2e) * 1000 if start_e2e is not None else latency_ocr_ms
+            return {
+                "method": "layoutxlm",
+                "prediction": _empty_fields(),
+                "normalized_prediction": _empty_fields(),
+                "raw_output": None,
+                "latency_ocr_ms": latency_ocr_ms,
+                "latency_model_ms": 0.0,
+                "latency_postprocess_ms": 0.0,
+                "latency_cached_ms": 0.0,
+                "latency_e2e_ms": latency_e2e,
+                "status": "ok",
+                "error": None,
+                "words": [],
+                "word_labels": []
+            }
+
+        width, height = image.size
+        words = [w["text"] for w in ocr_words]
+        word_boxes = [w["bbox"] for w in ocr_words]
+
+        start_model = time.time()
+
+        input_ids = [self.tokenizer.bos_token_id]
+        bbox = [[0, 0, 0, 0]]
+        word_subword_lengths = []
+
+        for word, box in zip(words, word_boxes):
+            norm_box = normalize_bbox(box, width, height)
+            sub_tokens = self.tokenizer.tokenize(word)
+            if not sub_tokens:
+                word_subword_lengths.append(0)
+                continue
+
+            sub_ids = self.tokenizer.convert_tokens_to_ids(sub_tokens)
+            word_subword_lengths.append(len(sub_ids))
+            for sub_id in sub_ids:
+                input_ids.append(sub_id)
+                bbox.append(norm_box)
+
+        input_ids.append(self.tokenizer.eos_token_id)
+        bbox.append([1000, 1000, 1000, 1000])
+
+        if len(input_ids) > self.max_length:
+            input_ids = input_ids[:self.max_length - 1] + [self.tokenizer.eos_token_id]
+            bbox = bbox[:self.max_length - 1] + [[1000, 1000, 1000, 1000]]
+
+        attention_mask = [1] * len(input_ids)
+        tensor_input_ids = torch.tensor([input_ids], dtype=torch.long).to(self.device)
+        tensor_bbox = torch.tensor([bbox], dtype=torch.long).to(self.device)
+        tensor_attention_mask = torch.tensor([attention_mask], dtype=torch.long).to(self.device)
+        tensor_image = self.image_processor(image, apply_ocr=False, return_tensors="pt").pixel_values.to(self.device)
+
+        with torch.no_grad():
+            outputs = self.model(
+                input_ids=tensor_input_ids,
+                bbox=tensor_bbox,
+                image=tensor_image,
+                attention_mask=tensor_attention_mask
+            )
+            logits = outputs.logits
+            predictions = torch.argmax(logits, dim=-1)[0].cpu().tolist()
+
+        current_idx = 1
+        word_predictions = []
+        for w_len in word_subword_lengths:
+            if w_len == 0:
+                word_predictions.append("O")
+                continue
+            if current_idx < len(predictions):
+                word_predictions.append(ID2LABEL.get(predictions[current_idx], "O"))
+            else:
+                word_predictions.append("O")
+            current_idx += w_len
+
+        raw_pred = aggregate_bio_spans(words, word_predictions)
+        model_ms = (time.time() - start_model) * 1000
+
+        post_start = time.time()
+        norm_pred = postprocess_extracted_fields(raw_pred)
+        post_ms = (time.time() - post_start) * 1000
+        latency_e2e = (time.time() - start_e2e) * 1000 if start_e2e is not None else latency_ocr_ms + model_ms + post_ms
+
+        return {
+            "method": "layoutxlm",
+            "prediction": raw_pred,
+            "normalized_prediction": norm_pred,
+            "raw_output": None,
+            "latency_ocr_ms": latency_ocr_ms,
+            "latency_model_ms": model_ms,
+            "latency_postprocess_ms": post_ms,
+            "latency_cached_ms": model_ms + post_ms,
+            "latency_e2e_ms": latency_e2e,
+            "status": "ok",
+            "error": None,
+            "words": ocr_words,
+            "word_labels": word_predictions
+        }
+
     def predict(self, image: Image.Image) -> Dict[str, Any]:
         """
         Thực hiện suy luận qua pipeline: OCR -> Sắp xếp thứ tự đọc -> LayoutXLM dự đoán -> Ghép thực thể.
@@ -114,8 +260,6 @@ class LayoutXLMExtractor(BaseExtractor):
         # Tự động căn thẳng ảnh hóa đơn nếu có viền nghiêng
         image = rectify_document(image)
         
-        width, height = image.size
-        
         # 1. Chạy OCR (PaddleOCR + VietOCR)
         # Vì hàm detect_text_regions nhận đường dẫn ảnh, ta lưu tạm ảnh ra đĩa
         # Lưu vào thư mục tạm trong workspace
@@ -125,16 +269,21 @@ class LayoutXLMExtractor(BaseExtractor):
         image.save(temp_img_path)
         
         try:
+            start_ocr = time.time()
             regions = detect_text_regions(self.detector, str(temp_img_path))
             
             if not regions:
+                latency_e2e = (time.time() - start_e2e) * 1000
                 return {
                     "method": "layoutxlm",
                     "prediction": _empty_fields(),
                     "normalized_prediction": _empty_fields(),
                     "raw_output": None,
+                    "latency_ocr_ms": latency_e2e,
+                    "latency_model_ms": 0.0,
+                    "latency_postprocess_ms": 0.0,
                     "latency_cached_ms": 0.0,
-                    "latency_e2e_ms": (time.time() - start_e2e) * 1000,
+                    "latency_e2e_ms": latency_e2e,
                     "status": "ok",
                     "error": None,
                     "words": [],
@@ -151,13 +300,17 @@ class LayoutXLMExtractor(BaseExtractor):
             # Lọc bỏ text rỗng
             regions = [r for r in regions if r["text"]]
         except Exception as exc:
+            latency_e2e = (time.time() - start_e2e) * 1000
             return {
                 "method": "layoutxlm",
                 "prediction": _empty_fields(),
                 "normalized_prediction": _empty_fields(),
                 "raw_output": None,
+                "latency_ocr_ms": latency_e2e,
+                "latency_model_ms": 0.0,
+                "latency_postprocess_ms": 0.0,
                 "latency_cached_ms": 0.0,
-                "latency_e2e_ms": (time.time() - start_e2e) * 1000,
+                "latency_e2e_ms": latency_e2e,
                 "status": "error",
                 "error": str(exc),
                 "words": [],
@@ -167,13 +320,17 @@ class LayoutXLMExtractor(BaseExtractor):
             _cleanup_temp_file(temp_img_path)
             
         if not regions:
+            latency_e2e = (time.time() - start_e2e) * 1000
             return {
                 "method": "layoutxlm",
                 "prediction": _empty_fields(),
                 "normalized_prediction": _empty_fields(),
                 "raw_output": None,
+                "latency_ocr_ms": latency_e2e,
+                "latency_model_ms": 0.0,
+                "latency_postprocess_ms": 0.0,
                 "latency_cached_ms": 0.0,
-                "latency_e2e_ms": (time.time() - start_e2e) * 1000,
+                "latency_e2e_ms": latency_e2e,
                 "status": "ok",
                 "error": None,
                 "words": [],
@@ -182,120 +339,8 @@ class LayoutXLMExtractor(BaseExtractor):
             
         # 2. Sắp xếp thứ tự đọc tự nhiên
         flat_words, _ = sort_reading_order(regions, y_threshold=self.y_threshold)
-        words = [w["text"] for w in flat_words]
-        word_boxes = [w["bbox"] for w in flat_words]
-        
-        start_model = time.time()
-        
-        # 3. Chuẩn bị token và bbox cho LayoutXLM
-        input_ids = []
-        bbox = []
-        
-        # Token bắt đầu: <s>
-        input_ids.append(self.tokenizer.bos_token_id)
-        bbox.append([0, 0, 0, 0])
-        
-        # Phân rã words thành subwords và theo vết token con đầu tiên
-        word_subword_lengths = []
-        for word, box in zip(words, word_boxes):
-            norm_box = normalize_bbox(box, width, height)
-            sub_tokens = self.tokenizer.tokenize(word)
-            if not sub_tokens:
-                word_subword_lengths.append(0)
-                continue
-                
-            sub_ids = self.tokenizer.convert_tokens_to_ids(sub_tokens)
-            word_subword_lengths.append(len(sub_ids))
-            
-            for sub_id in sub_ids:
-                input_ids.append(sub_id)
-                bbox.append(norm_box)
-                
-        # Token kết thúc: </s>
-        input_ids.append(self.tokenizer.eos_token_id)
-        bbox.append([1000, 1000, 1000, 1000])
-        
-        # Cắt cụt nếu vượt quá max_length
-        if len(input_ids) > self.max_length:
-            input_ids = input_ids[:self.max_length-1] + [self.tokenizer.eos_token_id]
-            bbox = bbox[:self.max_length-1] + [[1000, 1000, 1000, 1000]]
-            
-        # Tạo attention mask
-        attention_mask = [1] * len(input_ids)
-        
-        # Nạp dữ liệu vào PyTorch Tensor
-        tensor_input_ids = torch.tensor([input_ids], dtype=torch.long).to(self.device)
-        tensor_bbox = torch.tensor([bbox], dtype=torch.long).to(self.device)
-        tensor_attention_mask = torch.tensor([attention_mask], dtype=torch.long).to(self.device)
-        
-        # Tiền xử lý ảnh cho model (chuyển đổi sang BGR 224x224 và chuẩn hóa)
-        tensor_image = self.image_processor(image, apply_ocr=False, return_tensors="pt").pixel_values.to(self.device)
-        
-        # 4. Chạy mô hình LayoutXLM dự đoán
-        with torch.no_grad():
-            outputs = self.model(
-                input_ids=tensor_input_ids,
-                bbox=tensor_bbox,
-                image=tensor_image,
-                attention_mask=tensor_attention_mask
-            )
-            logits = outputs.logits
-            predictions = torch.argmax(logits, dim=-1)[0].cpu().tolist()
-            
-        # 5. Ghép nhãn BIO từ predictions về cấp độ word
-        # Bắt đầu duyệt từ index 1 (bỏ qua <s>)
-        current_idx = 1
-        word_predictions = []
-        for w_len in word_subword_lengths:
-            if w_len == 0:
-                word_predictions.append("O")
-                continue
-                
-            # Lấy nhãn của token con đầu tiên
-            if current_idx < len(predictions):
-                pred_id = predictions[current_idx]
-                pred_label = ID2LABEL.get(pred_id, "O")
-                word_predictions.append(pred_label)
-            else:
-                word_predictions.append("O")
-                
-            current_idx += w_len
-            
-        # Gom cụm các word theo nhãn BIO thành các trường thông tin tương ứng
-        raw_pred = {
-            "store_name": "",
-            "date": "",
-            "total": "",
-            "address": ""
-        }
-        for word, label in zip(words, word_predictions):
-            if label != "O":
-                field_name = label[2:].lower()
-                if field_name in raw_pred:
-                    if raw_pred[field_name]:
-                        raw_pred[field_name] += " " + word
-                    else:
-                        raw_pred[field_name] = word
-                        
-        # 6. Chuẩn hoá kết quả
-        norm_pred = postprocess_extracted_fields(raw_pred)
-        
-        end_time = time.time()
-        latency_cached = (end_time - start_model) * 1000
-        latency_e2e = (end_time - start_e2e) * 1000
-        
-        return {
-            "method": "layoutxlm",
-            "prediction": raw_pred,
-            "normalized_prediction": norm_pred,
-            "raw_output": None,
-            "latency_cached_ms": latency_cached,
-            "latency_e2e_ms": latency_e2e,
-            "status": "ok",
-            "error": None,
-            "words": flat_words,
-            "word_labels": word_predictions
-        }
+        latency_ocr = (time.time() - start_ocr) * 1000
+        return self.predict_from_ocr(image, flat_words, latency_ocr_ms=latency_ocr, start_e2e=start_e2e)
 
 
 def parse_args():
@@ -304,7 +349,7 @@ def parse_args():
     parser.add_argument(
         "--checkpoint",
         type=str,
-        default="checkpoints/layoutxlm/receipt_ie/ocr_cache/best_model",
+        default="checkpoints/layoutxlm/receipt_ie/final",
         help="Đường dẫn đến checkpoint tốt nhất của LayoutXLM"
     )
     parser.add_argument(
@@ -324,6 +369,12 @@ def parse_args():
         type=int,
         default=None,
         help="Giới hạn số mẫu chạy"
+    )
+    parser.add_argument(
+        "--use_ocr_cache",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Dùng OCR cache khi có sẵn thay vì chạy OCR online lại từng ảnh."
     )
     return parser.parse_args()
 
@@ -345,7 +396,7 @@ def main():
     out_file.parent.mkdir(parents=True, exist_ok=True)
     
     extractor = LayoutXLMExtractor()
-    extractor.load(args.checkpoint)
+    extractor.load(args.checkpoint, init_ocr=not args.use_ocr_cache)
     
     samples = []
     with open(test_file, "r", encoding="utf-8") as f:
@@ -369,6 +420,9 @@ def main():
                 "prediction": {},
                 "normalized_prediction": {},
                 "raw_output": None,
+                "latency_ocr_ms": 0.0,
+                "latency_model_ms": 0.0,
+                "latency_postprocess_ms": 0.0,
                 "latency_cached_ms": 0.0,
                 "latency_e2e_ms": 0.0,
                 "status": "ok",
@@ -380,11 +434,24 @@ def main():
                     raise FileNotFoundError(f"Image not found at {image_path_str}")
                     
                 img = Image.open(image_path_str).convert("RGB")
-                res = extractor.predict(img)
+                cache_path_str = sample.get("ocr_cache_path")
+                if args.use_ocr_cache and cache_path_str and os.path.exists(cache_path_str):
+                    with open(cache_path_str, "r", encoding="utf-8") as cache_f:
+                        ocr_data = json.load(cache_f)
+                    res = extractor.predict_from_ocr(img, ocr_data.get("words", []), latency_ocr_ms=0.0)
+                else:
+                    if args.use_ocr_cache and cache_path_str:
+                        print(f"OCR cache missing for {sample_id}, falling back to online OCR: {cache_path_str}")
+                        if extractor.detector is None or extractor.recognizer is None:
+                            extractor._init_ocr()
+                    res = extractor.predict(img)
                 
                 prediction_record["prediction"] = res["prediction"]
                 prediction_record["normalized_prediction"] = res["normalized_prediction"]
                 prediction_record["raw_output"] = res["raw_output"]
+                prediction_record["latency_ocr_ms"] = round(res["latency_ocr_ms"], 2)
+                prediction_record["latency_model_ms"] = round(res["latency_model_ms"], 2)
+                prediction_record["latency_postprocess_ms"] = round(res["latency_postprocess_ms"], 2)
                 prediction_record["latency_cached_ms"] = round(res["latency_cached_ms"], 2)
                 prediction_record["latency_e2e_ms"] = round(res["latency_e2e_ms"], 2)
                 

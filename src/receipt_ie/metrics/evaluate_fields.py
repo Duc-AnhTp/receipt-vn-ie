@@ -1,3 +1,6 @@
+import argparse
+import json
+from pathlib import Path
 from typing import Dict, List, Any
 from rapidfuzz.distance import Levenshtein
 
@@ -154,3 +157,40 @@ def evaluate_predictions(predictions: List[Dict[str, Any]], ground_truths: List[
     results["missing_prediction_ids"] = missing_prediction_ids
     
     return results
+
+
+def read_jsonl(path: str) -> List[Dict[str, Any]]:
+    records = []
+    with open(path, "r", encoding="utf-8") as f:
+        for line in f:
+            if line.strip():
+                records.append(json.loads(line))
+    return records
+
+
+def write_json(data: Dict[str, Any], path: str) -> None:
+    out_path = Path(path)
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    with open(out_path, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
+
+
+def parse_args():
+    parser = argparse.ArgumentParser(description="Evaluate receipt IE predictions against a gold JSONL file.")
+    parser.add_argument("--gold", required=True, help="Gold JSONL path, usually data/processed/test.jsonl")
+    parser.add_argument("--pred", required=True, help="Prediction JSONL path")
+    parser.add_argument("--output", required=True, help="Output metrics JSON path")
+    return parser.parse_args()
+
+
+def main():
+    args = parse_args()
+    ground_truths = read_jsonl(args.gold)
+    predictions = read_jsonl(args.pred)
+    results = evaluate_predictions(predictions, ground_truths)
+    write_json(results, args.output)
+    print(f"Saved metrics to {args.output}")
+
+
+if __name__ == "__main__":
+    main()

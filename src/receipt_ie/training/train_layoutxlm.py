@@ -88,6 +88,7 @@ def main():
     
     model_name = layout_cfg["model"]["name"]
     max_length = layout_cfg["model"]["max_length"]
+    overlap_threshold = layout_cfg.get("labeling", {}).get("overlap_threshold", 0.5)
     
     # 1. Setup Model và Tokenizer
     print(f"\n=== KHỞI TẠO LAYOUTXLM (mode: {args.mode}) ===")
@@ -103,7 +104,8 @@ def main():
         mode=args.mode,
         max_length=max_length,
         project_root=args.project_root,
-        annotation_level_filter="json_and_boxes"
+        annotation_level_filter="json_and_boxes",
+        overlap_threshold=overlap_threshold
     )
     
     val_dataset = LayoutXLMDataset(
@@ -112,7 +114,8 @@ def main():
         mode=args.mode,
         max_length=max_length,
         project_root=args.project_root,
-        annotation_level_filter="json_and_boxes"
+        annotation_level_filter="json_and_boxes",
+        overlap_threshold=overlap_threshold
     )
     
     # Thư mục checkpoints đầu ra
