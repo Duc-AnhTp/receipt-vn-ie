@@ -21,6 +21,7 @@ from receipt_ie.data.schemas import BaseExtractor
 from receipt_ie.inference.pipeline import get_extractor
 from receipt_ie.inference.postprocess_json import postprocess_extracted_fields
 from receipt_ie.inference.mock_extractor import MockExtractor
+from receipt_ie.ocr.preprocess import rectify_document
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
@@ -152,7 +153,10 @@ def run_or_get_cached_ocr(image: Image.Image, ocr_mode: str) -> Dict[str, Any]:
                 gpu_avail = torch.cuda.is_available()
                 baseline.recognizer = load_vietocr_model(config_name=rec_model, use_gpu=gpu_avail)
                 baseline.recognizer.config_name = rec_model
-        SESSION_OCR_CACHE[cache_key] = baseline.predict(image)
+        ocr_image = rectify_document(image)
+        res = baseline.predict(ocr_image)
+        res["ocr_image"] = ocr_image
+        SESSION_OCR_CACHE[cache_key] = res
     return SESSION_OCR_CACHE[cache_key]
 
 # Kiểm tra mockup ban đầu dựa trên sự tồn tại của checkpoint (không load model)
@@ -196,7 +200,8 @@ def handle_demo_run(image: Image.Image, model_name: str, ocr_mode: str) -> Tuple
         res = run_or_get_cached_ocr(image, ocr_mode)
     elif model_name == "VietOCR + LayoutXLM" and hasattr(extractor, "predict_from_ocr") and not MOCK_FLAGS.get("layoutxlm", False):
         ocr_res = run_or_get_cached_ocr(image, ocr_mode)
-        res = extractor.predict_from_ocr(image, ocr_res.get("words", []), latency_ocr_ms=0.0)
+        layout_image = ocr_res.get("ocr_image", image)
+        res = extractor.predict_from_ocr(layout_image, ocr_res.get("words", []), latency_ocr_ms=0.0)
     else:
         res = extractor.predict(image)
     e2e_time = (time.time() - start_time) * 1000
@@ -248,18 +253,20 @@ def handle_compare_run(image: Image.Image, ocr_mode: str) -> Tuple[Image.Image, 
     res_base = run_or_get_cached_ocr(image, ocr_mode)
     res_donut = donut_extractor.predict(image)
     if hasattr(layoutxlm_extractor, "predict_from_ocr") and not MOCK_FLAGS.get("layoutxlm", False):
-        res_layout = layoutxlm_extractor.predict_from_ocr(image, res_base.get("words", []), latency_ocr_ms=0.0)
+        layout_image = res_base.get("ocr_image", image)
+        res_layout = layoutxlm_extractor.predict_from_ocr(layout_image, res_base.get("words", []), latency_ocr_ms=0.0)
     else:
         res_layout = layoutxlm_extractor.predict(image)
     
     # 2. Tạo ảnh visualize OCR
     words = res_base.get("words", [])
-    ocr_visualized = draw_ocr_boxes(image, words)
+    debug_image = res_base.get("ocr_image", image)
+    ocr_visualized = draw_ocr_boxes(debug_image, words)
     
     # 3. Tạo ảnh visualize BIO Labels (LayoutXLM)
     layout_words = res_layout.get("words", [])
     layout_labels = res_layout.get("word_labels", [])
-    bio_visualized = draw_bio_predictions(image, layout_words, layout_labels)
+    bio_visualized = draw_bio_predictions(debug_image, layout_words, layout_labels)
     
     # 4. Trích xuất Donut raw sequence
     donut_raw = res_donut.get("raw_output", "N/A")

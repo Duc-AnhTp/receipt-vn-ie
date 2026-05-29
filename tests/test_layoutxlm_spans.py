@@ -1,6 +1,6 @@
 import unittest
 
-from receipt_ie.inference.infer_layoutxlm import aggregate_bio_spans
+from receipt_ie.inference.bio_aggregation import aggregate_bio_spans
 
 
 class TestLayoutXlmSpanAggregation(unittest.TestCase):

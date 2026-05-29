@@ -5,6 +5,8 @@ image:
     keep_aspect_ratio: true
   ocr:
     max_side: 2048
+    rectify: false
+    binarize: false
     denoise: true
     clahe: true
 

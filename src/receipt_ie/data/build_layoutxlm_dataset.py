@@ -14,6 +14,27 @@ from receipt_ie.data.augmentation import get_layoutxlm_transforms, apply_transfo
 
 logger = logging.getLogger(__name__)
 
+
+def _scale_box(box: List[int], scale_x: float, scale_y: float) -> List[int]:
+    return [
+        int(round(box[0] * scale_x)),
+        int(round(box[1] * scale_y)),
+        int(round(box[2] * scale_x)),
+        int(round(box[3] * scale_y)),
+    ]
+
+
+def _scale_field_boxes(
+    field_boxes: Dict[str, List[List[int]]],
+    scale_x: float,
+    scale_y: float
+) -> Dict[str, List[List[int]]]:
+    return {
+        field: [_scale_box(box, scale_x, scale_y) for box in boxes]
+        for field, boxes in field_boxes.items()
+    }
+
+
 class LayoutXLMDataset(Dataset):
     """
     Custom Dataset cho LayoutXLM (đọc từ unified JSONL).
@@ -92,6 +113,8 @@ class LayoutXLMDataset(Dataset):
         
         width = sample["width"]
         height = sample["height"]
+        img_rel_path = sample.get("image_path")
+        cache_data: Dict[str, Any] = {}
         
         words: List[str] = []
         word_boxes: List[List[int]] = []
@@ -114,6 +137,14 @@ class LayoutXLMDataset(Dataset):
             cache_words = cache_data.get("words", [])
             words = [w["text"] for w in cache_words]
             word_boxes = [w["bbox"] for w in cache_words]
+
+            preprocessed_image_path = cache_data.get("preprocessed_image_path")
+            if preprocessed_image_path:
+                img_rel_path = preprocessed_image_path
+
+            cache_size = cache_data.get("preprocessed_size") or cache_data.get("image_size")
+            if cache_size and len(cache_size) == 2:
+                width, height = int(cache_size[0]), int(cache_size[1])
             
         elif self.mode == "oracle_ocr":
             # Nạp từ ground-truth OCR trong sample
@@ -128,6 +159,21 @@ class LayoutXLMDataset(Dataset):
             
         # 1. Gán nhãn BIO viết hoa cho từng word dựa trên overlap với field_boxes
         field_boxes = sample.get("field_boxes", {})
+        preprocess_info = cache_data.get("preprocess", {})
+        original_size = preprocess_info.get("original_size") or cache_data.get("original_size")
+        processed_size = preprocess_info.get("processed_size") or cache_data.get("preprocessed_size")
+        coordinate_transform = preprocess_info.get("coordinate_transform") or cache_data.get("coordinate_transform")
+        if (
+            self.mode == "ocr_cache"
+            and coordinate_transform == "scale"
+            and original_size
+            and processed_size
+            and len(original_size) == 2
+            and len(processed_size) == 2
+        ):
+            scale_x = processed_size[0] / original_size[0] if original_size[0] else 1.0
+            scale_y = processed_size[1] / original_size[1] if original_size[1] else 1.0
+            field_boxes = _scale_field_boxes(field_boxes, scale_x, scale_y)
         word_labels = assign_word_labels(words, word_boxes, field_boxes, overlap_threshold=self.overlap_threshold)
         
         # 2. Tokenize và alignment tokens/boxes/labels
@@ -141,7 +187,6 @@ class LayoutXLMDataset(Dataset):
         )
         
         # 3. Tải và xử lý ảnh (bắt buộc đối với LayoutLMv2 / LayoutXLM)
-        img_rel_path = sample.get("image_path")
         img_path = self.project_root / img_rel_path if img_rel_path else Path("")
         
         # Fallback nếu ảnh không tồn tại
