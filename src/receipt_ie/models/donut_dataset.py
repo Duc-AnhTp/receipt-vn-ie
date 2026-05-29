@@ -8,6 +8,7 @@ from PIL import Image
 from transformers import DonutProcessor
 
 from receipt_ie.data.build_donut_dataset import target_to_donut_sequence
+from receipt_ie.data.augmentation import get_donut_transforms, apply_transforms
 
 class DonutDataset(Dataset):
     """
@@ -20,13 +21,18 @@ class DonutDataset(Dataset):
         processor: DonutProcessor,
         task_token: str = "<s_receipt_ie>",
         max_length: int = 192,
-        project_root: str = "."
+        project_root: str = ".",
+        is_train: bool = False
     ):
         self.processor = processor
         self.task_token = task_token
         self.max_length = max_length
         self.project_root = Path(project_root)
+        self.is_train = is_train
         
+        if self.is_train:
+            self.transform = get_donut_transforms()
+            
         self.samples: List[Dict[str, Any]] = []
         
         jsonl_file = Path(jsonl_path)
@@ -42,7 +48,7 @@ class DonutDataset(Dataset):
                 if line.strip():
                     self.samples.append(json.loads(line))
         
-        print(f"Đã load {len(self.samples)} mẫu dữ liệu Donut từ {jsonl_path}")
+        print(f"Đã load {len(self.samples)} mẫu dữ liệu Donut từ {jsonl_path} (is_train={self.is_train})")
 
     def __len__(self) -> int:
         return len(self.samples)
@@ -62,6 +68,8 @@ class DonutDataset(Dataset):
         else:
             try:
                 image = Image.open(img_path).convert("RGB")
+                if self.is_train:
+                    image = apply_transforms(image, self.transform)
             except Exception as e:
                 print(f"Lỗi đọc ảnh {img_path}: {e}")
                 image = Image.new("RGB", (self.processor.image_processor.size["width"], 

@@ -20,6 +20,7 @@ from receipt_ie.ocr.recognize_vietocr import load_vietocr_model, recognize_regio
 from receipt_ie.ocr.reading_order import sort_reading_order
 from typing import Dict, Any
 from receipt_ie.data.schemas import BaseExtractor
+from receipt_ie.ocr.preprocess import rectify_document
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
@@ -82,6 +83,10 @@ class BaselineExtractor(BaseExtractor):
 
     def predict(self, image: Image.Image) -> Dict[str, Any]:
         start_e2e = time.time()
+        
+        # Tự động căn thẳng ảnh hóa đơn nếu có viền nghiêng
+        image = rectify_document(image)
+        
         temp_img_path = None
         
         try:

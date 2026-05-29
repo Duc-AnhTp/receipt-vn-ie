@@ -14,6 +14,7 @@ from receipt_ie.ocr.recognize_vietocr import load_vietocr_model, recognize_regio
 from receipt_ie.ocr.reading_order import sort_reading_order
 from receipt_ie.data.build_layoutxlm_labels import normalize_bbox
 from receipt_ie.inference.postprocess_json import postprocess_extracted_fields
+from receipt_ie.ocr.preprocess import rectify_document
 
 EMPTY_FIELDS = {"store_name": "", "date": "", "total": "", "address": ""}
 
@@ -109,6 +110,10 @@ class LayoutXLMExtractor(BaseExtractor):
             raise RuntimeError("Mô hình chưa được nạp. Vui lòng gọi hàm load() trước.")
             
         start_e2e = time.time()
+        
+        # Tự động căn thẳng ảnh hóa đơn nếu có viền nghiêng
+        image = rectify_document(image)
+        
         width, height = image.size
         
         # 1. Chạy OCR (PaddleOCR + VietOCR)
