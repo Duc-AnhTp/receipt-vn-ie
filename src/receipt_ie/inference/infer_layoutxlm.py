@@ -14,6 +14,7 @@ from receipt_ie.ocr.recognize_vietocr import load_vietocr_model, recognize_regio
 from receipt_ie.ocr.reading_order import sort_reading_order
 from receipt_ie.data.build_layoutxlm_labels import normalize_bbox
 from receipt_ie.inference.postprocess_json import postprocess_extracted_fields
+from receipt_ie.inference.bio_aggregation import aggregate_bio_spans
 from receipt_ie.ocr.preprocess import rectify_document
 
 EMPTY_FIELDS = {"store_name": "", "date": "", "total": "", "address": ""}
@@ -28,42 +29,6 @@ def _cleanup_temp_file(path: Path) -> None:
         path.unlink(missing_ok=True)
     except (PermissionError, OSError):
         pass
-
-
-def aggregate_bio_spans(words: List[str], labels: List[str]) -> Dict[str, str]:
-    fields = {"store_name": [], "date": [], "total": [], "address": []}
-    current_field = None
-    current_tokens: List[str] = []
-
-    def flush():
-        nonlocal current_field, current_tokens
-        if current_field and current_tokens:
-            fields[current_field].append(" ".join(current_tokens))
-        current_field = None
-        current_tokens = []
-
-    for word, label in zip(words, labels):
-        if label == "O" or "-" not in label:
-            flush()
-            continue
-
-        prefix, field_label = label.split("-", 1)
-        field = field_label.lower()
-        if field not in fields:
-            flush()
-            continue
-
-        if prefix == "B" or current_field != field:
-            flush()
-            current_field = field
-            current_tokens = [word]
-        elif prefix == "I" and current_field == field:
-            current_tokens.append(word)
-        else:
-            flush()
-
-    flush()
-    return {field: max(spans, key=len) if spans else "" for field, spans in fields.items()}
 
 
 class LayoutXLMExtractor(BaseExtractor):

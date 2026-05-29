@@ -72,6 +72,7 @@ def classify_error(
     ocr_text: str,
     em: float,
     nes: float,
+    label_bad_evidence: bool = False,
 ) -> str:
     if em == 1.0:
         return "OK"
@@ -82,7 +83,7 @@ def classify_error(
     ocr_has_gold = bool(norm_gold) and (norm_gold in norm_ocr or ocr_rough_score >= 80)
 
     if not pred:
-        if method == "layoutxlm" and ocr_has_gold:
+        if method == "layoutxlm" and ocr_has_gold and label_bad_evidence:
             return "LABEL_BAD"
         return "EMPTY_PRED"
     if has_format_error(field, pred):
@@ -103,7 +104,7 @@ def classify_error(
         if raw_nes > nes + 0.15:
             return "POSTPROCESS_BAD"
 
-    if method == "layoutxlm" and ocr_has_gold:
+    if method == "layoutxlm" and ocr_has_gold and label_bad_evidence:
         return "LABEL_BAD"
     return "MODEL_BAD"
 
@@ -121,6 +122,7 @@ def prediction_rows(
         method = pred_record.get("method", "unknown")
         pred_data = pred_record.get("normalized_prediction") or {}
         raw_data = pred_record.get("prediction") or {}
+        label_bad_fields = set(pred_record.get("label_bad_fields") or [])
         gold_data = gold_record.get("target") or {}
         ocr_text = joined_ocr_text(gold_record, ocr_cache_dir)
 
@@ -141,7 +143,17 @@ def prediction_rows(
                 "em": em,
                 "nes": round(nes, 4),
                 "cer": round(cer, 4),
-                "error_type": classify_error(method, field, gold, pred, raw_pred, ocr_text, em, nes),
+                "error_type": classify_error(
+                    method,
+                    field,
+                    gold,
+                    pred,
+                    raw_pred,
+                    ocr_text,
+                    em,
+                    nes,
+                    label_bad_evidence=field in label_bad_fields,
+                ),
             }
 
 

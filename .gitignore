@@ -77,6 +77,7 @@ checkpoints/*
 !checkpoints/.gitkeep
 outputs/*
 !outputs/.gitkeep
+tmp/
 
 # IDEs and editors
 .vscode/
