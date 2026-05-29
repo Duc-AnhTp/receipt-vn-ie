@@ -8,6 +8,7 @@ import json
 import argparse
 import logging
 import yaml
+import re
 from pathlib import Path
 from tqdm import tqdm
 from PIL import Image
@@ -15,6 +16,7 @@ from PIL import Image
 from receipt_ie.ocr.detect_paddle import load_paddle_detector, detect_text_regions, crop_region
 from receipt_ie.ocr.recognize_vietocr import load_vietocr_model, recognize_regions
 from receipt_ie.ocr.reading_order import sort_reading_order
+from receipt_ie.ocr.preprocess import binarize_image, rectify_document
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
@@ -34,6 +36,12 @@ def parse_args():
         type=str,
         default="configs/ocr.yaml",
         help="Đường dẫn đến file cấu hình ocr.yaml."
+    )
+    parser.add_argument(
+        "--config_preprocess",
+        type=str,
+        default="configs/preprocess.yaml",
+        help="Image preprocessing config used before OCR cache generation."
     )
     parser.add_argument(
         "--overwrite",
@@ -60,6 +68,97 @@ def load_config(config_path: str) -> dict:
         return yaml.safe_load(f)
 
 
+def load_optional_config(config_path: str) -> dict:
+    if not config_path or not os.path.exists(config_path):
+        return {}
+    return load_config(config_path) or {}
+
+
+def _safe_image_stem(sample_id: str, image_path: Path) -> str:
+    raw = sample_id or image_path.stem
+    return re.sub(r"[^A-Za-z0-9_.-]+", "_", raw).strip("_") or image_path.stem
+
+
+def _resize_max_side(image: Image.Image, max_side: int | None) -> tuple[Image.Image, bool]:
+    if not max_side:
+        return image, False
+    width, height = image.size
+    current_max_side = max(width, height)
+    if current_max_side <= max_side:
+        return image, False
+    scale = max_side / current_max_side
+    new_size = (max(1, int(round(width * scale))), max(1, int(round(height * scale))))
+    return image.resize(new_size, Image.Resampling.LANCZOS), True
+
+
+def preprocess_image_for_ocr(
+    image: Image.Image,
+    sample_id: str,
+    image_path: Path,
+    preprocess_config: dict,
+    output_dir: Path,
+) -> tuple[Image.Image, dict, Path]:
+    """Apply configured OCR preprocessing and return image, metadata and detector path."""
+    ocr_preprocess = preprocess_config.get("image", {}).get("ocr", {})
+    max_side = ocr_preprocess.get("max_side")
+    rectify = bool(ocr_preprocess.get("rectify", False))
+    binarize = bool(ocr_preprocess.get("binarize", False))
+
+    original_size = list(image.size)
+    processed = image
+    steps: list[str] = []
+    coordinate_transform = "identity"
+
+    processed, resized = _resize_max_side(processed, max_side)
+    if resized:
+        steps.append("resize_max_side")
+        coordinate_transform = "scale"
+
+    if rectify:
+        processed = rectify_document(processed)
+        steps.append("rectify_document")
+        coordinate_transform = "unknown"
+
+    if binarize:
+        processed = binarize_image(processed)
+        steps.append("binarize_image")
+
+    processed_size = list(processed.size)
+    metadata = {
+        "applied": bool(steps),
+        "steps": steps,
+        "original_size": original_size,
+        "processed_size": processed_size,
+        "coordinate_transform": coordinate_transform,
+    }
+
+    if not steps:
+        return processed, metadata, image_path
+
+    output_dir.mkdir(parents=True, exist_ok=True)
+    preprocessed_path = output_dir / f"{_safe_image_stem(sample_id, image_path)}.png"
+    processed.save(preprocessed_path)
+    metadata["image_path"] = preprocessed_path.as_posix()
+    return processed, metadata, preprocessed_path
+
+
+def build_cache_base(sample_id: str, ocr_version: str, preprocess_meta: dict) -> dict:
+    cache_data = {
+        "id": sample_id,
+        "ocr_engine": ocr_version,
+        "preprocess_version": "v1",
+        "image_size": preprocess_meta["processed_size"],
+        "original_size": preprocess_meta["original_size"],
+        "preprocessed_size": preprocess_meta["processed_size"],
+        "preprocess_applied": preprocess_meta["applied"],
+        "coordinate_transform": preprocess_meta["coordinate_transform"],
+        "preprocess": preprocess_meta,
+    }
+    if preprocess_meta.get("image_path"):
+        cache_data["preprocessed_image_path"] = preprocess_meta["image_path"]
+    return cache_data
+
+
 def main():
     args = parse_args()
     
@@ -69,6 +168,7 @@ def main():
         return
         
     config = load_config(args.config_ocr)
+    preprocess_config = load_optional_config(args.config_preprocess)
     
     # Trích xuất cấu hình
     det_config = config.get("detection", {})
@@ -85,6 +185,7 @@ def main():
     
     cache_dir = Path(cache_config.get("dir", "data/interim/ocr_cache"))
     cache_dir.mkdir(parents=True, exist_ok=True)
+    preprocessed_dir = Path(cache_config.get("preprocessed_image_dir", "data/interim/preprocessed_images"))
     
     y_threshold = cache_config.get("reading_order_y_threshold", 12)
     ocr_version = cache_config.get("version", "ocr_paddle27_vietocr_transformer_v1")
@@ -148,21 +249,26 @@ def main():
             try:
                 # Đọc ảnh
                 img = Image.open(image_path).convert("RGB")
+                img, preprocess_meta, detector_image_path = preprocess_image_for_ocr(
+                    image=img,
+                    sample_id=str(sample_id),
+                    image_path=image_path,
+                    preprocess_config=preprocess_config,
+                    output_dir=preprocessed_dir,
+                )
                 width, height = img.size
                 
                 # 1. Phát hiện vùng chữ (PaddleOCR)
-                regions = detect_text_regions(detector, str(image_path))
+                regions = detect_text_regions(detector, str(detector_image_path))
                 
                 if not regions:
                     # Nếu không phát hiện thấy chữ nào, lưu cache trống
-                    cache_data = {
-                        "id": sample_id,
-                        "ocr_engine": ocr_version,
-                        "preprocess_version": "v1",
+                    cache_data = build_cache_base(str(sample_id), ocr_version, preprocess_meta)
+                    cache_data.update({
                         "image_size": [width, height],
                         "lines": [],
                         "words": []
-                    }
+                    })
                     with open(ocr_cache_path, "w", encoding="utf-8") as out_f:
                         json.dump(cache_data, out_f, ensure_ascii=False, indent=2)
                     processed_count += 1
@@ -187,10 +293,8 @@ def main():
                 flat_words, grouped_lines = sort_reading_order(regions, y_threshold=y_threshold)
                 
                 # Chuẩn bị dữ liệu lưu cache
-                cache_data = {
-                    "id": sample_id,
-                    "ocr_engine": ocr_version,
-                    "preprocess_version": "v1",
+                cache_data = build_cache_base(str(sample_id), ocr_version, preprocess_meta)
+                cache_data.update({
                     "image_size": [width, height],
                     "lines": [
                         [
@@ -211,7 +315,7 @@ def main():
                         }
                         for w in flat_words
                     ]
-                }
+                })
                 
                 # Ghi ra file cache
                 with open(ocr_cache_path, "w", encoding="utf-8") as out_f:

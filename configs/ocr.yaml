@@ -17,4 +17,5 @@ recognition:
 cache:
   version: "ocr_paddle27_vietocr_transformer_v1"
   dir: "data/interim/ocr_cache"
+  preprocessed_image_dir: "data/interim/preprocessed_images"
   reading_order_y_threshold: 12

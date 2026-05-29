@@ -2,6 +2,7 @@ import torch
 # Đảm bảo import torch đầu tiên trên Windows để tránh DLL collision
 import os
 import sys
+import shutil
 import yaml
 import argparse
 from pathlib import Path
@@ -29,7 +30,8 @@ def train_stage(
     cord_task_token: str,
     donut_config: Dict[str, Any],
     project_root: str,
-    is_warmup: bool = False
+    is_warmup: bool = False,
+    final_output_dir: str | None = None
 ):
     """
     Huấn luyện Donut. Luồng chính là fine-tuning tiếng Việt; CORD chỉ là optional/future work.
@@ -61,7 +63,8 @@ def train_stage(
         processor=processor,
         task_token=task_token,
         max_length=max_length,
-        project_root=project_root
+        project_root=project_root,
+        is_train=True
     )
     
     val_dataset = None
@@ -71,7 +74,8 @@ def train_stage(
             processor=processor,
             task_token=task_token,
             max_length=max_length,
-            project_root=project_root
+            project_root=project_root,
+            is_train=False
         )
         
     # 3. Cấu hình Training Arguments
@@ -140,6 +144,11 @@ def train_stage(
         trainer.save_model(best_model_dir)
         processor.save_pretrained(best_model_dir)
         print(f"Đã lưu mô hình tốt nhất vào: {best_model_dir}")
+        if final_output_dir:
+            if os.path.exists(final_output_dir):
+                shutil.rmtree(final_output_dir)
+            shutil.copytree(best_model_dir, final_output_dir)
+            print(f"Synced final Donut checkpoint to: {final_output_dir}")
     
     return best_model_dir
 
@@ -199,6 +208,7 @@ def main():
         train_jsonl = data_cfg["processed"]["train_jsonl"]
         val_jsonl = data_cfg["processed"]["val_jsonl"]
         finetune_out_dir = os.path.join(output_dir, "finetune")
+        final_output_dir = os.path.join(output_dir, "final")
         
         train_stage(
             model_name=current_model,
@@ -209,7 +219,8 @@ def main():
             cord_task_token=cord_task_token,
             donut_config=donut_cfg,
             project_root=args.project_root,
-            is_warmup=False
+            is_warmup=False,
+            final_output_dir=final_output_dir
         )
 
 if __name__ == "__main__":

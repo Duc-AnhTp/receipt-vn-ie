@@ -2,6 +2,7 @@ import torch
 # Đảm bảo import torch đầu tiên trên Windows để tránh DLL collision
 import os
 import sys
+import shutil
 import yaml
 import argparse
 import numpy as np
@@ -105,6 +106,7 @@ def main():
         max_length=max_length,
         project_root=args.project_root,
         annotation_level_filter="json_and_boxes",
+        is_train=True,
         overlap_threshold=overlap_threshold
     )
     
@@ -115,6 +117,7 @@ def main():
         max_length=max_length,
         project_root=args.project_root,
         annotation_level_filter="json_and_boxes",
+        is_train=False,
         overlap_threshold=overlap_threshold
     )
     
@@ -175,6 +178,11 @@ def main():
         trainer.save_model(best_model_dir)
         tokenizer.save_pretrained(best_model_dir)
         print(f"Đã lưu mô hình tốt nhất vào: {best_model_dir}")
+        final_model_dir = os.path.join(base_output_dir, "final")
+        if os.path.exists(final_model_dir):
+            shutil.rmtree(final_model_dir)
+        shutil.copytree(best_model_dir, final_model_dir)
+        print(f"Synced final LayoutXLM checkpoint to: {final_model_dir}")
 
 if __name__ == "__main__":
     main()

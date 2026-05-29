@@ -127,11 +127,18 @@ LayoutXLM là model chính cho `store_name` và `address`.
 bash scripts/03_train_layoutxlm.sh
 ```
 
+Kaggle T4x2 multi-GPU:
+
+```bash
+NUM_GPUS=2 bash scripts/03_train_layoutxlm.sh
+```
+
 Mặc định:
 
 - mode: `ocr_cache`
 - config: `configs/layoutxlm.yaml`
 - output: `checkpoints/layoutxlm/receipt_ie/ocr_cache/best_model`
+- final checkpoint: `checkpoints/layoutxlm/receipt_ie/final` (auto-synced by the training script)
 
 Sau khi train xong, copy checkpoint tốt nhất về đường dẫn chuẩn để evaluate/demo:
 
@@ -139,6 +146,8 @@ Sau khi train xong, copy checkpoint tốt nhất về đường dẫn chuẩn đ
 mkdir -p checkpoints/layoutxlm/receipt_ie/final
 cp -R checkpoints/layoutxlm/receipt_ie/ocr_cache/best_model/. checkpoints/layoutxlm/receipt_ie/final/
 ```
+
+Manual copy is only needed for old checkpoints. New training runs sync this path automatically on rank 0.
 
 Nếu muốn phân tích OCR upper bound:
 
@@ -154,6 +163,12 @@ Donut dùng để so sánh OCR-free. Luồng chính không dùng CORD.
 bash scripts/04_train_donut.sh
 ```
 
+Kaggle T4x2 multi-GPU:
+
+```bash
+NUM_GPUS=2 bash scripts/04_train_donut.sh
+```
+
 Script này chạy:
 
 ```bash
@@ -166,6 +181,8 @@ Sau khi train xong, copy checkpoint tốt nhất về đường dẫn chuẩn:
 mkdir -p checkpoints/donut/receipt_ie/final
 cp -R checkpoints/donut/receipt_ie/finetune/best_model/. checkpoints/donut/receipt_ie/final/
 ```
+
+Manual copy is only needed for old checkpoints. New training runs sync this path automatically on rank 0.
 
 ## 7. Evaluate
 
