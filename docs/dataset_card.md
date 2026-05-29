@@ -21,10 +21,10 @@ Tập dữ liệu biên lai tiếng Việt phục vụ bài toán trích xuất 
 - **Annotation level**: `json_and_boxes` (tối thiểu 200–300 ảnh) hoặc `json_only`.
 - **Đường dẫn**: `data/raw/self_collected/`
 
-### CORD v2
+### CORD v2 (Optional / Future Work)
 
 - **Mô tả**: Consolidated Receipt Dataset v2 từ Naver CLOVA.
-- **Vai trò**: Chỉ dùng làm warm-up/pretrain cho Donut. **Không đưa vào test chính**.
+- **Vai trò**: Chỉ giữ như nhánh tham khảo cho warm-up/pretrain Donut trong tương lai. **Không dùng trong pipeline chính và không đưa vào kết quả báo cáo hiện tại**.
 - **Task token riêng**: `<s_cord_receipt_parse>` (tách biệt với task chính `<s_receipt_ie>`).
 - **Đường dẫn**: `data/raw/cord_v2/`
 

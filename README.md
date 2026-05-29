@@ -63,10 +63,9 @@ pip install -r requirements/app.txt
 - `label_studio.json` — export từ Label Studio
 - `images/` — thư mục chứa ảnh biên lai
 
-### CORD v2 (Warm-up)
-```bash
-python -m receipt_ie.data.download_cord
-```
+### CORD v2 (Optional / Future Work)
+CORD v2 chỉ được giữ như nhánh tham khảo cho thí nghiệm warm-up trong tương lai.
+Luồng chính và kết quả báo cáo hiện tại **không dùng CORD v2**.
 
 ## Pipeline chạy thử
 
@@ -74,13 +73,40 @@ python -m receipt_ie.data.download_cord
 # 1. Convert dữ liệu sang unified JSONL
 python -m receipt_ie.data.convert_mcocr
 python -m receipt_ie.data.convert_labelstudio
-python -m receipt_ie.data.convert_cord
 
 # 2. Chia train/val/test
 python -m receipt_ie.data.split_data
 
 # 3. Validate dữ liệu
 python -m receipt_ie.data.validate_dataset --jsonl_path data/processed/train.jsonl
+```
+
+## GitHub → Kaggle T4x2
+
+Repo GitHub chỉ lưu code, docs, configs, requirements, tests và scripts. Không commit
+`data/`, `checkpoints/`, `outputs/` hoặc các file `*.zip`.
+
+Trên Kaggle, dùng 2 Dataset riêng:
+- `receipt-vn-ie-data`: chứa `receipt_dataset.zip`
+- `receipt-vn-ie-checkpoints`: chứa checkpoint Donut/LayoutXLM nếu cần demo, evaluate hoặc resume
+
+Bootstrap trên Kaggle:
+
+```bash
+git clone <repo-url> /kaggle/working/receipt-vn-ie
+cd /kaggle/working/receipt-vn-ie
+bash scripts/kaggle_bootstrap.sh
+```
+
+Pipeline chuẩn:
+
+```bash
+bash scripts/01_validate_data.sh
+bash scripts/02_build_ocr_cache.sh
+bash scripts/03_train_layoutxlm.sh
+bash scripts/04_train_donut.sh
+bash scripts/05_evaluate_all.sh
+bash scripts/06_error_analysis.sh
 ```
 
 ## Đánh giá

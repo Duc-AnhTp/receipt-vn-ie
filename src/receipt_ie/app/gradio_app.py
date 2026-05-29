@@ -3,6 +3,8 @@ import sys
 import time
 import yaml
 import logging
+import hashlib
+import io
 from pathlib import Path
 from typing import Dict, Any, Tuple, Optional
 
@@ -82,6 +84,13 @@ app_config = load_application_config()
 # Tránh nạp model tại top-level khi import (Lazy-loading)
 EXTRACTORS = {"baseline": None, "donut": None, "layoutxlm": None}
 MOCK_FLAGS = {"donut": False, "layoutxlm": False}
+SESSION_OCR_CACHE: Dict[Tuple[str, str], Dict[str, Any]] = {}
+
+
+def compute_image_hash(image: Image.Image) -> str:
+    buf = io.BytesIO()
+    image.convert("RGB").save(buf, format="PNG")
+    return hashlib.md5(buf.getvalue()).hexdigest()
 
 def get_baseline_extractor() -> BaseExtractor:
     if EXTRACTORS["baseline"] is None:
@@ -107,14 +116,16 @@ def get_donut_extractor() -> BaseExtractor:
         EXTRACTORS["donut"] = donut
     return EXTRACTORS["donut"]
 
-def get_layoutxlm_extractor() -> BaseExtractor:
+def get_layoutxlm_extractor(init_ocr: bool = False) -> BaseExtractor:
     if EXTRACTORS["layoutxlm"] is None:
         logger.info("Initializing layoutxlm extractor (lazy)...")
         layoutxlm_path = project_root / app_config["models"]["layoutxlm_checkpoint"]
         try:
             if not layoutxlm_path.exists() or not os.listdir(layoutxlm_path):
                 raise FileNotFoundError("LayoutXLM checkpoint folder empty or not exists.")
-            layoutxlm = get_extractor("layoutxlm", checkpoint_path=str(layoutxlm_path), project_root=str(project_root))
+            from receipt_ie.inference.infer_layoutxlm import LayoutXLMExtractor
+            layoutxlm = LayoutXLMExtractor(project_root=str(project_root))
+            layoutxlm.load(str(layoutxlm_path), init_ocr=init_ocr)
             MOCK_FLAGS["layoutxlm"] = False
         except Exception as e:
             logger.warning(f"Không thể nạp LayoutXLM checkpoint thực tế ({e}). Sử dụng Mock LayoutXLM.")
@@ -122,7 +133,27 @@ def get_layoutxlm_extractor() -> BaseExtractor:
             layoutxlm = MockExtractor("layoutxlm", baseline)
             MOCK_FLAGS["layoutxlm"] = True
         EXTRACTORS["layoutxlm"] = layoutxlm
+    elif init_ocr:
+        ext = EXTRACTORS["layoutxlm"]
+        if hasattr(ext, "_init_ocr") and (getattr(ext, "detector", None) is None or getattr(ext, "recognizer", None) is None):
+            ext._init_ocr()
     return EXTRACTORS["layoutxlm"]
+
+
+def run_or_get_cached_ocr(image: Image.Image, ocr_mode: str) -> Dict[str, Any]:
+    cache_key = (compute_image_hash(image), ocr_mode)
+    if cache_key not in SESSION_OCR_CACHE:
+        baseline = get_baseline_extractor()
+        rec_model = "vgg_seq2seq" if ocr_mode == "Fast (vgg_seq2seq)" else "vgg_transformer"
+        if hasattr(baseline, "recognizer") and baseline.recognizer is not None:
+            current_config = getattr(baseline.recognizer, "config_name", None)
+            if current_config != rec_model:
+                from receipt_ie.ocr.recognize_vietocr import load_vietocr_model
+                gpu_avail = torch.cuda.is_available()
+                baseline.recognizer = load_vietocr_model(config_name=rec_model, use_gpu=gpu_avail)
+                baseline.recognizer.config_name = rec_model
+        SESSION_OCR_CACHE[cache_key] = baseline.predict(image)
+    return SESSION_OCR_CACHE[cache_key]
 
 # Kiểm tra mockup ban đầu dựa trên sự tồn tại của checkpoint (không load model)
 def check_checkpoint_exists(checkpoint_key: str) -> bool:
@@ -161,19 +192,27 @@ def handle_demo_run(image: Image.Image, model_name: str, ocr_mode: str) -> Tuple
                 ext.recognizer.config_name = rec_model
                 
     start_time = time.time()
-    res = extractor.predict(image)
+    if model_name == "Baseline (Rule-based)":
+        res = run_or_get_cached_ocr(image, ocr_mode)
+    elif model_name == "VietOCR + LayoutXLM" and hasattr(extractor, "predict_from_ocr") and not MOCK_FLAGS.get("layoutxlm", False):
+        ocr_res = run_or_get_cached_ocr(image, ocr_mode)
+        res = extractor.predict_from_ocr(image, ocr_res.get("words", []), latency_ocr_ms=0.0)
+    else:
+        res = extractor.predict(image)
     e2e_time = (time.time() - start_time) * 1000
     
     # Lấy thông tin hiển thị latency
-    lat_cached = res.get("latency_cached_ms", 0.0)
+    lat_ocr = res.get("latency_ocr_ms", 0.0)
+    lat_model = res.get("latency_model_ms", res.get("latency_cached_ms", 0.0))
+    lat_post = res.get("latency_postprocess_ms", 0.0)
     lat_e2e = res.get("latency_e2e_ms", e2e_time)
     
     latency_info = (
-        f"**Thời gian suy luận (End-to-End):** {lat_e2e:.2f} ms\n"
-        f"**Thời gian xử lý của Mô hình (Model-only):** {lat_cached:.2f} ms\n"
+        f"**OCR:** {lat_ocr:.2f} ms\n"
+        f"**Model-only:** {lat_model:.2f} ms\n"
+        f"**Postprocess:** {lat_post:.2f} ms\n"
+        f"**End-to-End:** {lat_e2e:.2f} ms\n"
     )
-    if model_name == "Donut (OCR-free)":
-        latency_info = f"**Thời gian suy luận (Donut E2E):** {res.get('latency_ms', e2e_time):.2f} ms"
         
     # Hiển thị ghi chú nếu đang dùng Mock Model
     is_mock = res.get("is_mock", False)
@@ -190,7 +229,6 @@ def handle_compare_run(image: Image.Image, ocr_mode: str) -> Tuple[Image.Image, 
         return empty_img, empty_img, "", "", "", "Vui lòng tải ảnh lên."
         
     # Lazy load tất cả extractors phục vụ debug & so sánh
-    baseline_extractor = get_baseline_extractor()
     donut_extractor = get_donut_extractor()
     layoutxlm_extractor = get_layoutxlm_extractor()
 
@@ -206,10 +244,13 @@ def handle_compare_run(image: Image.Image, ocr_mode: str) -> Tuple[Image.Image, 
                 ext.recognizer = load_vietocr_model(config_name=rec_model, use_gpu=gpu_avail)
                 ext.recognizer.config_name = rec_model
                 
-    # 1. Chạy 3 mô hình
-    res_base = baseline_extractor.predict(image)
+    # 1. Chạy 3 mô hình, tái sử dụng OCR cache cho baseline/layoutxlm
+    res_base = run_or_get_cached_ocr(image, ocr_mode)
     res_donut = donut_extractor.predict(image)
-    res_layout = layoutxlm_extractor.predict(image)
+    if hasattr(layoutxlm_extractor, "predict_from_ocr") and not MOCK_FLAGS.get("layoutxlm", False):
+        res_layout = layoutxlm_extractor.predict_from_ocr(image, res_base.get("words", []), latency_ocr_ms=0.0)
+    else:
+        res_layout = layoutxlm_extractor.predict(image)
     
     # 2. Tạo ảnh visualize OCR
     words = res_base.get("words", [])
@@ -239,12 +280,12 @@ def handle_compare_run(image: Image.Image, ocr_mode: str) -> Tuple[Image.Image, 
     
     # 6. Bảng so sánh Latency
     lat_b_e2e = res_base.get("latency_e2e_ms", 0.0)
-    lat_d_e2e = res_donut.get("latency_ms", res_donut.get("latency_e2e_ms", 0.0))
+    lat_d_e2e = res_donut.get("latency_e2e_ms", 0.0)
     lat_l_e2e = res_layout.get("latency_e2e_ms", 0.0)
     
-    lat_b_cached = res_base.get("latency_cached_ms", 0.0)
-    lat_d_cached = res_donut.get("latency_ms", res_donut.get("latency_cached_ms", 0.0))
-    lat_l_cached = res_layout.get("latency_cached_ms", 0.0)
+    lat_b_cached = res_base.get("latency_model_ms", res_base.get("latency_cached_ms", 0.0))
+    lat_d_cached = res_donut.get("latency_model_ms", res_donut.get("latency_cached_ms", 0.0))
+    lat_l_cached = res_layout.get("latency_model_ms", res_layout.get("latency_cached_ms", 0.0))
     
     latency_table = f"""
 | Mô hình | Latency Cached (Model-only) | Latency E2E (Gồm OCR) | Chế độ chạy |
@@ -265,6 +306,10 @@ def handle_compare_run(image: Image.Image, ocr_mode: str) -> Tuple[Image.Image, 
         status_str += f"Đang chạy mockup cho: {', '.join(status_info)}."
 
     return ocr_visualized, bio_visualized, donut_raw, compare_table, latency_table, status_str
+
+
+def run_fixed_model(image: Image.Image, ocr_mode: str, model_name: str) -> Tuple[Dict[str, Any], str]:
+    return handle_demo_run(image, model_name, ocr_mode)
 
 
 # Tạo giao diện Blocks Gradio
@@ -300,9 +345,10 @@ with gr.Blocks(theme=theme, title="Receipt VN Information Extraction") as demo:
             input_image = gr.Image(type="pil", label="Tải ảnh biên lai lên")
             
             # Cấu hình OCR Mode
+            default_ocr_mode = "Fast (vgg_seq2seq)" if app_config.get("app", {}).get("fast_ocr_by_default") else "Accurate (vgg_transformer)"
             ocr_mode = gr.Dropdown(
                 choices=["Accurate (vgg_transformer)", "Fast (vgg_seq2seq)"],
-                value="Accurate (vgg_transformer)",
+                value=default_ocr_mode,
                 label="Chế độ OCR (VietOCR)",
                 info="Fast Mode tối ưu hóa tốc độ nhưng độ chính xác có thể giảm so với Accurate Mode."
             )
@@ -316,7 +362,11 @@ with gr.Blocks(theme=theme, title="Receipt VN Information Extraction") as demo:
                         label="Chọn mô hình trích xuất"
                     )
                 
-                run_btn = gr.Button("Bắt đầu trích xuất", variant="primary")
+                with gr.Row():
+                    run_btn = gr.Button("Bắt đầu trích xuất", variant="primary")
+                    run_baseline_btn = gr.Button("Run Baseline")
+                    run_donut_btn = gr.Button("Run Donut")
+                    run_layout_btn = gr.Button("Run LayoutXLM")
                 
                 with gr.Row():
                     output_json = gr.JSON(label="Thông tin trích xuất (JSON)")
@@ -327,6 +377,21 @@ with gr.Blocks(theme=theme, title="Receipt VN Information Extraction") as demo:
                 run_btn.click(
                     fn=handle_demo_run,
                     inputs=[input_image, model_selector, ocr_mode],
+                    outputs=[output_json, latency_display]
+                )
+                run_baseline_btn.click(
+                    fn=lambda image, mode: run_fixed_model(image, mode, "Baseline (Rule-based)"),
+                    inputs=[input_image, ocr_mode],
+                    outputs=[output_json, latency_display]
+                )
+                run_donut_btn.click(
+                    fn=lambda image, mode: run_fixed_model(image, mode, "Donut (OCR-free)"),
+                    inputs=[input_image, ocr_mode],
+                    outputs=[output_json, latency_display]
+                )
+                run_layout_btn.click(
+                    fn=lambda image, mode: run_fixed_model(image, mode, "VietOCR + LayoutXLM"),
+                    inputs=[input_image, ocr_mode],
                     outputs=[output_json, latency_display]
                 )
                 

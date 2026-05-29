@@ -12,4 +12,4 @@ models:
 app:
   title: "Receipt VN IE - Trích xuất thông tin hóa đơn tiếng Việt"
   description: "Hệ thống so sánh hai kiến trúc Donut (End-to-End OCR-free) và VietOCR + LayoutXLM (OCR-based) để trích xuất 4 trường thông tin của biên lai."
-  fast_ocr_by_default: false
+  fast_ocr_by_default: true

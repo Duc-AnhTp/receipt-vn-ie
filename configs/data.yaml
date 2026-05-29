@@ -1,4 +1,5 @@
 # Cấu hình đường dẫn dữ liệu
+# CORD v2 là optional/future work, không dùng trong pipeline/kết quả chính hiện tại.
 raw:
   cord_v2_dir: "data/raw/cord_v2"
   mc_ocr_2021_dir: "data/raw/mc_ocr_2021"
@@ -14,4 +15,5 @@ processed:
   train_jsonl: "data/processed/train.jsonl"
   val_jsonl: "data/processed/val.jsonl"
   test_jsonl: "data/processed/test.jsonl"
+  # Optional CORD warm-up path; scripts main không sử dụng.
   donut_warmup_train: "data/processed/donut/cord_warmup_train.jsonl"

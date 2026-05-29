@@ -32,7 +32,7 @@ def train_stage(
     is_warmup: bool = False
 ):
     """
-    Huấn luyện Donut cho một giai đoạn cụ thể (Warm-up CORD hoặc Fine-tuning Tiếng Việt).
+    Huấn luyện Donut. Luồng chính là fine-tuning tiếng Việt; CORD chỉ là optional/future work.
     """
     print(f"\n=== BẮT ĐẦU HUẤN LUYỆN: {'WARM-UP CORD' if is_warmup else 'FINE-TUNING TIẾNG VIỆT'} ===")
     print(f"Model name/path: {model_name}")
@@ -153,7 +153,7 @@ def main():
         type=str, 
         choices=["warmup", "finetune", "full"], 
         default="finetune", 
-        help="Chế độ chạy: warmup (chỉ CORD), finetune (chỉ Việt Nam), full (cả hai)"
+        help="Chế độ chạy: finetune là main run; warmup/full dùng CORD v2 optional/future work"
     )
     args = parser.parse_args()
     
@@ -167,7 +167,7 @@ def main():
     # Thư mục checkpoints
     output_dir = donut_cfg["training"]["output_dir"]
     
-    # 1. Warm-up pretraining trên CORD v2 (nếu chọn warmup hoặc full)
+    # 1. Optional/future work: Warm-up pretraining trên CORD v2 (nếu chọn warmup hoặc full)
     current_model = model_name
     if args.mode in ["warmup", "full"]:
         cord_train = data_cfg["processed"]["donut_warmup_train"]

@@ -31,3 +31,6 @@ training:
   save_steps: 200
   save_total_limit: 1
   early_stopping_patience: 5
+
+labeling:
+  overlap_threshold: 0.5

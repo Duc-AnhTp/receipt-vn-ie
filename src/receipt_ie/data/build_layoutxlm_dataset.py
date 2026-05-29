@@ -10,6 +10,7 @@ from PIL import Image
 
 from receipt_ie.data.build_layoutxlm_labels import assign_word_labels, align_tokens_layoutxlm
 from receipt_ie.ocr.reading_order import sort_reading_order
+from receipt_ie.data.augmentation import get_layoutxlm_transforms, apply_transforms
 
 logger = logging.getLogger(__name__)
 
@@ -27,13 +28,20 @@ class LayoutXLMDataset(Dataset):
         mode: str = "ocr_cache",
         max_length: int = 512,
         project_root: str = ".",
-        annotation_level_filter: str = "json_and_boxes"
+        annotation_level_filter: str = "json_and_boxes",
+        is_train: bool = False,
+        overlap_threshold: float = 0.5
     ):
         self.tokenizer = tokenizer
         self.mode = mode.lower()
         self.max_length = max_length
         self.project_root = Path(project_root)
         self.annotation_level_filter = annotation_level_filter
+        self.is_train = is_train
+        self.overlap_threshold = overlap_threshold
+        
+        if self.is_train:
+            self.transform = get_layoutxlm_transforms()
         
         if self.mode not in ["ocr_cache", "oracle_ocr"]:
             raise ValueError("mode phải là 'ocr_cache' hoặc 'oracle_ocr'")
@@ -120,7 +128,7 @@ class LayoutXLMDataset(Dataset):
             
         # 1. Gán nhãn BIO viết hoa cho từng word dựa trên overlap với field_boxes
         field_boxes = sample.get("field_boxes", {})
-        word_labels = assign_word_labels(words, word_boxes, field_boxes)
+        word_labels = assign_word_labels(words, word_boxes, field_boxes, overlap_threshold=self.overlap_threshold)
         
         # 2. Tokenize và alignment tokens/boxes/labels
         aligned = align_tokens_layoutxlm(
@@ -142,6 +150,8 @@ class LayoutXLMDataset(Dataset):
         else:
             try:
                 image = Image.open(img_path).convert("RGB")
+                if self.is_train:
+                    image = apply_transforms(image, self.transform)
             except Exception as e:
                 logger.warning(f"Lỗi đọc ảnh {img_path}: {e}")
                 image = Image.new("RGB", (224, 224), color="white")

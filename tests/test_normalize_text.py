@@ -26,6 +26,7 @@ class TestNormalizeText(unittest.TestCase):
     def test_normalize_date(self):
         self.assertEqual(normalize_date("Ngày 22/05/2024 lúc 17:00"), "2024-05-22")
         self.assertEqual(normalize_date("Ngày: 09-08-20"), "2020-08-09")
+        self.assertEqual(normalize_date("Ngày bán: 09.08.2020 18:32"), "2020-08-09")
         self.assertEqual(normalize_date("2024/05/22"), "2024-05-22")
         self.assertEqual(normalize_date("32/13/2024"), "") # Ngày tháng không thực tế
         self.assertEqual(normalize_date("Không có ngày"), "")
