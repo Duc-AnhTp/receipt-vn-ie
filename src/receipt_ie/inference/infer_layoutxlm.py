@@ -224,7 +224,7 @@ class LayoutXLMExtractor(BaseExtractor):
         tensor_attention_mask = torch.tensor([attention_mask], dtype=torch.long).to(self.device)
         
         # Tiền xử lý ảnh cho model (chuyển đổi sang BGR 224x224 và chuẩn hóa)
-        tensor_image = self.image_processor(image, return_tensors="pt").pixel_values.to(self.device)
+        tensor_image = self.image_processor(image, apply_ocr=False, return_tensors="pt").pixel_values.to(self.device)
         
         # 4. Chạy mô hình LayoutXLM dự đoán
         with torch.no_grad():

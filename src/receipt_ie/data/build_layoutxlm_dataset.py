@@ -147,7 +147,7 @@ class LayoutXLMDataset(Dataset):
                 image = Image.new("RGB", (224, 224), color="white")
                 
         # Tiền xử lý ảnh qua processor
-        pixel_values = self.image_processor(image, return_tensors="pt").pixel_values[0]
+        pixel_values = self.image_processor(image, apply_ocr=False, return_tensors="pt").pixel_values[0]
         
         # Trả về định dạng tensor PyTorch
         return {
