@@ -23,7 +23,7 @@ git commit -m "Configure Receipt VN IE project for Kaggle"
 
 # Tạo repo mới trên GitHub (Ví dụ đặt tên là receipt-vn-ie)
 # Thêm remote và đẩy code lên nhánh main
-git remote add origin https://github.com/<TÊN_MÌNH>/receipt-vn-ie.git
+git remote add origin https://github.com/Duc-AnhTp/receipt-vn-ie.git
 git branch -M main
 git push -u origin main
 ```
@@ -74,13 +74,13 @@ Tùy thuộc vào việc bạn chọn nạp code qua **GitHub** (Cách 1) hay **
 #### A. Nếu dùng Cách 1 (GitHub)
 *   **Nếu Repo của bạn là Public:**
     ```bash
-    git clone https://github.com/<TÊN_MÌNH>/receipt-vn-ie.git /kaggle/working/receipt-vn-ie
+    git clone https://github.com/Duc-AnhTp/receipt-vn-ie.git /kaggle/working/receipt-vn-ie
     cd /kaggle/working/receipt-vn-ie
     ```
 *   **Nếu Repo của bạn là Private (Bảo mật):**
     Hãy tạo một **Personal Access Token (PAT)** trên GitHub (vào *Settings -> Developer settings -> Personal access tokens -> Tokens (classic)* -> tích chọn quyền `repo` -> nhấn *Generate token*). Sau đó chạy clone bằng link chứa token trên Kaggle Notebook:
     ```bash
-    git clone https://<MÃ_TOKEN_CỦA_BẠN>@github.com/<TÊN_MÌNH>/receipt-vn-ie.git /kaggle/working/receipt-vn-ie
+    git clone https://<MÃ_TOKEN_CỦA_BẠN>@github.com/Duc-AnhTp/receipt-vn-ie.git /kaggle/working/receipt-vn-ie
     cd /kaggle/working/receipt-vn-ie
     ```
 
