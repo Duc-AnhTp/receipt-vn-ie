@@ -52,7 +52,7 @@ Nếu không muốn dùng GitHub, bạn hãy nén code lại như sau:
 
 ### Bước 2.1: Tạo Kaggle Dataset chứa dữ liệu
 1. Truy cập vào Kaggle -> chọn **Datasets** -> chọn **New Dataset**.
-2. Đặt tên dataset là `receipt-vn-ie-data`.
+2. Đặt tên dataset là `receipt-vn-ie-new-data`.
 3. Tải file `data.zip` (và file `code.zip` nếu dùng Cách 2) lên hệ thống và nhấn **Create**.
 
 ### Bước 2.2: Khởi tạo Kaggle Notebook
@@ -60,7 +60,7 @@ Nếu không muốn dùng GitHub, bạn hãy nén code lại như sau:
 2. Ở bảng cấu hình bên phải (Notebook options):
    * **Accelerator:** Chọn `GPU T4 x2` (Kích hoạt 2 GPU song song).
    * **Internet:** Bật trạng thái **On** (để tải thư viện và pretrained model).
-3. Nhấp vào nút **Add Data** -> Tìm kiếm dataset `receipt-vn-ie-data` bạn vừa tạo và add vào notebook.
+3. Nhấp vào nút **Add Data** -> Tìm kiếm dataset `receipt-vn-ie-new-data` bạn vừa tạo và add vào notebook.
 
 ---
 
@@ -98,14 +98,14 @@ mkdir -p /kaggle/working/receipt-vn-ie
 cd /kaggle/working/receipt-vn-ie
 
 # Giải nén mã nguồn từ dataset
-unzip -q /kaggle/input/receipt-vn-ie-data/code.zip -d .
+unzip -q /kaggle/input/receipt-vn-ie-new-data/code.zip -d .
 ```
 
 #### Giải nén dữ liệu (Dành cho cả 2 cách)
 ```bash
 # Giải nén dữ liệu từ dataset
 mkdir -p data
-unzip -q /kaggle/input/receipt-vn-ie-data/data.zip -d data/
+unzip -q /kaggle/input/receipt-vn-ie-new-data/data.zip -d data/
 ```
 
 ### Bước 3.2: Cài đặt các thư viện cần thiết
