@@ -17,10 +17,10 @@ model:
 training:
   output_dir: "checkpoints/layoutxlm/receipt_ie"
   epochs: 20
-  train_batch_size: 4
-  eval_batch_size: 4
-  gradient_accumulation_steps: 1
-  gradient_checkpointing: false
+  train_batch_size: 16
+  eval_batch_size: 16
+  gradient_accumulation_steps: 2
+  gradient_checkpointing: true
   learning_rate: 2.0e-5
   weight_decay: 0.01
   warmup_ratio: 0.1

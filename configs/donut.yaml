@@ -12,9 +12,9 @@ training:
   epochs: 30
   # Chỉ dùng khi chạy optional mode=warmup/full với CORD v2.
   warmup_epochs: 3
-  train_batch_size: 1
-  eval_batch_size: 1
-  gradient_accumulation_steps: 16
+  train_batch_size: 4
+  eval_batch_size: 2
+  gradient_accumulation_steps: 4
   learning_rate: 2.0e-5
   weight_decay: 0.01
   warmup_ratio: 0.05
