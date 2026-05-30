@@ -61,11 +61,9 @@ class LayoutXLMDataset(Dataset):
         self.is_train = is_train
         self.overlap_threshold = overlap_threshold
         
+        self.transform = None
         if self.is_train:
             self.transform = get_layoutxlm_transforms()
-        
-        if self.mode not in ["ocr_cache", "oracle_ocr"]:
-            raise ValueError("mode phải là 'ocr_cache' hoặc 'oracle_ocr'")
             
         # Khởi tạo Image Processor cho LayoutXLM
         try:
@@ -160,9 +158,19 @@ class LayoutXLMDataset(Dataset):
         # 1. Gán nhãn BIO viết hoa cho từng word dựa trên overlap với field_boxes
         field_boxes = sample.get("field_boxes", {})
         preprocess_info = cache_data.get("preprocess", {})
-        original_size = preprocess_info.get("original_size") or cache_data.get("original_size")
-        processed_size = preprocess_info.get("processed_size") or cache_data.get("preprocessed_size")
-        coordinate_transform = preprocess_info.get("coordinate_transform") or cache_data.get("coordinate_transform")
+        preprocess_meta = preprocess_info.get("metadata", {}) if isinstance(preprocess_info, dict) else {}
+        original_size = preprocess_info.get("original_size") or preprocess_meta.get("original_size") or cache_data.get("original_size")
+        if not original_size and preprocess_meta.get("original_width") and preprocess_meta.get("original_height"):
+            original_size = [preprocess_meta["original_width"], preprocess_meta["original_height"]]
+        processed_size = (
+            preprocess_info.get("processed_size")
+            or cache_data.get("preprocessed_size")
+        )
+        coordinate_transform = (
+            preprocess_info.get("coordinate_transform")
+            or preprocess_meta.get("coordinate_transform")
+            or cache_data.get("coordinate_transform")
+        )
         if (
             self.mode == "ocr_cache"
             and coordinate_transform == "scale"

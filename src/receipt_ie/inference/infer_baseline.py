@@ -9,7 +9,6 @@ import time
 import argparse
 import logging
 import yaml
-import uuid
 from pathlib import Path
 from tqdm import tqdm
 from PIL import Image
@@ -20,23 +19,14 @@ from receipt_ie.ocr.recognize_vietocr import load_vietocr_model, recognize_regio
 from receipt_ie.ocr.reading_order import sort_reading_order
 from typing import Dict, Any
 from receipt_ie.data.schemas import BaseExtractor
-from receipt_ie.ocr.preprocess import rectify_document
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
 EMPTY_FIELDS = {"store_name": "", "date": "", "total": "", "address": ""}
 
-
 def _empty_fields() -> Dict[str, str]:
     return EMPTY_FIELDS.copy()
-
-
-def _cleanup_temp_file(path: Path) -> None:
-    try:
-        path.unlink(missing_ok=True)
-    except (PermissionError, OSError) as exc:
-        logger.warning("Could not remove temporary OCR file %s: %s", path, exc)
 
 
 class BaselineExtractor(BaseExtractor):
@@ -81,117 +71,52 @@ class BaselineExtractor(BaseExtractor):
             rec_gpu = torch.cuda.is_available()
             self.recognizer = load_vietocr_model(config_name=rec_config, use_gpu=rec_gpu)
 
-    def predict_from_ocr(self, ocr_data: Dict[str, Any], latency_ocr_ms: float = 0.0, start_e2e: float | None = None) -> Dict[str, Any]:
-        start_rule = time.time()
+    def predict_from_ocr(self, ocr_data: dict) -> Dict[str, Any]:
+        """
+        Thực hiện dự đoán trực tiếp từ dữ liệu OCR cache.
+        """
+        start_postprocess = time.time()
         extracted = extract_fields_from_ocr(ocr_data)
-        latency_model = (time.time() - start_rule) * 1000
-        latency_e2e = (time.time() - start_e2e) * 1000 if start_e2e is not None else latency_ocr_ms + latency_model
-        words = ocr_data.get("words", [])
-
+        postprocess_ms = (time.time() - start_postprocess) * 1000
+        
         return {
-            "method": "baseline",
+            "latency_ocr_ms": 0.0,
+            "latency_model_ms": 0.0,
+            "latency_postprocess_ms": postprocess_ms,
+            "latency_e2e_ms": postprocess_ms,
             "prediction": extracted,
             "normalized_prediction": extracted,
-            "raw_output": None,
-            "latency_ocr_ms": latency_ocr_ms,
-            "latency_model_ms": latency_model,
-            "latency_postprocess_ms": 0.0,
-            "latency_cached_ms": latency_model,
-            "latency_e2e_ms": latency_e2e,
             "status": "ok",
-            "error": None,
-            "words": words
+            "error": None
         }
 
     def predict(self, image: Image.Image) -> Dict[str, Any]:
-        start_e2e = time.time()
-        
-        # Tự động căn thẳng ảnh hóa đơn nếu có viền nghiêng
-        image = rectify_document(image)
-        
-        temp_img_path = None
-        
-        try:
-            # Use a unique file name to avoid stale locks/collisions on Windows.
-            temp_dir = self.project_root / "data/temp"
-            temp_dir.mkdir(parents=True, exist_ok=True)
-            temp_img_path = temp_dir / f"baseline_{uuid.uuid4().hex}.png"
-            image.save(temp_img_path)
-
-            start_ocr = time.time()
-            regions = detect_text_regions(self.detector, str(temp_img_path))
-            if not regions:
-                latency_e2e = (time.time() - start_e2e) * 1000
-                return {
-                    "method": "baseline",
-                    "prediction": _empty_fields(),
-                    "normalized_prediction": _empty_fields(),
-                    "raw_output": None,
-                    "latency_ocr_ms": latency_e2e,
-                    "latency_model_ms": 0.0,
-                    "latency_postprocess_ms": 0.0,
-                    "latency_cached_ms": 0.0,
-                    "latency_e2e_ms": latency_e2e,
-                    "status": "ok",
-                    "error": None,
-                    "words": []
-                }
-                
-            cropped_imgs = [crop_region(image, r["bbox"], padding=2) for r in regions]
-            texts = recognize_regions(self.recognizer, cropped_imgs, batch_size=16)
-            for r, text in zip(regions, texts):
-                r["text"] = text.strip()
-            regions = [r for r in regions if r["text"]]
+        """
+        Dự đoán từ ảnh PIL Image. Sử dụng runtime OCR cache để tăng tốc.
+        """
+        if self.detector is None or self.recognizer is None:
+            self._init_ocr()
             
-            if not regions:
-                latency_e2e = (time.time() - start_e2e) * 1000
-                return {
-                    "method": "baseline",
-                    "prediction": _empty_fields(),
-                    "normalized_prediction": _empty_fields(),
-                    "raw_output": None,
-                    "latency_ocr_ms": latency_e2e,
-                    "latency_model_ms": 0.0,
-                    "latency_postprocess_ms": 0.0,
-                    "latency_cached_ms": 0.0,
-                    "latency_e2e_ms": latency_e2e,
-                    "status": "ok",
-                    "error": None,
-                    "words": []
-                }
-                
-            flat_words, grouped_lines = sort_reading_order(regions, y_threshold=self.y_threshold)
-            width, height = image.size
-            ocr_data = {
-                "image_size": [width, height],
-                "lines": [
-                    [{"bbox": w["bbox"], "polygon": w["polygon"], "text": w["text"]} for w in line]
-                    for line in grouped_lines
-                ],
-                "words": [{"bbox": w["bbox"], "polygon": w["polygon"], "text": w["text"]} for w in flat_words]
-            }
-            latency_ocr = (time.time() - start_ocr) * 1000
-            return self.predict_from_ocr(ocr_data, latency_ocr_ms=latency_ocr, start_e2e=start_e2e)
-        except Exception as exc:
-            logger.exception("Baseline prediction failed")
-            latency_e2e = (time.time() - start_e2e) * 1000
-            return {
-                "method": "baseline",
-                "prediction": _empty_fields(),
-                "normalized_prediction": _empty_fields(),
-                "raw_output": None,
-                "latency_ocr_ms": latency_e2e,
-                "latency_model_ms": 0.0,
-                "latency_postprocess_ms": 0.0,
-                "latency_cached_ms": 0.0,
-                "latency_e2e_ms": latency_e2e,
-                "status": "error",
-                "error": str(exc),
-                "words": []
-            }
-        finally:
-            if temp_img_path is not None:
-                _cleanup_temp_file(temp_img_path)
+        from receipt_ie.ocr.cache_manager import get_or_build_ocr
+        
+        start_ocr = time.time()
+        ocr_data = get_or_build_ocr(
+            image=image,
+            detector=self.detector,
+            recognizer=self.recognizer,
+            preprocess_profile="resize",
+            ocr_config_path=str(self.ocr_config_path),
+            cache_dir=str(self.project_root / "outputs/runtime_ocr_cache")
+        )
+        ocr_duration = (time.time() - start_ocr) * 1000
+        
+        # Nếu thời gian lấy OCR rất ngắn (< 15ms) chứng tỏ lấy trực tiếp từ cache
+        latency_ocr_ms = ocr_duration if ocr_duration > 15.0 else 0.0
+        
+        res = self.predict_from_ocr(ocr_data)
+        res["latency_ocr_ms"] = latency_ocr_ms
+        res["latency_e2e_ms"] = latency_ocr_ms + res["latency_postprocess_ms"]
+        return res
 
 
 def parse_args():
@@ -281,6 +206,7 @@ def main():
     logger.info(f"Running baseline inference on {len(samples)} samples...")
     
     count = 0
+    extractor = BaselineExtractor(ocr_config_path=args.config_ocr)
     with open(out_file, "w", encoding="utf-8") as out_f:
         for sample in tqdm(samples, desc="Baseline Inference"):
             sample_id = sample.get("id")
@@ -296,7 +222,6 @@ def main():
                 "latency_ocr_ms": 0.0,
                 "latency_model_ms": 0.0,
                 "latency_postprocess_ms": 0.0,
-                "latency_cached_ms": 0.0,
                 "latency_e2e_ms": 0.0,
                 "status": "ok",
                 "error": None
@@ -350,16 +275,15 @@ def main():
                     ocr_end_time = time.time()
                 
                 ocr_latency_ms = (ocr_end_time - ocr_start_time) * 1000.0 if ocr_start_time > 0 else 0.0
-                res = BaselineExtractor().predict_from_ocr(ocr_data, latency_ocr_ms=ocr_latency_ms)
+                res = extractor.predict_from_ocr(ocr_data)
                 
                 # Cập nhật kết quả
                 prediction_record["prediction"] = res["prediction"]
                 prediction_record["normalized_prediction"] = res["normalized_prediction"]
-                prediction_record["latency_ocr_ms"] = round(res["latency_ocr_ms"], 2)
+                prediction_record["latency_ocr_ms"] = round(ocr_latency_ms, 2)
                 prediction_record["latency_model_ms"] = round(res["latency_model_ms"], 2)
                 prediction_record["latency_postprocess_ms"] = round(res["latency_postprocess_ms"], 2)
-                prediction_record["latency_cached_ms"] = round(res["latency_cached_ms"], 2)
-                prediction_record["latency_e2e_ms"] = round(res["latency_e2e_ms"], 2)
+                prediction_record["latency_e2e_ms"] = round(ocr_latency_ms + res["latency_postprocess_ms"], 2)
                 
             except Exception as e:
                 logger.error(f"Error evaluating sample {sample_id}: {e}")

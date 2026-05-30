@@ -5,8 +5,8 @@ server:
   share: true
 
 models:
-  donut_checkpoint: "checkpoints/donut/receipt_ie/final"
-  layoutxlm_checkpoint: "checkpoints/layoutxlm/receipt_ie/final"
+  donut_checkpoint: "checkpoints/donut/receipt_ie/finetune/best_model"
+  layoutxlm_checkpoint: "checkpoints/layoutxlm/receipt_ie/ocr_cache/best_model"
   baseline_rules: "configs/baseline.yaml"
 
 app:

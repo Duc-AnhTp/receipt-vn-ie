@@ -4,7 +4,7 @@ import hashlib
 from pathlib import Path
 from sklearn.model_selection import train_test_split
 import numpy as np
-from collections import defaultdict
+from collections import Counter, defaultdict
 
 def get_image_md5(path_str: str) -> str:
     path = Path(path_str)
@@ -31,6 +31,18 @@ def write_jsonl(items: list, path: Path):
     with open(path, "w", encoding="utf-8") as f:
         for item in items:
             f.write(json.dumps(item, ensure_ascii=False) + "\n")
+
+
+def safe_stratify(labels: list):
+    counts = Counter(labels)
+    if len(counts) < 2:
+        print(f"[CẢNH BÁO] Số lớp nhãn quá ít để phân tầng (stratify): {len(counts)}. Fallback về stratify=None.")
+        return None
+    if min(counts.values()) < 2:
+        print(f"[CẢNH BÁO] Có lớp nhãn chứa ít hơn 2 mẫu: {dict(counts)}. Không thể chia phân tầng. Fallback về stratify=None.")
+        return None
+    return labels
+
 
 def check_leakage(train: list, val: list, test: list) -> bool:
     """
@@ -90,7 +102,7 @@ def split_main(items: list, out_dir: Path) -> tuple:
         unique_groups, group_sources,
         test_size=0.30,
         random_state=42,
-        stratify=group_sources
+        stratify=safe_stratify(group_sources)
     )
     
     # Split temp thành val (15%) và test (15%)
@@ -98,7 +110,7 @@ def split_main(items: list, out_dir: Path) -> tuple:
         temp_groups, y_temp,
         test_size=0.50,
         random_state=42,
-        stratify=y_temp
+        stratify=safe_stratify(y_temp)
     )
     
     train_items = []

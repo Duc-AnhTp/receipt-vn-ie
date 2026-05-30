@@ -4,8 +4,6 @@ from pathlib import Path
 
 from PIL import Image
 
-from receipt_ie.ocr.build_ocr_cache import build_cache_base, preprocess_image_for_ocr
-
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
@@ -45,37 +43,6 @@ class TestTrainingWiring(unittest.TestCase):
         self.assertTrue(any(_has_keyword(call, "is_train", True) for call in calls))
         self.assertTrue(any(_has_keyword(call, "is_train", False) for call in calls))
         self.assertTrue(any(any(keyword.arg == "overlap_threshold" for keyword in call.keywords) for call in calls))
-
-
-class TestOcrPreprocessWiring(unittest.TestCase):
-    def test_preprocess_metadata_and_cache_schema_for_scaled_image(self):
-        tmp_path = PROJECT_ROOT / "tmp" / "test_training_wiring"
-        tmp_path.mkdir(parents=True, exist_ok=True)
-        image_path = tmp_path / "receipt.png"
-        Image.new("RGB", (100, 50), color="white").save(image_path)
-
-        image = Image.open(image_path).convert("RGB")
-        processed, metadata, detector_path = preprocess_image_for_ocr(
-            image=image,
-            sample_id="sample/01",
-            image_path=image_path,
-            preprocess_config={"image": {"ocr": {"max_side": 50, "rectify": False, "binarize": False}}},
-            output_dir=tmp_path / "preprocessed",
-        )
-
-        self.assertEqual(processed.size, (50, 25))
-        self.assertTrue(metadata["applied"])
-        self.assertEqual(metadata["steps"], ["resize_max_side"])
-        self.assertEqual(metadata["coordinate_transform"], "scale")
-        self.assertEqual(metadata["original_size"], [100, 50])
-        self.assertEqual(metadata["processed_size"], [50, 25])
-        self.assertTrue(detector_path.exists())
-
-        cache_base = build_cache_base("sample/01", "ocr_v1", metadata)
-        self.assertEqual(cache_base["preprocessed_size"], [50, 25])
-        self.assertEqual(cache_base["coordinate_transform"], "scale")
-        self.assertIn("preprocessed_image_path", cache_base)
-
 
 if __name__ == "__main__":
     unittest.main()

@@ -21,7 +21,7 @@ from receipt_ie.data.schemas import BaseExtractor
 from receipt_ie.inference.pipeline import get_extractor
 from receipt_ie.inference.postprocess_json import postprocess_extracted_fields
 from receipt_ie.inference.mock_extractor import MockExtractor
-from receipt_ie.ocr.preprocess import rectify_document
+from receipt_ie.preprocessing.image_preprocess import preprocess_receipt_image
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
@@ -67,8 +67,8 @@ def load_application_config() -> dict:
             return yaml.safe_load(f)
     return {
         "models": {
-            "donut_checkpoint": "checkpoints/donut/receipt_ie/final",
-            "layoutxlm_checkpoint": "checkpoints/layoutxlm/receipt_ie/final",
+            "donut_checkpoint": "checkpoints/donut/receipt_ie/finetune/best_model",
+            "layoutxlm_checkpoint": "checkpoints/layoutxlm/receipt_ie/ocr_cache/best_model",
             "baseline_rules": "configs/baseline.yaml"
         },
         "app": {
@@ -153,7 +153,7 @@ def run_or_get_cached_ocr(image: Image.Image, ocr_mode: str) -> Dict[str, Any]:
                 gpu_avail = torch.cuda.is_available()
                 baseline.recognizer = load_vietocr_model(config_name=rec_model, use_gpu=gpu_avail)
                 baseline.recognizer.config_name = rec_model
-        ocr_image = rectify_document(image)
+        ocr_image = preprocess_receipt_image(image, profile="resize", max_long_side=1600).image
         res = baseline.predict(ocr_image)
         res["ocr_image"] = ocr_image
         SESSION_OCR_CACHE[cache_key] = res

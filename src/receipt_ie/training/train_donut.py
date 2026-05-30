@@ -2,7 +2,6 @@ import torch
 # Đảm bảo import torch đầu tiên trên Windows để tránh DLL collision
 import os
 import sys
-import shutil
 import yaml
 import argparse
 from pathlib import Path
@@ -30,8 +29,7 @@ def train_stage(
     cord_task_token: str,
     donut_config: Dict[str, Any],
     project_root: str,
-    is_warmup: bool = False,
-    final_output_dir: str | None = None
+    is_warmup: bool = False
 ):
     """
     Huấn luyện Donut. Luồng chính là fine-tuning tiếng Việt; CORD chỉ là optional/future work.
@@ -64,7 +62,8 @@ def train_stage(
         task_token=task_token,
         max_length=max_length,
         project_root=project_root,
-        is_train=True
+        is_train=True,
+        strict_image=True
     )
     
     val_dataset = None
@@ -75,7 +74,8 @@ def train_stage(
             task_token=task_token,
             max_length=max_length,
             project_root=project_root,
-            is_train=False
+            is_train=False,
+            strict_image=True
         )
         
     # 3. Cấu hình Training Arguments
@@ -85,10 +85,12 @@ def train_stage(
     
     # Giảm epoch nếu là warm-up pretrain để tránh overfitting vào cấu trúc CORD
     epochs = t_cfg["warmup_epochs"] if is_warmup else t_cfg["epochs"]
+    max_steps = t_cfg.get("max_steps", -1)
     
     training_args = Seq2SeqTrainingArguments(
         output_dir=output_dir,
         num_train_epochs=epochs,
+        max_steps=max_steps,
         per_device_train_batch_size=t_cfg["train_batch_size"],
         per_device_eval_batch_size=t_cfg["eval_batch_size"],
         gradient_accumulation_steps=t_cfg["gradient_accumulation_steps"],
@@ -144,11 +146,6 @@ def train_stage(
         trainer.save_model(best_model_dir)
         processor.save_pretrained(best_model_dir)
         print(f"Đã lưu mô hình tốt nhất vào: {best_model_dir}")
-        if final_output_dir:
-            if os.path.exists(final_output_dir):
-                shutil.rmtree(final_output_dir)
-            shutil.copytree(best_model_dir, final_output_dir)
-            print(f"Synced final Donut checkpoint to: {final_output_dir}")
     
     return best_model_dir
 
@@ -164,11 +161,19 @@ def main():
         default="finetune", 
         help="Chế độ chạy: finetune là main run; warmup/full dùng CORD v2 optional/future work"
     )
+    parser.add_argument("--epochs", type=int, default=None, help="Ghi đè số epochs từ config file")
+    parser.add_argument("--max_steps", type=int, default=None, help="Ghi đè số steps huấn luyện tối đa")
     args = parser.parse_args()
     
     donut_cfg = load_yaml(args.donut_config)
     data_cfg = load_yaml(args.data_config)
     
+    if args.epochs is not None:
+        donut_cfg["training"]["epochs"] = args.epochs
+        donut_cfg["training"]["warmup_epochs"] = args.epochs
+    if args.max_steps is not None:
+        donut_cfg["training"]["max_steps"] = args.max_steps
+        
     model_name = donut_cfg["model"]["name"]
     task_token = donut_cfg["model"]["task_token"]
     cord_task_token = donut_cfg["model"]["cord_task_token"]
@@ -208,7 +213,6 @@ def main():
         train_jsonl = data_cfg["processed"]["train_jsonl"]
         val_jsonl = data_cfg["processed"]["val_jsonl"]
         finetune_out_dir = os.path.join(output_dir, "finetune")
-        final_output_dir = os.path.join(output_dir, "final")
         
         train_stage(
             model_name=current_model,
@@ -219,8 +223,7 @@ def main():
             cord_task_token=cord_task_token,
             donut_config=donut_cfg,
             project_root=args.project_root,
-            is_warmup=False,
-            final_output_dir=final_output_dir
+            is_warmup=False
         )
 
 if __name__ == "__main__":

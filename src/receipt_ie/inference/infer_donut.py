@@ -1,6 +1,9 @@
 import torch
 # Đảm bảo import torch đầu tiên trên Windows để tránh DLL collision
 import time
+import json
+import os
+from pathlib import Path
 from typing import Dict, Any
 from PIL import Image
 from transformers import DonutProcessor, VisionEncoderDecoderModel
@@ -34,12 +37,12 @@ class DonutExtractor(BaseExtractor):
     def predict(self, image: Image.Image) -> Dict[str, Any]:
         """
         Thực hiện dự đoán ảnh biên lai.
-        Trả về dictionary kết quả thô, kết quả chuẩn hoá và thời gian trích xuất (latency).
+        Trả về các trường latency theo Unified Schema.
         """
         if self.model is None or self.processor is None:
             raise RuntimeError("Mô hình chưa được nạp. Vui lòng gọi hàm load() trước.")
             
-        start_time = time.time()
+        start_model = time.time()
         
         # 1. Tiền xử lý ảnh qua processor
         pixel_values = self.processor(image, return_tensors="pt").pixel_values
@@ -65,32 +68,28 @@ class DonutExtractor(BaseExtractor):
                 eos_token_id=self.processor.tokenizer.eos_token_id
             )
             
+        model_ms = (time.time() - start_model) * 1000.0
+        
+        start_postprocess = time.time()
         # Giải mã kết quả
         seq = self.processor.batch_decode(outputs, skip_special_tokens=False)[0]
         
-        model_end = time.time()
-
         # 4. Parse chuỗi XML kết quả về dạng dict thô
         raw_pred = donut_sequence_to_target(seq, self.task_token)
         
         # 5. Chuẩn hoá kết quả
-        postprocess_start = time.time()
         norm_pred = postprocess_extracted_fields(raw_pred)
-        postprocess_ms = (time.time() - postprocess_start) * 1000
         
-        latency_ms = (time.time() - start_time) * 1000
-        latency_model_ms = (model_end - start_time) * 1000
+        postprocess_ms = (time.time() - start_postprocess) * 1000.0
         
         return {
+            "latency_ocr_ms": 0.0,
+            "latency_model_ms": model_ms,
+            "latency_postprocess_ms": postprocess_ms,
+            "latency_e2e_ms": model_ms + postprocess_ms,
             "prediction": raw_pred,
             "normalized_prediction": norm_pred,
             "raw_output": seq,
-            "method": "donut",
-            "latency_ocr_ms": 0.0,
-            "latency_model_ms": latency_model_ms,
-            "latency_postprocess_ms": postprocess_ms,
-            "latency_cached_ms": latency_ms,
-            "latency_e2e_ms": latency_ms,
             "status": "ok",
             "error": None
         }
@@ -102,7 +101,7 @@ def parse_args():
     parser.add_argument(
         "--checkpoint",
         type=str,
-        default="checkpoints/donut/receipt_ie/final",
+        default="checkpoints/donut/receipt_ie/finetune/best_model",
         help="Đường dẫn đến checkpoint tốt nhất của Donut"
     )
     parser.add_argument(
@@ -127,9 +126,6 @@ def parse_args():
 
 
 def main():
-    import json
-    import os
-    from pathlib import Path
     from tqdm import tqdm
     
     args = parse_args()
@@ -170,7 +166,6 @@ def main():
                 "latency_ocr_ms": 0.0,
                 "latency_model_ms": 0.0,
                 "latency_postprocess_ms": 0.0,
-                "latency_cached_ms": 0.0,
                 "latency_e2e_ms": 0.0,
                 "status": "ok",
                 "error": None
@@ -189,7 +184,6 @@ def main():
                 prediction_record["latency_ocr_ms"] = round(res["latency_ocr_ms"], 2)
                 prediction_record["latency_model_ms"] = round(res["latency_model_ms"], 2)
                 prediction_record["latency_postprocess_ms"] = round(res["latency_postprocess_ms"], 2)
-                prediction_record["latency_cached_ms"] = round(res["latency_cached_ms"], 2)
                 prediction_record["latency_e2e_ms"] = round(res["latency_e2e_ms"], 2)
                 
             except Exception as e:
