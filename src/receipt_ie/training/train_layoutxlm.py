@@ -2,7 +2,6 @@ import torch
 # Đảm bảo import torch đầu tiên trên Windows để tránh DLL collision
 import os
 import sys
-import shutil
 import yaml
 import argparse
 import numpy as np
@@ -82,16 +81,21 @@ def main():
         default="ocr_cache", 
         help="Chế độ chạy: ocr_cache (thực tế) hoặc oracle_ocr (phân tích cận trên)"
     )
+    parser.add_argument("--epochs", type=int, default=None, help="Ghi đè số epochs từ config file")
+    parser.add_argument("--max_steps", type=int, default=None, help="Ghi đè số steps huấn luyện tối đa")
     args = parser.parse_args()
     
     layout_cfg = load_yaml(args.layout_config)
     data_cfg = load_yaml(args.data_config)
     
+    if args.epochs is not None:
+        layout_cfg["training"]["epochs"] = args.epochs
+    if args.max_steps is not None:
+        layout_cfg["training"]["max_steps"] = args.max_steps
+    
     model_name = layout_cfg["model"]["name"]
     max_length = layout_cfg["model"]["max_length"]
     overlap_threshold = layout_cfg.get("labeling", {}).get("overlap_threshold", 0.5)
-    
-    # 1. Setup Model và Tokenizer
     print(f"\n=== KHỞI TẠO LAYOUTXLM (mode: {args.mode}) ===")
     model, tokenizer = setup_layoutxlm_model_and_tokenizer(model_name=model_name)
     
@@ -129,9 +133,13 @@ def main():
     t_cfg = layout_cfg["training"]
     use_fp16 = t_cfg["fp16"] and torch.cuda.is_available()
     
+    epochs = t_cfg["epochs"]
+    max_steps = t_cfg.get("max_steps", -1)
+    
     training_args = TrainingArguments(
         output_dir=output_dir,
-        num_train_epochs=t_cfg["epochs"],
+        num_train_epochs=epochs,
+        max_steps=max_steps,
         per_device_train_batch_size=t_cfg["train_batch_size"],
         per_device_eval_batch_size=t_cfg["eval_batch_size"],
         gradient_accumulation_steps=t_cfg.get("gradient_accumulation_steps", 1),
@@ -178,11 +186,6 @@ def main():
         trainer.save_model(best_model_dir)
         tokenizer.save_pretrained(best_model_dir)
         print(f"Đã lưu mô hình tốt nhất vào: {best_model_dir}")
-        final_model_dir = os.path.join(base_output_dir, "final")
-        if os.path.exists(final_model_dir):
-            shutil.rmtree(final_model_dir)
-        shutil.copytree(best_model_dir, final_model_dir)
-        print(f"Synced final LayoutXLM checkpoint to: {final_model_dir}")
 
 if __name__ == "__main__":
     main()

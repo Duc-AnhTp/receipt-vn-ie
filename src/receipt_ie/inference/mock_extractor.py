@@ -41,10 +41,9 @@ class MockExtractor(BaseExtractor):
                 "normalized_prediction": norm_pred,
                 "raw_output": seq,
                 "latency_ocr_ms": res.get("latency_ocr_ms", 0.0) * 1.1,
-                "latency_model_ms": res.get("latency_model_ms", res.get("latency_cached_ms", 0.0)) * 1.1,
+                "latency_model_ms": res.get("latency_model_ms", 0.0) * 1.1,
                 "latency_postprocess_ms": res.get("latency_postprocess_ms", 0.0) * 1.1,
-                "latency_cached_ms": res["latency_cached_ms"] * 1.1, # giả lập chậm hơn xíu
-                "latency_e2e_ms": res["latency_e2e_ms"] * 1.1,
+                "latency_e2e_ms": res.get("latency_e2e_ms", 0.0) * 1.1,
                 "status": "ok",
                 "is_mock": True
             }
@@ -70,10 +69,9 @@ class MockExtractor(BaseExtractor):
                 "prediction": pred,
                 "normalized_prediction": norm_pred,
                 "latency_ocr_ms": res.get("latency_ocr_ms", 0.0) * 1.2,
-                "latency_model_ms": res.get("latency_model_ms", res.get("latency_cached_ms", 0.0)) * 1.2,
+                "latency_model_ms": res.get("latency_model_ms", 0.0) * 1.2,
                 "latency_postprocess_ms": res.get("latency_postprocess_ms", 0.0) * 1.2,
-                "latency_cached_ms": res["latency_cached_ms"] * 1.2,
-                "latency_e2e_ms": res["latency_e2e_ms"] * 1.2,
+                "latency_e2e_ms": res.get("latency_e2e_ms", 0.0) * 1.2,
                 "status": "ok",
                 "words": words,
                 "word_labels": word_labels,

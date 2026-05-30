@@ -30,8 +30,8 @@ class TestErrorAnalysis(unittest.TestCase):
         pred.write_text(json.dumps({
             "id": "a",
             "method": "baseline",
-            "prediction": {"store_name": "", "date": "2026-05-22", "total": "100000", "address": "HN"},
-            "normalized_prediction": {"store_name": "", "date": "2026-05-22", "total": "100000", "address": "HN"},
+            "prediction": {"store_name": "", "date": "", "total": "", "address": ""},
+            "normalized_prediction": {"store_name": "", "date": "", "total": "", "address": ""},
             "status": "ok",
         }, ensure_ascii=False) + "\n", encoding="utf-8")
 

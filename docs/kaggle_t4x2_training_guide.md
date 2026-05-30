@@ -1,64 +1,26 @@
 # Kaggle T4x2 Training Guide
 
-Hướng dẫn này mô tả luồng chuẩn để clone code từ GitHub, lấy dữ liệu từ Kaggle Dataset, train/evaluate trên GPU T4x2 và tải artifact về.
+Huong dan nay mo ta luong chuan de clone code tu GitHub, lay du lieu/checkpoint tu Kaggle Dataset, validate, build OCR cache, train/evaluate tren GPU T4x2 va tai artifact ve.
 
-## 1. Chuẩn bị trước khi lên Kaggle
+## 1. Kaggle Setup
 
-### GitHub repo
+GitHub chi chua code, docs, configs, requirements, scripts va tests. Khong push `data/`, `checkpoints/`, `outputs/`, `*.zip`.
 
-Chỉ push code và metadata:
+Tao 2 Kaggle Dataset:
 
-- `src/`
-- `configs/`
-- `docs/`
-- `requirements/`
-- `scripts/`
-- `tests/`
-- `README.md`
-- `pyproject.toml`
+- `receipt-vn-ie-data`: chua `receipt_dataset.zip`, giai nen ra cau truc `data/...`.
+- `receipt-vn-ie-checkpoints`: optional, dung cho demo/evaluate/resume. Layout chuan:
+  - `donut/receipt_ie/finetune/best_model`
+  - `layoutxlm/receipt_ie/ocr_cache/best_model`
+  - hoac co prefix `checkpoints/...` tuong ung.
 
-Không push:
-
-- `data/`
-- `checkpoints/`
-- `outputs/`
-- `*.zip`
-
-`.gitignore` hiện đã loại các thư mục/file lớn này.
-
-### Kaggle Dataset
-
-Tạo 2 Kaggle Dataset riêng:
-
-1. `receipt-vn-ie-data`
-   - Chứa `receipt_dataset.zip`
-   - Zip sau khi giải nén phải tạo được cấu trúc `data/...`, ví dụ:
-     - `data/processed/train.jsonl`
-     - `data/processed/val.jsonl`
-     - `data/processed/test.jsonl`
-     - `data/interim/ocr_cache/`
-     - `data/raw/...`
-
-2. `receipt-vn-ie-checkpoints`
-   - Optional, dùng để demo/evaluate/resume.
-   - Layout được hỗ trợ:
-     - `donut/receipt_ie/final`
-     - `layoutxlm/receipt_ie/final`
-   - Hoặc:
-     - `checkpoints/donut/receipt_ie/final`
-     - `checkpoints/layoutxlm/receipt_ie/final`
-
-## 2. Tạo Kaggle Notebook
-
-Trong Kaggle Notebook:
+Kaggle Notebook:
 
 - Accelerator: `GPU T4 x2`
-- Internet: bật nếu cần `pip install`, tải model pretrained hoặc dependency.
-- Add Data:
-  - `receipt-vn-ie-data`
-  - `receipt-vn-ie-checkpoints` nếu có checkpoint sẵn
+- Internet: bat neu can install dependencies/model pretrained
+- Add Data: `receipt-vn-ie-data`, optional `receipt-vn-ie-checkpoints`
 
-Cell bootstrap:
+Bootstrap:
 
 ```bash
 git clone <github-url> /kaggle/working/receipt-vn-ie
@@ -66,196 +28,150 @@ cd /kaggle/working/receipt-vn-ie
 bash scripts/kaggle_bootstrap.sh
 ```
 
-Bootstrap sẽ:
-
-- cài package project
-- cài app/OCR dependencies
-- thử cài `paddlepaddle-gpu`
-- giải nén `receipt_dataset.zip`
-- copy checkpoint về `checkpoints/.../final`
-- in thông tin CUDA/GPU
-
-Nếu `paddlepaddle-gpu` không tương thích môi trường Kaggle hiện tại, ưu tiên dùng OCR cache đã build sẵn trong dataset. Chỉ build lại OCR khi PaddleOCR hoạt động ổn.
-
-## 3. Kiểm tra dữ liệu
+Kiem tra GPU:
 
 ```bash
-cd /kaggle/working/receipt-vn-ie
+python - <<'PY'
+import torch
+print("CUDA:", torch.cuda.is_available())
+print("GPU count:", torch.cuda.device_count())
+if torch.cuda.is_available():
+    for i in range(torch.cuda.device_count()):
+        print(i, torch.cuda.get_device_name(i))
+PY
+```
+
+## 2. Data + OCR
+
+Validate:
+
+```bash
 bash scripts/01_validate_data.sh
 ```
 
-Kiểm tra các file:
+Dieu kien pass: `total_errors = 0`, date dung `YYYY-MM-DD`, total chi gom digits, image/box khong loi nghiem trong.
 
-- `outputs/metrics/train_validation_report.json`
-- `outputs/metrics/val_validation_report.json`
-- `outputs/metrics/test_validation_report.json`
-- `outputs/metrics/field_missing_rate.csv`
-
-Điều kiện pass:
-
-- `total_errors = 0`
-- `date` đúng `YYYY-MM-DD`
-- `total` chỉ gồm chữ số
-- `image_path` tồn tại
-- `field_boxes` không sai tọa độ nghiêm trọng
-
-## 4. Kiểm tra hoặc build OCR cache
-
-Nếu dataset đã có `data/interim/ocr_cache`, kiểm tra chất lượng OCR mẫu:
+OCR preprocess ablation:
 
 ```bash
-python -m receipt_ie.metrics.ocr_quality \
-  --jsonl_path data/processed/train.jsonl \
-  --ocr_cache_dir data/interim/ocr_cache \
-  --output_csv outputs/ocr/ocr_quality_sample.csv \
-  --limit 30
+bash scripts/02b_ablate_ocr_preprocess.sh
 ```
 
-Nếu cần build lại OCR cache:
+Chon profile tot nhat theo rough OCR quality + latency. Mac dinh khuyen nghi:
 
 ```bash
-bash scripts/02_build_ocr_cache.sh
+export PREPROCESS_PROFILE=resize
 ```
 
-Lưu ý: OCR cache là trung tâm của Baseline và LayoutXLM. Nếu OCR cache kém, train LayoutXLM sẽ học trên input nhiễu.
-
-## 5. Train LayoutXLM trước
-
-LayoutXLM là model chính cho `store_name` và `address`.
+Build OCR cache full tu processed split:
 
 ```bash
-bash scripts/03_train_layoutxlm.sh
+PREPROCESS_PROFILE=resize bash scripts/02_build_ocr_cache.sh
 ```
 
-Kaggle T4x2 multi-GPU:
+Smoke OCR cache:
 
 ```bash
-NUM_GPUS=2 bash scripts/03_train_layoutxlm.sh
+python -m receipt_ie.ocr.build_ocr_cache \
+  --data_files data/processed/train.jsonl \
+  --limit 20 \
+  --preprocess_profile resize \
+  --overwrite
 ```
 
-Mặc định:
+## 3. LayoutXLM First
 
-- mode: `ocr_cache`
-- config: `configs/layoutxlm.yaml`
-- output: `checkpoints/layoutxlm/receipt_ie/ocr_cache/best_model`
-- final checkpoint: `checkpoints/layoutxlm/receipt_ie/final` (auto-synced by the training script)
-
-Sau khi train xong, copy checkpoint tốt nhất về đường dẫn chuẩn để evaluate/demo:
+Visualize BIO labels truoc khi train:
 
 ```bash
-mkdir -p checkpoints/layoutxlm/receipt_ie/final
-cp -R checkpoints/layoutxlm/receipt_ie/ocr_cache/best_model/. checkpoints/layoutxlm/receipt_ie/final/
+python -m receipt_ie.visualization.visualize_layoutxlm_labels \
+  --jsonl data/processed/train.jsonl \
+  --limit 50 \
+  --output_dir outputs/debug/layoutxlm_labels \
+  --overlap_threshold 0.4
 ```
 
-Manual copy is only needed for old checkpoints. New training runs sync this path automatically on rank 0.
-
-Nếu muốn phân tích OCR upper bound:
+Train LayoutXLM tren T4x2:
 
 ```bash
-LAYOUTXLM_MODE=oracle_ocr bash scripts/03_train_layoutxlm.sh
+USE_ACCELERATE=1 NUM_PROCESSES=2 bash scripts/03_train_layoutxlm.sh
 ```
 
-## 6. Train Donut sau
-
-Donut dùng để so sánh OCR-free. Luồng chính không dùng CORD.
+Fallback 1 GPU/no accelerate:
 
 ```bash
-bash scripts/04_train_donut.sh
+USE_ACCELERATE=0 bash scripts/03_train_layoutxlm.sh
 ```
 
-Kaggle T4x2 multi-GPU:
+Checkpoint chuan cho app/evaluate:
 
-```bash
-NUM_GPUS=2 bash scripts/04_train_donut.sh
+```text
+checkpoints/layoutxlm/receipt_ie/ocr_cache/best_model
 ```
 
-Script này chạy:
+## 4. Evaluate + Error Analysis
 
-```bash
-python -m receipt_ie.training.train_donut --mode finetune
-```
-
-Sau khi train xong, copy checkpoint tốt nhất về đường dẫn chuẩn:
-
-```bash
-mkdir -p checkpoints/donut/receipt_ie/final
-cp -R checkpoints/donut/receipt_ie/finetune/best_model/. checkpoints/donut/receipt_ie/final/
-```
-
-Manual copy is only needed for old checkpoints. New training runs sync this path automatically on rank 0.
-
-## 7. Evaluate
-
-Evaluate Baseline + LayoutXLM trước, bỏ qua Donut nếu chưa train:
+Evaluate Baseline + LayoutXLM truoc, bo Donut neu chua train:
 
 ```bash
 RUN_DONUT=0 bash scripts/05_evaluate_all.sh
 ```
 
-Evaluate đủ 3 model khi đã có checkpoint Donut:
+Evaluate du 3 model:
 
 ```bash
 RUN_BASELINE=1 RUN_LAYOUTXLM=1 RUN_DONUT=1 bash scripts/05_evaluate_all.sh
 ```
 
-Có thể giới hạn số mẫu để smoke test:
+`scripts/05_evaluate_all.sh` se xuat:
 
-```bash
-LIMIT=3 RUN_DONUT=0 bash scripts/05_evaluate_all.sh
-```
-
-Output chính:
-
-- `outputs/predictions/baseline_test.jsonl`
-- `outputs/predictions/layoutxlm_test.jsonl`
-- `outputs/predictions/donut_test.jsonl`
 - `outputs/metrics/main_metrics.json`
 - `outputs/metrics/latency_by_method.json`
-- `outputs/metrics/*_metrics.json`
-
-## 8. Error Analysis
-
-```bash
-bash scripts/06_error_analysis.sh
-```
-
-Output:
-
 - `outputs/error_analysis/error_by_field.csv`
 
-Các nhóm lỗi:
+## 5. Donut After Pipeline Is Clean
 
-- `EMPTY_PRED`
-- `FORMAT_ERROR`
-- `OCR_MISS`
-- `OCR_WRONG`
-- `POSTPROCESS_BAD`
-- `MODEL_BAD`
-- `LABEL_BAD`
+Train Donut sau khi validate/OCR/LayoutXLM da on:
 
-Donut là OCR-free nên không được gán `OCR_MISS` hoặc `OCR_WRONG`.
+```bash
+USE_ACCELERATE=1 NUM_PROCESSES=2 bash scripts/04_train_donut.sh
+```
 
-## 9. Artifact cần tải về
+Fallback:
 
-Tải các thư mục/file sau từ Kaggle Output:
+```bash
+USE_ACCELERATE=0 bash scripts/04_train_donut.sh
+```
+
+Checkpoint chuan:
+
+```text
+checkpoints/donut/receipt_ie/finetune/best_model
+```
+
+## 6. Smoke Test
+
+Chay smoke tren Kaggle:
+
+```bash
+bash scripts/07_smoke_kaggle.sh
+```
+
+Thu tu go/no-go truoc train full:
+
+1. `pytest` pass.
+2. Validate train/val/test pass.
+3. OCR cache build full pass.
+4. OCR quality report khong qua te.
+5. BIO visualization nhin hop ly.
+6. Checkpoint path dung `best_model`.
+7. Accelerate T4x2 co fallback ro rang.
+
+## 7. Artifacts Can Tai Ve
 
 - `outputs/metrics/`
 - `outputs/error_analysis/`
 - `outputs/ocr/ocr_quality_sample.csv`
 - `outputs/predictions/`
-- `checkpoints/layoutxlm/receipt_ie/final/`
-- `checkpoints/donut/receipt_ie/final/`
-
-Nếu checkpoint lớn, nên tạo Kaggle Dataset version mới thay vì tải thủ công.
-
-## 10. Thứ tự khuyến nghị
-
-1. Bootstrap
-2. Validate data
-3. Kiểm tra OCR quality
-4. Train LayoutXLM
-5. Evaluate Baseline + LayoutXLM
-6. Error analysis
-7. Train Donut
-8. Evaluate đủ 3 model
-9. Tải metrics/checkpoints/artifacts
+- `checkpoints/layoutxlm/receipt_ie/ocr_cache/best_model/`
+- `checkpoints/donut/receipt_ie/finetune/best_model/`

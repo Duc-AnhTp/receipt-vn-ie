@@ -1,92 +1,142 @@
-import argparse
-import csv
 import json
+import argparse
+import os
 import re
 from pathlib import Path
-from typing import Any, Dict, List
+import pandas as pd
+from rapidfuzz.fuzz import partial_ratio
 
-from rapidfuzz import fuzz
+from receipt_ie.postprocess.total_extractor import strip_accents
 
-from receipt_ie.data.schemas import FIELDS
-
-
-def read_jsonl(path: str) -> List[Dict[str, Any]]:
-    records = []
-    with open(path, "r", encoding="utf-8") as f:
-        for line in f:
-            if line.strip():
-                records.append(json.loads(line))
-    return records
-
-
-def norm(value: str) -> str:
-    value = str(value or "").lower()
-    value = re.sub(r"\s+", " ", value)
-    return value.strip()
-
-
-def load_ocr_text(sample: Dict[str, Any], ocr_cache_dir: str) -> str:
-    cache_path = sample.get("ocr_cache_path") or ""
-    candidates = []
-    if cache_path:
-        candidates.append(Path(cache_path))
-        candidates.append(Path(ocr_cache_dir) / Path(cache_path).name)
-    for path in candidates:
-        if path.exists():
-            with open(path, "r", encoding="utf-8") as f:
-                data = json.load(f)
-            return " ".join(w.get("text", "") for w in data.get("words", []) if w.get("text"))
-    return ""
-
-
-def rough_contains(gold: str, ocr_text: str) -> bool:
-    gold_n = norm(gold)
-    ocr_n = norm(ocr_text)
-    if not gold_n:
-        return True
-    if gold_n in ocr_n:
-        return True
-    return fuzz.partial_ratio(gold_n, ocr_n) >= 80
-
-
-def parse_args():
-    parser = argparse.ArgumentParser(description="Create a rough OCR quality sample report.")
-    parser.add_argument("--jsonl_path", required=True, help="Dataset JSONL path")
-    parser.add_argument("--ocr_cache_dir", default="data/interim/ocr_cache", help="OCR cache directory")
-    parser.add_argument("--output_csv", required=True, help="Output CSV path")
-    parser.add_argument("--limit", type=int, default=30, help="Maximum number of samples")
-    return parser.parse_args()
-
+def normalize_for_compare(s: str) -> str:
+    s = strip_accents(s or "").lower()
+    return re.sub(r"[^\w\s]", "", s).strip()
 
 def main():
-    args = parse_args()
-    samples = read_jsonl(args.jsonl_path)[: args.limit]
-    rows = []
+    parser = argparse.ArgumentParser(description="Đánh giá chất lượng OCR thô so với Ground Truth.")
+    parser.add_argument("--jsonl", required=True, help="Đường dẫn file JSONL dataset (ví dụ: val.jsonl)")
+    parser.add_argument("--ocr_cache_dir", default="data/interim/ocr_cache", help="Thư mục chứa OCR cache JSON")
+    parser.add_argument("--output_csv", default="outputs/ocr_quality_sample.csv", help="Đường dẫn lưu file CSV báo cáo")
+    parser.add_argument("--limit", type=int, default=None, help="Giới hạn số lượng mẫu đánh giá")
+    args = parser.parse_args()
+    
+    jsonl_path = Path(args.jsonl)
+    if not jsonl_path.exists():
+        print(f"Không tìm thấy file dataset tại {jsonl_path}")
+        return
+        
+    ocr_cache_dir = Path(args.ocr_cache_dir)
+    
+    samples = []
+    with open(jsonl_path, "r", encoding="utf-8") as f:
+        for line in f:
+            if line.strip():
+                samples.append(json.loads(line))
+                
+    if args.limit is not None:
+        samples = samples[:args.limit]
+        
+    fields = ["store_name", "date", "total", "address"]
+    quality_records = []
+    
+    print(f"Bắt đầu đánh giá chất lượng OCR trên {len(samples)} mẫu từ {jsonl_path.name}...")
+    
     for sample in samples:
-        ocr_text = load_ocr_text(sample, args.ocr_cache_dir)
-        target = sample.get("target", {})
-        for field in FIELDS:
-            gold = target.get(field, "")
-            rows.append({
-                "id": sample.get("id", ""),
-                "field": field,
-                "gold_text": gold,
-                "ocr_text_joined": ocr_text,
-                "ocr_contains_gold_rough": rough_contains(gold, ocr_text),
-                "note": "",
-            })
-
+        sample_id = sample.get("id")
+        image_path = sample.get("image_path")
+        target = sample.get("target") or {}
+        
+        # Tìm file ocr cache
+        cache_path = sample.get("ocr_cache_path")
+        candidates = []
+        if cache_path:
+            candidates.append(Path(cache_path))
+            candidates.append(ocr_cache_dir / Path(cache_path).name)
+        candidates.append(ocr_cache_dir / f"{sample_id}.json")
+        
+        ocr_data = None
+        for path in candidates:
+            if path.exists():
+                try:
+                    with open(path, "r", encoding="utf-8") as f:
+                        ocr_data = json.load(f)
+                    break
+                except Exception:
+                    pass
+                    
+        if not ocr_data:
+            # Không có ocr cache cho sample này, gán độ phủ = 0
+            record = {
+                "id": sample_id,
+                "image_path": image_path,
+                "has_ocr_cache": False,
+                "store_name_match": 0.0,
+                "date_match": 0.0,
+                "total_match": 0.0,
+                "address_match": 0.0,
+                "avg_match": 0.0
+            }
+            quality_records.append(record)
+            continue
+            
+        # Ghép text OCR phẳng
+        ocr_words = ocr_data.get("words", [])
+        ocr_text = " ".join([w.get("text", "") for w in ocr_words if w.get("text")]).strip()
+        ocr_text_clean = normalize_for_compare(ocr_text)
+        
+        scores = {}
+        for f in fields:
+            gold_val = target.get(f, "")
+            gold_clean = normalize_for_compare(gold_val)
+            
+            if not gold_clean:
+                # Nếu Ground Truth trống, coi như OCR khớp hoàn hảo 100% trường đó
+                scores[f] = 1.0
+            else:
+                if not ocr_text_clean:
+                    scores[f] = 0.0
+                else:
+                    # Tính tỉ lệ trùng khớp chuỗi con mờ (partial fuzzy match ratio)
+                    # Trả về giá trị trong dải [0.0, 1.0]
+                    scores[f] = partial_ratio(gold_clean, ocr_text_clean) / 100.0
+                    
+        avg_score = sum(scores.values()) / len(fields)
+        
+        record = {
+            "id": sample_id,
+            "image_path": image_path,
+            "has_ocr_cache": True,
+            "store_name_match": round(scores["store_name"], 4),
+            "date_match": round(scores["date"], 4),
+            "total_match": round(scores["total"], 4),
+            "address_match": round(scores["address"], 4),
+            "avg_match": round(avg_score, 4)
+        }
+        quality_records.append(record)
+        
+    df = pd.DataFrame(quality_records)
     out_path = Path(args.output_csv)
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    with open(out_path, "w", encoding="utf-8", newline="") as f:
-        writer = csv.DictWriter(
-            f,
-            fieldnames=["id", "field", "gold_text", "ocr_text_joined", "ocr_contains_gold_rough", "note"],
-        )
-        writer.writeheader()
-        writer.writerows(rows)
-    print(f"Saved OCR quality sample with {len(rows)} rows to {out_path}")
-
+    df.to_csv(out_path, index=False, encoding="utf-8")
+    
+    # Tính toán kết quả trung bình tổng thể
+    total_samples = len(df)
+    cached_samples = df["has_ocr_cache"].sum()
+    
+    print(f"\n=== BÁO CÁO CHẤT LƯỢNG OCR TỔNG THỂ ===")
+    print(f"Tổng số mẫu đánh giá: {total_samples}")
+    print(f"Số mẫu có OCR cache: {cached_samples} ({cached_samples/total_samples*100:.2f}%)")
+    
+    if cached_samples > 0:
+        df_cached = df[df["has_ocr_cache"]]
+        print(f"Điểm rough match trung bình từng trường:")
+        print(f"  - store_name: {df_cached['store_name_match'].mean() * 100:.2f}%")
+        print(f"  - date:       {df_cached['date_match'].mean() * 100:.2f}%")
+        print(f"  - total:      {df_cached['total_match'].mean() * 100:.2f}%")
+        print(f"  - address:    {df_cached['address_match'].mean() * 100:.2f}%")
+        print(f"  - Trung bình:  {df_cached['avg_match'].mean() * 100:.2f}%")
+        
+    print(f"\nBáo cáo chi tiết chất lượng OCR lưu tại: {out_path}")
 
 if __name__ == "__main__":
     main()

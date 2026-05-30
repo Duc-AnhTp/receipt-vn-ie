@@ -1,10 +1,13 @@
 # Cấu hình tiền xử lý ảnh và tăng cường dữ liệu (Augmentation)
 image:
+  default_profile: "resize"
   donut:
     max_size: [1280, 960]
     keep_aspect_ratio: true
   ocr:
-    max_side: 2048
+    profile: "resize"
+    max_long_side: 1600
+    max_side: 1600
     rectify: false
     binarize: false
     denoise: true

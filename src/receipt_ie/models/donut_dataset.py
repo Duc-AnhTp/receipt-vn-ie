@@ -22,13 +22,15 @@ class DonutDataset(Dataset):
         task_token: str = "<s_receipt_ie>",
         max_length: int = 192,
         project_root: str = ".",
-        is_train: bool = False
+        is_train: bool = False,
+        strict_image: bool = True
     ):
         self.processor = processor
         self.task_token = task_token
         self.max_length = max_length
         self.project_root = Path(project_root)
         self.is_train = is_train
+        self.strict_image = strict_image
         
         if self.is_train:
             self.transform = get_donut_transforms()
@@ -62,6 +64,8 @@ class DonutDataset(Dataset):
         
         # Fallback nếu ảnh không tồn tại
         if not img_path.exists():
+            if self.strict_image:
+                raise FileNotFoundError(img_path)
             # Tạo một ảnh mock trắng để tránh crash khi training
             image = Image.new("RGB", (self.processor.image_processor.size["width"], 
                                       self.processor.image_processor.size["height"]), color="white")
@@ -71,6 +75,8 @@ class DonutDataset(Dataset):
                 if self.is_train:
                     image = apply_transforms(image, self.transform)
             except Exception as e:
+                if self.strict_image:
+                    raise RuntimeError(f"Could not load image {img_path}: {e}") from e
                 print(f"Lỗi đọc ảnh {img_path}: {e}")
                 image = Image.new("RGB", (self.processor.image_processor.size["width"], 
                                           self.processor.image_processor.size["height"]), color="white")

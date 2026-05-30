@@ -1,11 +1,16 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-NUM_GPUS="${NUM_GPUS:-1}"
-DONUT_MODE="${DONUT_MODE:-finetune}"
+USE_ACCELERATE="${USE_ACCELERATE:-1}"
+NUM_PROCESSES="${NUM_PROCESSES:-2}"
 
-if [[ "$NUM_GPUS" -gt 1 ]]; then
-  torchrun --standalone --nproc_per_node="$NUM_GPUS" -m receipt_ie.training.train_donut --mode "$DONUT_MODE" "$@"
+echo "=== Bắt đầu huấn luyện Donut ==="
+
+if [[ "$USE_ACCELERATE" == "1" ]]; then
+  accelerate launch --multi_gpu --num_processes "$NUM_PROCESSES" \
+    -m receipt_ie.training.train_donut \
+    --mode finetune "$@"
 else
-  python -m receipt_ie.training.train_donut --mode "$DONUT_MODE" "$@"
+  python -m receipt_ie.training.train_donut \
+    --mode finetune "$@"
 fi

@@ -45,35 +45,42 @@ def normalize_date(s: str) -> str:
     Chuẩn hóa các định dạng ngày tháng tiếng Việt về định dạng chuẩn YYYY-MM-DD.
     Nếu không parse được hoặc không khớp mẫu, trả về chuỗi rỗng.
     """
-    raw = normalize_vietnamese_text(s).lower()
-    keyword_re = re.compile(r"(ngày|ngay|date|time|lúc|luc|giờ|gio|bán hàng|ban hang)")
-
-    # Các mẫu regex ngày tháng thông dụng. Hỗ trợ /, -, . và năm 2 chữ số.
+    s = normalize_vietnamese_text(s).lower()
+    
+    # Loại bỏ các từ khóa ngày tháng giờ giấc
+    s = re.sub(r"(ngày|ngay|date|time|lúc|luc|giờ|gio)", " ", s)
+    s = re.sub(r"\s+", " ", s).strip()
+    
+    # Các mẫu regex ngày tháng thông dụng (sắp xếp từ cụ thể/dài nhất đến ngắn nhất)
+    # Hỗ trợ dấu chấm (.) làm dấu phân cách
     patterns = [
-        (r"\b(\d{4})[./-](\d{1,2})[./-](\d{1,2})\b", "ymd"),
-        (r"\b(\d{1,2})[./-](\d{1,2})[./-](\d{4})\b", "dmy"),
-        (r"\b(\d{1,2})[./-](\d{1,2})[./-](\d{2})\b", "dmy"),
+        r"\b(\d{4})[/\-.](\d{1,2})[/\-.](\d{1,2})\b",  # yyyy/mm/dd hoặc yyyy-mm-dd hoặc yyyy.mm.dd
+        r"\b(\d{1,2})[/\-.](\d{1,2})[/\-.](\d{4})\b",  # dd/mm/yyyy hoặc dd-mm-yyyy hoặc dd.mm.yyyy
+        r"\b(\d{1,2})[/\-.](\d{1,2})[/\-.](\d{2})\b",    # dd/mm/yy hoặc dd-mm-yy hoặc dd.mm.yy
     ]
-
-    candidates = []
-    for pattern, order in patterns:
-        for match in re.finditer(pattern, raw):
-            parts = match.groups()
-            candidates.append((0 if keyword_re.search(raw[max(0, match.start() - 24): match.end() + 24]) else 1, match.start(), parts, order))
-
-    for _, _, parts, order in sorted(candidates, key=lambda x: (x[0], x[1])):
-        try:
-            if order == "ymd":
-                year, month, day = map(int, parts)
-            else:
-                day, month, year = map(int, parts)
-                if year < 100:
-                    year += 2000
-
-            return datetime(year, month, day).strftime("%Y-%m-%d")
-        except ValueError:
+    
+    for pattern in patterns:
+        match = re.search(pattern, s)
+        if not match:
             continue
-
+        
+        parts = match.groups()
+        try:
+            if len(parts[0]) == 4: # yyyy/mm/dd
+                year, month, day = map(int, parts)
+            else: # dd/mm/yyyy hoặc dd/mm/yy
+                day, month, year = map(int, parts)
+                if year < 100: # yy -> yyyy
+                    year += 2000
+            
+            # Giới hạn dải năm giao dịch hợp lệ
+            if 2010 <= year <= 2030:
+                # Trả về chuỗi ngày chuẩn hóa nếu ngày tháng năm hợp lệ
+                return datetime(year, month, day).strftime("%Y-%m-%d")
+        except ValueError:
+            # Nếu giá trị ngày tháng không thực tế (ví dụ ngày 32, tháng 13)
+            continue
+            
     return ""
 
 def normalize_money(s: str) -> str:

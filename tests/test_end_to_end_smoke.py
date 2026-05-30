@@ -26,15 +26,13 @@ class TestEndToEndSmoke(unittest.TestCase):
         cls.mock_image_path.unlink(missing_ok=True)
 
     def setUp(self):
-        temp_root = Path("C:/tmp")
-        temp_root.mkdir(parents=True, exist_ok=True)
-        self.temp_project = tempfile.TemporaryDirectory(dir=temp_root)
+        self.temp_project = tempfile.TemporaryDirectory()
 
-        # Patch các hàm OCR trong infer_baseline để chạy hoàn toàn offline
+        # Patch các hàm OCR trong cache_manager để chạy hoàn toàn offline
         self.patch_load_paddle = patch("receipt_ie.inference.infer_baseline.load_paddle_detector")
         self.patch_load_vietocr = patch("receipt_ie.inference.infer_baseline.load_vietocr_model")
-        self.patch_detect = patch("receipt_ie.inference.infer_baseline.detect_text_regions")
-        self.patch_recognize = patch("receipt_ie.inference.infer_baseline.recognize_regions")
+        self.patch_detect = patch("receipt_ie.ocr.cache_manager.detect_text_regions")
+        self.patch_recognize = patch("receipt_ie.ocr.cache_manager.recognize_regions")
 
         self.mock_load_paddle = self.patch_load_paddle.start()
         self.mock_load_vietocr = self.patch_load_vietocr.start()
@@ -77,11 +75,13 @@ class TestEndToEndSmoke(unittest.TestCase):
         # Xác nhận cấu trúc trả về
         self.assertIn("prediction", res)
         self.assertIn("normalized_prediction", res)
-        self.assertIn("latency_cached_ms", res)
+        self.assertIn("latency_ocr_ms", res)
+        self.assertIn("latency_model_ms", res)
+        self.assertIn("latency_postprocess_ms", res)
         self.assertIn("latency_e2e_ms", res)
         self.assertIn("status", res)
-        self.assertIn("words", res)
         self.assertEqual(res["status"], "ok")
+
 
         # Kiểm tra nội dung trích xuất
         norm_pred = res["normalized_prediction"]
