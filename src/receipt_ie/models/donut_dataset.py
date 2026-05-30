@@ -62,9 +62,19 @@ class DonutDataset(Dataset):
         img_rel_path = sample["image_path"]
         img_path = self.project_root / img_rel_path
         
-        # Fallback nếu ảnh không tồn tại
+        # Fallback: nếu ảnh raw không tồn tại, tìm ảnh đã tiền xử lý (resize)
         if not img_path.exists():
-            if self.strict_image:
+            img_stem = Path(img_rel_path).stem  # Ví dụ: mcocr_public_145013rpxpi hoặc img_399
+            # Tìm trong thư mục preprocessed_images/resize với các pattern có thể có
+            resize_dir = self.project_root / "data" / "interim" / "preprocessed_images" / "resize"
+            found = False
+            if resize_dir.exists():
+                for candidate in resize_dir.iterdir():
+                    if img_stem in candidate.stem:
+                        img_path = candidate
+                        found = True
+                        break
+            if not found and self.strict_image:
                 raise FileNotFoundError(img_path)
             # Tạo một ảnh mock trắng để tránh crash khi training
             image = Image.new("RGB", (self.processor.image_processor.size["width"], 
