@@ -74,52 +74,52 @@ Tùy thuộc vào việc bạn chọn nạp code qua **GitHub** (Cách 1) hay **
 #### A. Nếu dùng Cách 1 (GitHub)
 *   **Nếu Repo của bạn là Public:**
     ```bash
-    git clone https://github.com/Duc-AnhTp/receipt-vn-ie.git /kaggle/working/receipt-vn-ie
-    cd /kaggle/working/receipt-vn-ie
+    !git clone https://github.com/Duc-AnhTp/receipt-vn-ie.git /kaggle/working/receipt-vn-ie
+    %cd /kaggle/working/receipt-vn-ie
     ```
 *   **Nếu Repo của bạn là Private (Bảo mật):**
     Hãy tạo một **Personal Access Token (PAT)** trên GitHub (vào *Settings -> Developer settings -> Personal access tokens -> Tokens (classic)* -> tích chọn quyền `repo` -> nhấn *Generate token*). Sau đó chạy clone bằng link chứa token trên Kaggle Notebook:
     ```bash
-    git clone https://<MÃ_TOKEN_CỦA_BẠN>@github.com/Duc-AnhTp/receipt-vn-ie.git /kaggle/working/receipt-vn-ie
-    cd /kaggle/working/receipt-vn-ie
+    !git clone https://<MÃ_TOKEN_CỦA_BẠN>@github.com/Duc-AnhTp/receipt-vn-ie.git /kaggle/working/receipt-vn-ie
+    %cd /kaggle/working/receipt-vn-ie
     ```
 
 *   **Cách PULL cập nhật code cực nhanh khi sửa code ở local:**
     Mỗi khi bạn sửa code ở local, bạn chỉ cần push lên GitHub (`git push`). Sau đó, trên Kaggle Notebook bạn chỉ cần chạy cell này để cập nhật code mới trong 1 giây mà không cần upload lại file ZIP:
     ```bash
-    cd /kaggle/working/receipt-vn-ie
-    git pull
+    %cd /kaggle/working/receipt-vn-ie
+    !git pull
     ```
 
 #### B. Nếu dùng Cách 2 (File Zip)
 ```bash
 # Tạo thư mục làm việc chính
-mkdir -p /kaggle/working/receipt-vn-ie
-cd /kaggle/working/receipt-vn-ie
+!mkdir -p /kaggle/working/receipt-vn-ie
+%cd /kaggle/working/receipt-vn-ie
 
 # Giải nén mã nguồn từ dataset
-unzip -q /kaggle/input/receipt-vn-ie-new-data/code.zip -d .
+!unzip -q /kaggle/input/receipt-vn-ie-new-data/code.zip -d .
 ```
 
 #### Giải nén dữ liệu (Dành cho cả 2 cách)
 ```bash
 # Giải nén dữ liệu từ dataset
-mkdir -p data
-unzip -q /kaggle/input/receipt-vn-ie-new-data/data.zip -d data/
+!mkdir -p data
+!unzip -q /kaggle/input/receipt-vn-ie-new-data/data.zip -d data/
 ```
 
 ### Bước 3.2: Cài đặt các thư viện cần thiết
 ```bash
 # Cài đặt gói receipt_ie ở chế độ editable và các thư viện bổ sung
-pip install -e .
-pip install albumentations --upgrade
+!pip install -e .
+!pip install albumentations --upgrade
 ```
 
 ### Bước 3.3: Huấn luyện LayoutXLM trên T4x2 (Sử dụng Accelerate Distributed Training)
 Để chạy mô hình song song trên cả 2 GPU T4, chúng ta sử dụng thư viện `accelerate` của Hugging Face đã được tích hợp sẵn:
 ```bash
 # Chạy huấn luyện LayoutXLM DDP (Distributed Data Parallel) trên 2 GPU
-accelerate launch --multi_gpu --num_processes 2 \
+!accelerate launch --multi_gpu --num_processes 2 \
   -m receipt_ie.training.train_layoutxlm \
   --mode ocr_cache
 ```
@@ -129,7 +129,7 @@ accelerate launch --multi_gpu --num_processes 2 \
 Sau khi LayoutXLM hoàn tất, bạn có thể chạy tiếp huấn luyện Donut:
 ```bash
 # Chạy huấn luyện Donut trên 2 GPU
-accelerate launch --multi_gpu --num_processes 2 \
+!accelerate launch --multi_gpu --num_processes 2 \
   -m receipt_ie.training.train_donut \
   --mode finetune
 ```
@@ -142,9 +142,9 @@ accelerate launch --multi_gpu --num_processes 2 \
 Sau khi quá trình huấn luyện hoàn tất, bạn cần nén các checkpoint tốt nhất lại để tải về máy local:
 ```bash
 # Nén checkpoint LayoutXLM
-zip -r layoutxlm_best.zip checkpoints/layoutxlm/receipt_ie/ocr_cache/best_model
+!zip -r layoutxlm_best.zip checkpoints/layoutxlm/receipt_ie/ocr_cache/best_model
 
 # Nén checkpoint Donut
-zip -r donut_best.zip checkpoints/donut/receipt_ie/finetune/best_model
+!zip -r donut_best.zip checkpoints/donut/receipt_ie/finetune/best_model
 ```
 Nhấp vào tab **Files** ở bảng bên trái của Kaggle Notebook, tìm file `layoutxlm_best.zip` và `donut_best.zip` nằm dưới thư mục `/kaggle/working/`, chọn **Download** để tải về máy của bạn!
