@@ -88,3 +88,6 @@ tmp/
 *.sln
 *.swp
 *.swo
+
+# Kaggle Training Guide (local only)
+KAGGLE_T4x2_TRAINING_GUIDE.md
