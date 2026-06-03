@@ -162,8 +162,8 @@ def main():
     out_path.parent.mkdir(parents=True, exist_ok=True)
     df_details.to_csv(out_path, index=False, encoding="utf-8")
     
-    # In ra bảng thống kê tổng kết
-    print("\n=== THỐNG KÊ PHÂN LOẠI LỖI THEO FIELD ===")
+    # Print summary table
+    print("\n=== ERROR CLASSIFICATION BY FIELD SUMMARY ===")
     summary_data = []
     for f in fields:
         row = {"Field": f}
@@ -175,8 +175,8 @@ def main():
     
     summary_path = out_path.parent / "error_summary.csv"
     df_summary.to_csv(summary_path, index=False, encoding="utf-8")
-    print(f"\nBáo cáo chi tiết các mẫu lỗi lưu tại: {out_path}")
-    print(f"Báo cáo thống kê tổng hợp lưu tại: {summary_path}")
+    print(f"\nDetailed error samples saved to: {out_path}")
+    print(f"Summary error stats saved to: {summary_path}")
 
 if __name__ == "__main__":
     main()

@@ -187,5 +187,5 @@ if __name__ == "__main__":
     with open(out_path, "w", encoding="utf-8") as f:
         json.dump(results, f, ensure_ascii=False, indent=2)
         
-    print(f"Đã lưu kết quả đánh giá vào {out_path}")
+    print(f"Saved evaluation metrics to {out_path}")
     print(json.dumps(results, indent=2))
