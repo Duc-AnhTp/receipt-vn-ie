@@ -4,7 +4,7 @@ model:
   name: "naver-clova-ix/donut-base"
   task_token: "<s_receipt_ie>"
   cord_task_token: "<s_cord_receipt_parse>"
-  max_length: 192
+  max_length: 512
   image_size: [960, 640]
 
 training:
@@ -12,10 +12,10 @@ training:
   epochs: 100
   # Chỉ dùng khi chạy optional mode=warmup/full với CORD v2.
   warmup_epochs: 3
-  train_batch_size: 4
-  eval_batch_size: 2
+  train_batch_size: 8
+  eval_batch_size: 4
   gradient_accumulation_steps: 4
-  learning_rate: 2.0e-5
+  learning_rate: 1.0e-5
   weight_decay: 0.01
   warmup_ratio: 0.05
   lr_scheduler_type: "cosine"
@@ -28,6 +28,6 @@ training:
   early_stopping_patience: 15
 
 generation:
-  max_length: 192
-  num_beams: 1
+  max_length: 512
+  num_beams: 2
   early_stopping: true
