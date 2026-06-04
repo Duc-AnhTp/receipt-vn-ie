@@ -131,16 +131,21 @@ RUN_BASELINE=1 RUN_LAYOUTXLM=1 RUN_DONUT=1 bash scripts/05_evaluate_all.sh
 
 ## 5. Donut After Pipeline Is Clean
 
-Train Donut sau khi validate/OCR/LayoutXLM da on:
+Train Donut sau khi validate/OCR/LayoutXLM da on. Khuyen nghi su dung che do `full` (warmup tren CORD v2 truoc khi finetune) de dat do chinh xac cao nhat:
 
 ```bash
-USE_ACCELERATE=1 NUM_PROCESSES=2 bash scripts/04_train_donut.sh
+# 1. Download & convert CORD v2 (chi can chay 1 lan truoc khi train)
+python -m receipt_ie.data.download_cord
+python -m receipt_ie.data.convert_cord
+
+# 2. Train Donut o che do full (tu dong warmup CORD -> finetune Tieng Viet)
+USE_ACCELERATE=1 NUM_PROCESSES=2 bash scripts/04_train_donut.sh --mode full
 ```
 
-Fallback:
+Fallback hoac chi chay finetune (neu da co checkpoint warmup):
 
 ```bash
-USE_ACCELERATE=0 bash scripts/04_train_donut.sh
+USE_ACCELERATE=1 NUM_PROCESSES=2 bash scripts/04_train_donut.sh --mode finetune
 ```
 
 Checkpoint chuan:

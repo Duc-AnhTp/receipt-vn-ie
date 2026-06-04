@@ -57,12 +57,17 @@ class DonutExtractor(BaseExtractor):
         decoder_input_ids = decoder_input_ids.to(self.device)
         
         # 3. Sinh chuỗi XML kết quả
+        num_beams = getattr(self.model.generation_config, "num_beams", 2)
+        # Đảm bảo num_beams luôn >= 2 để kích hoạt Beam Search
+        if num_beams is None or num_beams < 2:
+            num_beams = 2
+            
         with torch.no_grad():
             outputs = self.model.generate(
                 pixel_values,
                 decoder_input_ids=decoder_input_ids,
                 max_length=self.model.config.max_length,
-                num_beams=1,
+                num_beams=num_beams,
                 early_stopping=True,
                 pad_token_id=self.processor.tokenizer.pad_token_id,
                 eos_token_id=self.processor.tokenizer.eos_token_id

@@ -31,10 +31,9 @@ def setup_donut_model_and_processor(
         "<s_address>", "</s_address>"
     ]
     
-    # Thêm tokens vào tokenizer
-    # return_tensors="pt" hoặc chỉ thêm vào vocab
-    num_added_tokens = processor.tokenizer.add_tokens(new_tokens)
-    print(f"Đã thêm {num_added_tokens} tokens mới vào tokenizer.")
+    # Thêm tokens vào tokenizer dưới dạng special tokens để bảo vệ cấu trúc thẻ
+    num_added_tokens = processor.tokenizer.add_special_tokens({"additional_special_tokens": new_tokens})
+    print(f"Đã thêm {num_added_tokens} special tokens mới vào tokenizer.")
     
     # 3. Cập nhật model embeddings để nhận diện các token mới
     model.decoder.resize_token_embeddings(len(processor.tokenizer))

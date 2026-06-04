@@ -87,7 +87,7 @@ def plot_metrics_comparison():
 def plot_error_analysis():
     print("Plotting error analysis...")
     
-    models = ["baseline", "layoutxlm"]
+    models = ["baseline", "layoutxlm", "donut"]
     
     for model in models:
         path = f"outputs/error_analysis/{model}_error_by_field.csv"
