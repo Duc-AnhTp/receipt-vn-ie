@@ -9,7 +9,7 @@ model:
 
 training:
   output_dir: "checkpoints/donut/receipt_ie"
-  epochs: 250
+  epochs: 120
   # Chỉ dùng khi chạy optional mode=warmup/full với CORD v2.
   warmup_epochs: 10
   train_batch_size: 2
