@@ -8,6 +8,7 @@ echo "=== Bắt đầu huấn luyện Donut ==="
 
 if [[ "$USE_ACCELERATE" == "1" ]]; then
   accelerate launch --multi_gpu --num_processes "$NUM_PROCESSES" \
+    --mixed_precision fp16 \
     -m receipt_ie.training.train_donut \
     --mode finetune "$@"
 else
