@@ -163,6 +163,7 @@ def main():
     )
     parser.add_argument("--epochs", type=int, default=None, help="Ghi đè số epochs từ config file")
     parser.add_argument("--max_steps", type=int, default=None, help="Ghi đè số steps huấn luyện tối đa")
+    parser.add_argument("--resume_model", type=str, default=None, help="Đường dẫn tới best_model đã lưu trước đó để train tiếp")
     args = parser.parse_args()
     
     donut_cfg = load_yaml(args.donut_config)
@@ -174,7 +175,7 @@ def main():
     if args.max_steps is not None:
         donut_cfg["training"]["max_steps"] = args.max_steps
         
-    model_name = donut_cfg["model"]["name"]
+    model_name = args.resume_model or donut_cfg["model"]["name"]
     task_token = donut_cfg["model"]["task_token"]
     cord_task_token = donut_cfg["model"]["cord_task_token"]
     
