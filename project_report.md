@@ -155,6 +155,8 @@ Dữ liệu thô trải qua bước tiền xử lý chuẩn hóa tọa độ bou
 - **Tập Kiểm định (Validation):** 10%
 - **Tập Kiểm thử (Test):** 10%
 
+Đặc biệt, để ngăn chặn hiện tượng rò rỉ dữ liệu (Data Leakage) — một lỗi phổ biến khi huấn luyện mô hình trên ảnh biên lai (nơi một hóa đơn có thể được chụp nhiều lần ở các góc độ hoặc điều kiện ánh sáng khác nhau) — chúng tôi áp dụng chiến lược phân tách theo nhóm (**Group Split**) dựa trên định danh `group_id`. Phương pháp này đảm bảo tất cả các phiên bản ảnh của cùng một hóa đơn chỉ xuất hiện duy nhất trong một tập dữ liệu (hoặc Train, hoặc Val, hoặc Test) mà không bị phân tán chéo.
+
 ---
 
 ## 5. THỰC NGHIỆM VÀ KẾT QUẢ (Experiments and Results)
