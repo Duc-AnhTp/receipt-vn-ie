@@ -117,6 +117,7 @@ Phương pháp này dựa trên lý thuyết học biểu diễn đa phương th
     $$\mathbf{t}_i = \text{WordEmbedding}(w_i)$$
 2.  **2D Spatial Position Embedding ($\mathbf{e}_{2D}$):** Tọa độ bounding box của từ $\text{bbox}_i = [x_{min}, y_{min}, x_{max}, y_{max}]$ được chuẩn hóa về dải nguyên $[0, 1000]$ dựa trên kích thước ảnh $(W, H)$:
     $$x_1 = \left\lfloor 1000 \times \frac{x_{min}}{W} \right\rfloor, \quad y_1 = \left\lfloor 1000 \times \frac{y_{min}}{H} \right\rfloor, \quad x_2 = \left\lfloor 1000 \times \frac{x_{max}}{W} \right\rfloor, \quad y_2 = \left\lfloor 1000 \times \frac{y_{max}}{H} \right\rfloor$$
+    Việc chuẩn hóa này vô cùng quan trọng vì nó giúp mô hình loại bỏ sự phụ thuộc vào độ phân giải ảnh gốc, mang lại tính bất biến về tỷ lệ (scale invariance) và đảm bảo các hóa đơn có kích thước khác nhau đều được biểu diễn trên cùng một lưới tọa độ chuẩn hóa.
     Tính toán thêm chiều rộng $w = x_2 - x_1$ và chiều cao $h = y_2 - y_1$. Vector nhúng 2D được tạo ra bằng cách cộng các vector nhúng tọa độ từ các bảng nhúng tương ứng:
     $$\mathbf{e}_{2D}(\text{bbox}_i) = \mathbf{e}_{x_1}(x_1) + \mathbf{e}_{y_1}(y_1) + \mathbf{e}_{x_2}(x_2) + \mathbf{e}_{y_2}(y_2) + \mathbf{e}_{w}(w) + \mathbf{e}_{h}(h)$$
 3.  **Visual Embedding ($\mathbf{v}_i$):** Sử dụng mạng CNN backbone (ResNeXt-101 FPN) trích xuất bản đồ đặc trưng trực quan của ảnh hóa đơn. Đặc trưng visual cục bộ của từng từ được cắt trích bằng thuật toán **RoIAlign** dựa trên bounding box tương ứng:
