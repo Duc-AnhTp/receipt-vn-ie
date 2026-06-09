@@ -176,7 +176,13 @@ Quá trình huấn luyện được thực hiện trên nền tảng đám mây 
 
 ### 5.2. Kết quả huấn luyện và đánh giá trên tập Kiểm thử (Test Set)
 
-Sau khi huấn luyện hoàn tất, hai mô hình được đánh giá trên tập Test độc lập. Kết quả về độ chính xác và tốc độ xử lý (đo trên cấu hình CPU/GPU cục bộ) được trình bày trong bảng dưới đây:
+Sau khi huấn luyện hoàn tất, hai mô hình được đánh giá trên tập Test độc lập. Hệ thống đánh giá áp dụng 4 nhóm chỉ số đo lường chính bao gồm:
+*   **Exact Match (EM):** Chỉ số đánh giá nghiêm ngặt, chỉ tính điểm khi chuỗi dự đoán khớp hoàn toàn 100% với chuỗi ground-truth.
+*   **Normalized Edit Similarity (NES):** Điểm tương đồng dựa trên khoảng cách Levenshtein được chuẩn hóa, giúp phản ánh độ chính xác tiệm cận ngay cả khi có sai khác nhỏ về ký tự.
+*   **Character Error Rate (CER):** Tỷ lệ lỗi ký tự, đo lường lượng thao tác chèn, xóa, thay thế ký tự cần thiết để biến chuỗi dự đoán thành chuỗi đích.
+*   **E2E Latency (Độ trễ đầu-cuối):** Tổng thời gian tính bằng mili-giây từ thời điểm nhận ảnh biên lai đầu vào cho đến khi trả về kết quả cấu trúc JSON hoàn chỉnh.
+
+Kết quả về độ chính xác (F1-score trên cơ sở khớp nhãn chính xác) và tốc độ xử lý (đo trên cấu hình GPU NVIDIA T4 và CPU tương đương) được trình bày trong các bảng dưới đây:
 
 #### Bảng 1: So sánh độ chính xác trích xuất (F1-Score cho từng trường)
 
