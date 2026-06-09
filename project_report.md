@@ -11,9 +11,10 @@ Trích xuất thông tin tự động từ hóa đơn biên lai đóng vai trò 
 ## 2. GIỚI THIỆU (Introduction)
 ### 2.1. Đặt vấn đề
 Hóa đơn, biên lai bán lẻ là các tài liệu bán cấu trúc (semi-structured documents) chứa thông tin có giá trị cao như tên cửa hàng, ngày giao dịch, tổng tiền thanh toán và địa chỉ. Việc nhập liệu thủ công các thông tin này tốn nhiều thời gian và dễ xảy ra sai sót. Trích xuất thông tin tự động (Information Extraction - IE) từ ảnh chụp hóa đơn gặp nhiều thách thức lớn:
-- **Chất lượng ảnh phức tạp:** Hóa đơn thường được chụp trong điều kiện ánh sáng kém, bị mờ, quăn, hoặc nhàu nát.
-- **Tính đa dạng về layout:** Mỗi cửa hàng có một cách thiết kế bố cục hóa đơn khác nhau, không tuân theo quy chuẩn cố định.
-- **Đặc trưng ngôn ngữ tiếng Việt:** Tiếng Việt có dấu thanh phức tạp, viết hoa không nhất quán và nhiều từ viết tắt đặc trưng vùng miền.
+- **Chất lượng ảnh phức tạp:** Hóa đơn thường được chụp trong điều kiện ánh sáng kém, bị mờ, quăn, hoặc nhàu nát, làm giảm chất lượng nhận dạng ký tự quang học.
+- **In ấn chất lượng thấp:** Nhiều biên lai sử dụng công nghệ in nhiệt trên giấy chất lượng kém, dẫn đến chữ bị mờ nhạt, mất nét hoặc bị ố vàng theo thời gian.
+- **Tính đa dạng về layout:** Mỗi cửa hàng, chuỗi siêu thị hoặc nhà hàng có một cách thiết kế bố cục hóa đơn khác nhau, không tuân theo quy chuẩn cố định về vị trí hay kích thước các trường thông tin.
+- **Đặc trưng ngôn ngữ tiếng Việt:** Tiếng Việt có dấu thanh phức tạp (dễ bị nhầm lẫn khi nhận dạng OCR), viết hoa không nhất quán, sử dụng nhiều ký tự đặc biệt, viết tắt vùng miền (ví dụ: "Q.", "P.", "TP.", "đ", "VND") và các cấu trúc ngữ pháp phi chuẩn.
 
 ### 2.2. Mục tiêu nghiên cứu
 - Xây dựng thành công hệ thống trích xuất 4 trường thông tin cốt lõi: `STORE_NAME` (Tên cửa hàng), `DATE` (Ngày tháng), `TOTAL` (Tổng tiền), và `ADDRESS` (Địa chỉ).
