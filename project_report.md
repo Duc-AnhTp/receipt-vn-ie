@@ -252,3 +252,4 @@ Nghiên cứu đã huấn luyện thành công hai hệ thống trích xuất th
 **Hướng phát triển tương lai:**
 1. Áp dụng các kỹ thuật lượng tử hóa mô hình (Quantization) để nén nhẹ kích thước Donut và LayoutXLM nhằm tăng tốc độ suy luận trên CPU ở local.
 2. Tích hợp các bộ phát hiện chữ nhanh như DBNet thay cho bộ phát hiện chữ truyền thống của VietOCR để tối ưu thời gian E2E Latency của pipeline LayoutXLM.
+3. Nghiên cứu sinh dữ liệu hóa đơn tổng hợp (Synthetic Data Generation) bằng các công cụ sinh văn bản trực quan nhằm tăng số lượng và tính đa dạng của dữ liệu huấn luyện, giúp mô hình Donut hạn chế lỗi ảo giác khi gặp font chữ lạ.
