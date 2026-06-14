@@ -1,0 +1,12 @@
+% ============================================================================
+%  CHƯƠNG 0: TÓM TẮT
+% ============================================================================
+
+\section*{Tóm tắt}
+\addcontentsline{toc}{section}{Tóm tắt}
+
+% >>> BẢN NHÁP: Tóm tắt đề tài (Sinh viên đọc lại và chỉnh sửa) <<<
+Trong những năm gần đây, nhu cầu chuyển đổi số và tự động hóa quy trình quản lý tài chính doanh nghiệp cũng như cá nhân ngày càng tăng cao, đặt ra bài toán số hóa và trích xuất thông tin tự động từ các tài liệu hóa đơn, biên lai bán lẻ. Đối với ngôn ngữ tiếng Việt, việc trích xuất thông tin từ biên lai gặp nhiều thách thức lớn do chất lượng ảnh chụp từ thiết bị di động không đồng đều, cấu trúc biên lai đa dạng và đặc thù ngôn ngữ có dấu dễ bị nhận dạng sai. Đồ án này tập trung nghiên cứu và xây dựng hệ thống trích xuất thông tin tự động bốn trường dữ liệu quan trọng từ biên lai tiếng Việt bao gồm: tên cửa hàng (\field{store\_name}), ngày tháng (\field{date}), tổng tiền thanh toán (\field{total}) và địa chỉ (\field{address}). Chúng em tiến hành thực nghiệm và so sánh chi tiết ba phương pháp tiếp cận tiêu biểu: (1) Phương pháp heuristics dựa trên luật kết hợp OCR truyền thống (\model{Baseline}), (2) Mô hình học sâu End-to-End không cần OCR (\model{Donut}), và (3) Mô hình học sâu đa phương thức tích hợp thông tin văn bản, bố cục và hình ảnh (\model{LayoutXLM}) kết hợp với công cụ nhận dạng văn bản tiếng Việt \model{VietOCR}. Các mô hình được huấn luyện và đánh giá trên bộ dữ liệu thống nhất gồm 1.559 mẫu biên lai thu thập từ cuộc thi MC-OCR 2021 kết hợp với dữ liệu tự chụp thực tế. Kết quả thực nghiệm cho thấy mô hình \model{LayoutXLM} đạt hiệu năng vượt trội với độ chính xác tuyệt đối Macro EM đạt 43,48\%, tương tự độ tương đồng văn bản Macro NES đạt 61,86\% và tỷ lệ lỗi ký tự Macro CER đạt 39,64\%. Trong khi đó, phương pháp \model{Baseline} cho thấy ưu thế vượt trội ở trường thông tin ngày tháng nhờ luật biểu thức chính quy (EM đạt 74,79\%), còn mô hình \model{Donut} gặp hạn chế lớn về hiện tượng sinh ảo (hallucination) do giới hạn về kích thước tập dữ liệu huấn luyện. Cuối cùng, nhóm nghiên cứu đã xây dựng thành công ứng dụng demo tương tác trực quan bằng giao diện \model{Gradio} phục vụ việc kiểm thử thực tế.
+
+\vspace{1em}
+\noindent\textbf{Từ khoá:} trích xuất thông tin, biên lai, Donut, LayoutXLM, OCR, tiếng Việt.

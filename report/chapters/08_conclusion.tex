@@ -1,0 +1,63 @@
+% ============================================================================
+%  Section 8: Kết luận và hướng phát triển
+% ============================================================================
+\section{Kết luận và hướng phát triển}
+\label{sec:conclusion}
+
+% ============================================================================
+\subsection{Kết luận}
+\label{subsec:conclusion}
+
+% >>> BẢN NHÁP: Tóm tắt kết quả đồ án (Sinh viên đọc lại và chỉnh sửa) <<<
+Đồ án đã nghiên cứu và giải quyết thành công bài toán tự động hóa trích xuất thông tin bốn trường thực thể then chốt (\field{store\_name}, \field{date}, \field{total}, \field{address}) từ ảnh chụp biên lai tiếng Việt. Để đạt được mục tiêu này, nhóm nghiên cứu đã: (1) Xây dựng thành công bộ dữ liệu biên lai tiếng Việt thống nhất gồm 1.559 mẫu ảnh chất lượng cao được gán nhãn chuẩn hóa; (2) Thiết kế và triển khai có hệ thống ba pipeline trích xuất đại diện cho ba trường phái tiếp cận kỹ thuật khác nhau gồm Baseline rule-based, Donut sinh End-to-End, và LayoutXLM học đa phương thức; (3) Xây dựng bộ đánh giá hiệu năng tự động và khách quan dựa trên các chỉ số chuẩn hóa EM, NES và CER; (4) Hiện thực hóa ứng dụng demo tương tác trực quan bằng Gradio phục vụ chạy thử nghiệm.
+
+Đồ án đã thực hiện so sánh hệ thống ba phương pháp trích xuất thông tin từ biên lai tiếng Việt trên bộ dữ liệu gồm 1.559 mẫu (234 mẫu test). Các kết quả chính như sau:
+
+\begin{itemize}
+  \item \model{LayoutXLM} đạt kết quả tổng thể tốt nhất với Macro \metric{EM} = 43.48\% và Macro \metric{NES} = 61.86\%, cho thấy hiệu quả của việc kết hợp thông tin văn bản, vị trí không gian (layout), và ảnh trong kiến trúc multi-modal.
+
+  \item Baseline (regex trên kết quả \gls{ocr}) bất ngờ đạt kết quả tốt nhất trên trường \field{date} (\metric{EM} = 74.79\%) nhờ các luật regex chuyên biệt cho định dạng ngày giờ có cấu trúc rõ ràng.
+
+  \item \model{Donut} (OCR-free) cho kết quả kém nhất (Macro \metric{EM} = 5.88\%, Macro \metric{CER} = 105.23\%) khi huấn luyện trên tập dữ liệu nhỏ khoảng 1.559 mẫu biên lai tiếng Việt, chủ yếu do hiện tượng hallucination và lỗi sinh chuỗi format.
+\end{itemize}
+
+% ============================================================================
+\subsection{Hạn chế}
+\label{subsec:limitations}
+
+Đồ án còn một số hạn chế cần được nhận diện:
+
+\begin{enumerate}
+  \item \textbf{Bộ dữ liệu nhỏ:} Chỉ có khoảng 1.559 mẫu — chưa đủ lớn để các mô hình deep learning, đặc biệt \model{Donut}, phát huy hết tiềm năng.
+
+  \item \textbf{Chưa thử nghiệm mô hình mới hơn:} Các mô hình như LayoutLMv3 \cite{huang2022layoutlmv3}, Pix2Struct \cite{lee2023pix2struct}, DocTR chưa được so sánh trong đồ án.
+
+  \item \textbf{Chưa kiểm tra tính tổng quát:} Chưa thực hiện stress-test trên các nhóm cửa hàng hoàn toàn mới (held-out store groups) để đánh giá khả năng tổng quát hóa.
+
+  \item \textbf{\model{Donut} chưa được warm-up:} Mô hình \model{Donut} được fine-tune trực tiếp từ \code{donut-base} mà chưa qua bước warm-up trên tập CORD v2 \cite{park2019cord} — một bước quan trọng trong pipeline gốc.
+\end{enumerate}
+
+% ============================================================================
+\subsection{Hướng phát triển}
+\label{subsec:future_work}
+
+Dựa trên kết quả và hạn chế, chúng tôi đề xuất các hướng phát triển sau:
+
+\begin{enumerate}
+  \item \textbf{Mở rộng bộ dữ liệu:} Thu thập thêm biên lai từ nhiều loại cửa hàng, vùng miền khác nhau. Áp dụng data augmentation (xoay, nhiễu, thay đổi độ sáng) để tăng tính đa dạng.
+
+  \item \textbf{Warm-up \model{Donut} trên CORD v2:} Fine-tune \model{Donut} trên tập CORD v2 \cite{park2019cord} trước khi chuyển sang biên lai tiếng Việt, giúp mô hình học cấu trúc biên lai tổng quát trước.
+
+  \item \textbf{Thử nghiệm mô hình mới:} So sánh với LayoutLMv3 \cite{huang2022layoutlmv3}, Pix2Struct \cite{lee2023pix2struct} — các mô hình đã cho kết quả vượt trội trên benchmark quốc tế.
+
+  \item \textbf{Cải thiện chất lượng \gls{ocr}:} Thay thế hoặc bổ sung VietOCR bằng TrOCR \cite{li2023trocr}, nâng cấp PaddleOCR lên v2.8+ để cải thiện độ chính xác nhận dạng dấu tiếng Việt.
+
+  \item \textbf{Xử lý \field{address} nhiều dòng:} Thiết kế module chuyên biệt cho trường \field{address} — sử dụng reading order cải tiến và mô hình phân đoạn dòng (line segmentation) để ghép nối chính xác hơn.
+
+  \item \textbf{Triển khai ứng dụng thực tế:}
+  \begin{itemize}
+    \item Xây dựng REST API phục vụ tích hợp hệ thống.
+    \item Phát triển ứng dụng di động (mobile app) cho người dùng cuối.
+    \item Tối ưu latency: quantization (INT8), model distillation, batch inference.
+  \end{itemize}
+\end{enumerate}

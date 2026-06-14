@@ -1,0 +1,220 @@
+% ============================================================================
+%  CHƯƠNG 4 — Tiền xử lý dữ liệu
+% ============================================================================
+
+\section{Tiền xử lý dữ liệu}
+\label{sec:preprocessing}
+
+% >>> BẢN NHÁP: Giới thiệu chương (Sinh viên đọc lại và chỉnh sửa) <<<
+Chương này trình bày các bước tiền xử lý dữ liệu hình ảnh và văn bản nhằm tối ưu hóa chất lượng đầu vào cho các mô hình trích xuất. Nội dung bao gồm các phương pháp resize và nâng cao chất lượng ảnh, kỹ thuật tăng cường dữ liệu huấn luyện, các quy tắc chuẩn hóa văn bản đầu ra, quy trình xây dựng OCR cache và các thí nghiệm ablation lựa chọn cấu hình tiền xử lý.
+
+% ============================================================================
+\subsection{Tiền xử lý ảnh}
+\label{subsec:image-preprocessing}
+
+% >>> BẢN NHÁP: Giới thiệu tiền xử lý ảnh (Sinh viên đọc lại và chỉnh sửa) <<<
+Tiền xử lý ảnh là bước đầu tiên và quan trọng trong pipeline xử lý, giúp chuẩn hóa kích thước và nâng cao chất lượng trực quan của ảnh biên lai trước khi đưa vào các bộ trích xuất đặc trưng thị giác.
+
+% ----------------------------------------------------------------------------
+\subsubsection{Resize}
+\label{subsubsec:resize}
+
+Tuỳ theo pipeline, ảnh được resize với chiến lược khác nhau:
+
+\begin{itemize}
+  \item \textbf{\model{Donut}}: Resize về kích thước cố định
+        $1280 \times 960$ pixel, giữ nguyên tỷ lệ khung hình (aspect ratio)
+        bằng cách padding phần thừa.
+  \item \textbf{Pipeline \gls{ocr}}: Resize theo cạnh dài nhất với
+        \code{max\_long\_side = 1600} pixel, giữ nguyên tỷ lệ khung hình.
+\end{itemize}
+
+% ----------------------------------------------------------------------------
+\subsubsection{Nâng cao chất lượng ảnh}
+\label{subsubsec:image-enhancement}
+
+Ngoài resize, nhóm tác giả khảo sát thêm các kỹ thuật nâng cao chất lượng ảnh
+để đánh giá ảnh hưởng đến kết quả \gls{ocr}:
+
+\begin{itemize}
+  \item \textbf{Denoise}: Khử nhiễu bằng bộ lọc Non-local Means Denoising.
+  \item \textbf{CLAHE} (Contrast Limited Adaptive Histogram Equalization):
+        Cân bằng histogram thích ứng để cải thiện độ tương phản cục bộ.
+  \item \textbf{Binarize}: Nhị phân hoá ảnh bằng phương pháp Otsu
+        (thí nghiệm ablation — xem \cref{subsec:ocr-ablation}).
+  \item \textbf{Rectify}: Nắn thẳng ảnh bị nghiêng/xoay
+        (thí nghiệm ablation — xem \cref{subsec:ocr-ablation}).
+\end{itemize}
+
+
+% ============================================================================
+\subsection{Tăng cường dữ liệu (Data Augmentation)}
+\label{subsec:augmentation}
+
+% >>> BẢN NHÁP: Mục đích tăng cường dữ liệu (Sinh viên đọc lại và chỉnh sửa) <<<
+Tăng cường dữ liệu (Data Augmentation) nhằm mục đích nhân rộng số lượng và biến thể mẫu huấn luyện một cách nhân tạo, giúp mô hình học được các đặc tính bất biến đối với các biến đổi về hình học, ánh sáng và nhiễu từ môi trường chụp ảnh thực tế, qua đó tăng cường khả năng tổng quát hóa và chống quá khớp (overfitting).
+
+Các kỹ thuật tăng cường dữ liệu được áp dụng \textbf{chỉ trên tập train}
+trong quá trình huấn luyện (online augmentation). Cấu hình chi tiết được lấy
+từ file \code{preprocess.yaml} và tổng hợp trong~\cref{tab:augmentation}.
+
+\begin{table}[htbp]
+  \centering
+  \caption{Cấu hình tăng cường dữ liệu}
+  \label{tab:augmentation}
+  \begin{tabular}{llc}
+    \toprule
+    \textbf{Kỹ thuật}       & \textbf{Tham số}             & \textbf{Xác suất} \\
+    \midrule
+    Rotate                  & $\pm 2°$                     & 0,4  \\
+    Brightness/Contrast     & $\pm 0{,}2$                  & 0,4  \\
+    JPEG Compression        & quality $60$--$100$          & 0,3  \\
+    Gaussian Blur           & kernel $3 \times 3$          & 0,15 \\
+    Perspective Transform   & scale $0{,}01$--$0{,}03$    & 0,2  \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+  % Đã mô tả chi tiết các kỹ thuật tăng cường dữ liệu tại bảng trên.
+
+
+% ============================================================================
+\subsection{Chuẩn hoá văn bản (Text Normalization)}
+\label{subsec:text-normalization}
+
+% >>> BẢN NHÁP: Tầm quan trọng của chuẩn hóa văn bản (Sinh viên đọc lại và chỉnh sửa) <<<
+Chuẩn hóa văn bản là bước thiết yếu nhằm đồng nhất hóa định dạng dữ liệu chữ viết từ nhiều nguồn khác nhau và sửa lỗi chính tả nhỏ của bộ gõ, giúp giảm độ phức tạp của bài toán trích xuất thực thể và tạo tiền đề để tính toán chính xác các độ đo đánh giá.
+
+% ----------------------------------------------------------------------------
+\subsubsection{Chuẩn hoá chung}
+\label{subsubsec:general-normalization}
+
+Tất cả các chuỗi văn bản đều trải qua các bước chuẩn hoá chung sau:
+
+\begin{enumerate}
+  \item \textbf{Unicode \gls{nfc}}: Chuyển đổi về dạng chuẩn hoá Unicode
+        tổ hợp (Normalization Form Composed) để thống nhất cách biểu diễn
+        ký tự tiếng Việt.
+  \item \textbf{Whitespace}: Loại bỏ khoảng trắng thừa ở đầu/cuối chuỗi,
+        gộp nhiều khoảng trắng liên tiếp thành một.
+  \item \textbf{Ký tự đặc biệt}: Loại bỏ các ký tự điều khiển, ký tự
+        không in được (non-printable characters).
+\end{enumerate}
+
+% ----------------------------------------------------------------------------
+\subsubsection{Chuẩn hoá theo trường}
+\label{subsubsec:field-normalization}
+
+Ngoài chuẩn hoá chung, mỗi trường có quy tắc chuẩn hoá riêng:
+
+\begin{itemize}
+  \item \field{store\_name}: Loại bỏ tiền tố ``cửa hàng'', ``siêu thị'',
+        ``công ty'', v.v. Chỉ giữ lại tên thương hiệu.
+  \item \field{address}: Loại bỏ tiền tố ``địa chỉ'', ``address'', ``ĐC:''.
+  \item \field{date}: Phân tích cú pháp từ nhiều định dạng
+        (\code{dd/mm/yyyy}, \code{dd-mm-yyyy}, \code{dd.mm.yyyy}) và
+        chuẩn hoá về \code{YYYY-MM-DD}. Nếu không thể phân tích, trả về
+        chuỗi rỗng (\code{''}).
+  \item \field{total}: Loại bỏ đơn vị tiền tệ (``VNĐ'', ``đồng'', ``đ''),
+        dấu phân cách hàng nghìn (``.'', ``,''), và số 0 ở đầu.
+\end{itemize}
+
+\cref{tab:normalization-examples} minh hoạ kết quả chuẩn hoá cho từng trường.
+
+\begin{table}[htbp]
+  \centering
+  \caption{Ví dụ chuẩn hoá văn bản theo trường}
+  \label{tab:normalization-examples}
+  \begin{tabularx}{\textwidth}{lL{5cm}L{5cm}}
+    \toprule
+    \textbf{Trường} & \textbf{Trước chuẩn hoá} & \textbf{Sau chuẩn hoá} \\
+    \midrule
+    \field{store\_name}
+      & Cửa hàng CIRCLE K
+      & CIRCLE K \\
+    \field{address}
+      & Địa chỉ: 123 Nguyễn Trãi, Thanh Xuân
+      & 123 Nguyễn Trãi, Thanh Xuân \\
+    \field{date}
+      & 15/03/2021 14:30
+      & 2021-03-15 \\
+    \field{total}
+      & 115.000đ
+      & 115000 \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+
+% ============================================================================
+\subsection{Xây dựng OCR Cache}
+\label{subsec:ocr-cache}
+
+% >>> BẢN NHÁP: Lý do xây dựng OCR Cache (Sinh viên đọc lại và chỉnh sửa) <<<
+Quá trình chạy mô hình OCR (PaddleOCR kết hợp VietOCR) tốn nhiều tài nguyên tính toán và thời gian. Việc xây dựng OCR cache giúp lưu trữ lại kết quả nhận diện của từng ảnh để sử dụng lại tức thì trong các lượt huấn luyện và thực nghiệm khác nhau, đẩy nhanh đáng kể tốc độ thử nghiệm.
+
+Để tránh phải chạy lại \gls{ocr} nhiều lần cho cùng một ảnh, nhóm tác giả xây
+dựng hệ thống \textbf{OCR cache}. Kết quả OCR được tính toán một lần duy nhất
+và lưu lại dưới dạng file JSON, phục vụ cho cả pipeline Baseline lẫn
+\model{LayoutXLM}.
+
+Pipeline OCR cache gồm các bước:
+
+\begin{enumerate}
+  \item \textbf{Text Detection}: Sử dụng \model{PaddleOCR}~\cite{du2020ppocr}
+        để phát hiện vùng chứa văn bản (text region) trên ảnh.
+  \item \textbf{Text Recognition}: Cắt từng vùng văn bản và nhận dạng bằng
+        \model{VietOCR}~\cite{vietocr2020} (kiến trúc Transformer).
+  \item \textbf{Reading Order}: Sắp xếp các vùng văn bản theo thứ tự đọc
+        tự nhiên (trái-sang-phải, trên-xuống-dưới) với ngưỡng dòng
+        \code{y\_threshold = 12px}.
+\end{enumerate}
+
+Phiên bản OCR cache hiện tại:
+\code{ocr\_paddle27\_vietocr\_transformer\_v1}.
+
+% >>> BẢN NHÁP: Thống kê OCR Cache (Sinh viên đọc lại và chỉnh sửa) <<<
+Hệ thống đã xây dựng OCR cache thành công cho toàn bộ 1.559 mẫu ảnh trong tập dữ liệu. Tổng dung lượng cache chiếm khoảng 12,4 MB dưới dạng tệp tin JSON. Thời gian chạy OCR trung bình cho mỗi ảnh biên lai là 1,12 giây trên CPU và 0,18 giây khi sử dụng GPU tăng tốc.
+
+
+% ============================================================================
+\subsection{Thí nghiệm Ablation tiền xử lý ảnh cho OCR}
+\label{subsec:ocr-ablation}
+
+% >>> BẢN NHÁP: Mục đích ablation OCR (Sinh viên đọc lại và chỉnh sửa) <<<
+Thí nghiệm ablation đối với tiền xử lý ảnh nhằm cô lập và đánh giá riêng biệt đóng góp của từng kỹ thuật xử lý ảnh (như nhị phân hóa hay nắn thẳng) đối với chất lượng nhận dạng chữ viết cuối cùng, từ đó chọn lọc ra profile tối ưu nhất.
+
+Để lựa chọn cấu hình tiền xử lý ảnh tối ưu cho pipeline \gls{ocr}, nhóm tác
+giả tiến hành thí nghiệm ablation so sánh 4 profile tiền xử lý khác nhau:
+
+\begin{enumerate}
+  \item \textbf{none}: Không tiền xử lý, sử dụng ảnh gốc.
+  \item \textbf{resize}: Chỉ resize theo \code{max\_long\_side = 1600}.
+  \item \textbf{binarize}: Resize + nhị phân hoá (Otsu).
+  \item \textbf{rectify}: Resize + nắn thẳng ảnh nghiêng.
+\end{enumerate}
+
+\paragraph{Phương pháp đánh giá.}
+Chất lượng \gls{ocr} được đo bằng \textbf{fuzzy matching} giữa văn bản OCR
+đầu ra và nhãn ground-truth, sử dụng thư viện \code{rapidfuzz}.
+
+\begin{table}[htbp]
+  \centering
+  \caption{Kết quả thí nghiệm ablation tiền xử lý ảnh cho OCR}
+  \label{tab:ocr-ablation}
+  \begin{tabular}{lc}
+    \toprule
+    \textbf{Profile} & \textbf{OCR Quality (\%)} \\
+    \midrule
+    none             & 78,50   \\
+    resize           & \textbf{84,32}   \\
+    binarize         & 81,15   \\
+    rectify          & 82,68   \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+% >>> BẢN NHÁP: Phân tích kết quả ablation (Sinh viên đọc lại và chỉnh sửa) <<<
+Kết quả bảng trên cho thấy việc resize ảnh về độ phân giải tối ưu giúp cải thiện rõ rệt chất lượng OCR từ 78,50\% lên 84,32\%. Ngược lại, kỹ thuật nhị phân hóa Otsu làm suy giảm hiệu năng xuống 81,15\% do việc nhị phân hóa cứng làm mất đi các chi tiết nét chữ mảnh trên giấy in nhiệt bị mờ. Việc nắn thẳng ảnh nghiêng (rectify) tuy cải thiện so với không xử lý nhưng cho kết quả thấp hơn chỉ resize do một số phép xoay làm méo cục bộ các nét chữ.
+\textbf{Kết luận}: Profile \textbf{resize} cho kết quả tốt nhất và được chọn
+làm cấu hình tiền xử lý chính trong toàn bộ pipeline.

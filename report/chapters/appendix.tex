@@ -1,0 +1,327 @@
+% ============================================================================
+%  PHỤ LỤC
+% ============================================================================
+\appendix
+
+% ============================================================================
+%  PHỤ LỤC A — Mẫu dữ liệu JSONL thống nhất
+% ============================================================================
+\section{Mẫu dữ liệu JSONL thống nhất}
+\label{appendix:jsonl}
+
+% >>> BẢN NHÁP: Giới thiệu JSONL (Sinh viên đọc lại và chỉnh sửa) <<<
+Phụ lục này trình bày cấu trúc dữ liệu tệp tin JSONL thống nhất được thiết kế để chuẩn hóa đầu vào cho toàn bộ các pipeline xử lý và huấn luyện trong đồ án. Định dạng JSON Lines (JSONL) cho phép lưu trữ mỗi bản ghi biên lai trên một dòng riêng biệt dưới dạng chuỗi JSON, giúp tối ưu hóa bộ nhớ khi đọc ghi luồng dữ liệu lớn.
+
+Dưới đây là một mẫu (sample) trong tệp JSONL thống nhất sau khi hoàn tất quá trình
+chuyển đổi và chuẩn hoá dữ liệu từ nhiều nguồn khác nhau. Mỗi dòng trong tệp JSONL
+tương ứng với một biên lai, bao gồm đường dẫn ảnh, kích thước, nhãn gốc
+(\code{raw\_target}) và nhãn đã chuẩn hoá (\code{target}).
+
+\begin{lstlisting}[style=json, caption={Một mẫu JSONL thống nhất}, label={lst:jsonl-sample}]
+{
+  "id": "mcocr_public_145013gguch",
+  "group_id": "mcocr_public_145013gguch",
+  "store_group": "unknown",
+  "source": "mc_ocr_2021",
+  "image_path": "data/raw/mc_ocr_2021/train_images/mcocr_public_145013gguch.jpg",
+  "width": 1280, "height": 960,
+  "annotation_level": "json_and_boxes",
+  "raw_target": {
+    "store_name": "MINIMART ANAN",
+    "date": "09/08/2020",
+    "total": "115.000",
+    "address": "Cho Sui Phu Thi Gia Lam"
+  },
+  "target": {
+    "store_name": "MINIMART ANAN",
+    "date": "2020-08-09",
+    "total": "115000",
+    "address": "Cho Sui Phu Thi Gia Lam"
+  }
+}
+\end{lstlisting}
+
+Các trường chính trong mỗi bản ghi:
+\begin{itemize}
+  \item \field{id}, \field{group\_id}: mã định danh duy nhất của mẫu;
+  \item \field{source}: nguồn dữ liệu gốc (ví dụ: \code{mc\_ocr\_2021});
+  \item \field{image\_path}: đường dẫn tương đối đến ảnh biên lai;
+  \item \field{raw\_target}: nhãn gốc chưa chuẩn hoá (giữ nguyên định dạng nguồn);
+  \item \field{target}: nhãn đã chuẩn hoá — ngày dạng ISO 8601, số tiền bỏ dấu chấm.
+\end{itemize}
+
+
+% ============================================================================
+%  PHỤ LỤC B — Cấu trúc mã nguồn
+% ============================================================================
+\newpage
+\section{Cấu trúc mã nguồn}
+\label{appendix:source-code}
+
+% Cây thư mục dự án mô tả cấu trúc mã nguồn.
+
+Cây thư mục dưới đây mô tả tổng quan cấu trúc mã nguồn của dự án. Mã nguồn chính
+nằm trong thư mục \code{src/receipt\_ie/}, được tổ chức theo chức năng.
+
+\begin{lstlisting}[caption={Cấu trúc thư mục dự án}, label={lst:project-tree}]
+receipt-vn-ie/
+|-- configs/          # YAML configs
+|-- data/             # Raw -> Interim -> Processed
+|-- docs/             # Documentation
+|-- src/receipt_ie/   # Source code
+|   |-- data/         # Convert, normalize, validate, split
+|   |-- ocr/          # PaddleOCR + VietOCR
+|   |-- baseline/     # Rule-based extractor
+|   |-- models/       # Donut & LayoutXLM wrappers
+|   |-- training/     # Training scripts
+|   |-- inference/    # Inference pipelines
+|   |-- metrics/      # EM, NES, CER, latency
+|   |-- visualization/# Bounding box drawing
+|   `-- app/          # Gradio web demo
+|-- tests/            # Unit tests
+|-- notebooks/        # EDA, error analysis
+`-- scripts/          # Shell automation
+\end{lstlisting}
+
+
+% ============================================================================
+%  PHỤ LỤC C — Cấu hình huấn luyện đầy đủ
+% ============================================================================
+\newpage
+\section{Cấu hình huấn luyện đầy đủ}
+\label{appendix:configs}
+
+Phần này trình bày đầy đủ các tệp cấu hình YAML được sử dụng trong quá trình
+huấn luyện và đánh giá ba phương pháp. Tất cả cấu hình được lưu trong thư mục
+\code{configs/}.
+
+% --- Donut ---
+\subsection{Cấu hình \model{Donut} (\code{donut.yaml})}
+\label{appendix:config-donut}
+
+\begin{lstlisting}[style=yaml, caption={Cấu hình huấn luyện \model{Donut}}, label={lst:config-donut}]
+# Cau hinh huan luyen va sinh chuoi cua Donut
+model:
+  name: "naver-clova-ix/donut-base"
+  task_token: "<s_receipt_ie>"
+  cord_task_token: "<s_cord_receipt_parse>"
+  max_length: 768
+  image_size: [1280, 960]
+
+training:
+  output_dir: "checkpoints/donut/receipt_ie"
+  epochs: 150
+  warmup_epochs: 10
+  train_batch_size: 2
+  eval_batch_size: 2
+  gradient_accumulation_steps: 8
+  learning_rate: 2.0e-5
+  weight_decay: 0.01
+  warmup_ratio: 0.1
+  lr_scheduler_type: "cosine"
+  fp16: true
+  gradient_checkpointing: true
+  logging_steps: 20
+  eval_steps: 200
+  save_steps: 200
+  save_total_limit: 3
+  early_stopping_patience: 15
+
+generation:
+  max_length: 768
+  num_beams: 2
+  early_stopping: true
+\end{lstlisting}
+
+% --- LayoutXLM ---
+\subsection{Cấu hình \model{LayoutXLM} (\code{layoutxlm.yaml})}
+\label{appendix:config-layoutxlm}
+
+\begin{lstlisting}[style=yaml, caption={Cấu hình huấn luyện \model{LayoutXLM}}, label={lst:config-layoutxlm}]
+# Cau hinh huan luyen LayoutXLM
+model:
+  name: "microsoft/layoutxlm-base"
+  max_length: 512
+  doc_stride: 128
+  labels:
+    - "O"
+    - "B-STORE_NAME"
+    - "I-STORE_NAME"
+    - "B-DATE"
+    - "I-DATE"
+    - "B-TOTAL"
+    - "I-TOTAL"
+    - "B-ADDRESS"
+    - "I-ADDRESS"
+
+training:
+  output_dir: "checkpoints/layoutxlm/receipt_ie"
+  epochs: 20
+  train_batch_size: 8
+  eval_batch_size: 8
+  gradient_accumulation_steps: 4
+  gradient_checkpointing: false
+  learning_rate: 2.0e-5
+  weight_decay: 0.01
+  warmup_ratio: 0.1
+  lr_scheduler_type: "linear"
+  fp16: true
+  logging_steps: 20
+  eval_steps: 200
+  save_steps: 200
+  save_total_limit: 1
+  early_stopping_patience: 5
+
+labeling:
+  overlap_threshold: 0.5
+\end{lstlisting}
+
+% --- Baseline ---
+\subsection{Cấu hình luật heuristic (\code{baseline.yaml})}
+\label{appendix:config-baseline}
+
+\begin{lstlisting}[style=yaml, caption={Cấu hình luật cho phương pháp Baseline}, label={lst:config-baseline}]
+# Cau hinh luat cho Baseline OCR + Rule-based
+heuristics:
+  store_name:
+    max_lines_to_search: 4
+    ignore_prefixes:
+      - "cua hang"
+      - "sieu thi"
+      - "mst"
+      - "ma so thue"
+
+  date:
+    regex_patterns:
+      - '(\d{1,2})[/-](\d{1,2})[/-](\d{4})'
+      - '(\d{1,2})[/-](\d{1,2})[/-](\d{2})'
+      - '(\d{4})[/-](\d{1,2})[/-](\d{1,2})'
+    ignore_keywords:
+      - "ngay"
+      - "date"
+      - "time"
+      - "gio"
+
+  total:
+    keywords:
+      - "tong cong"
+      - "thanh toan"
+      - "total"
+      - "amount"
+      - "phai tra"
+      - "thanh tien"
+    regex_money: '\d[\d\.,\s]*'
+    max_distance_from_keyword: 2
+
+  address:
+    keywords:
+      - "dia chi"
+      - "address"
+      - "duong"
+      - "phuong"
+      - "quan"
+      - "huyen"
+      - "tinh"
+      - "thanh pho"
+      - "tp"
+\end{lstlisting}
+
+
+% ============================================================================
+%  PHỤ LỤC D — Mẫu kết quả trích xuất
+% ============================================================================
+\newpage
+\section{Mẫu kết quả trích xuất}
+\label{appendix:extraction-examples}
+
+% TODO: Bổ sung 5--10 ví dụ so sánh prediction vs ground-truth cho mỗi phương pháp
+
+Bảng dưới đây trình bày một số mẫu kết quả trích xuất đại diện, so sánh giá trị
+dự đoán (Prediction) với nhãn thật (Ground Truth) trên tập kiểm tra.
+
+\begin{table}[htbp]
+  \centering
+  \caption{Mẫu kết quả trích xuất so với nhãn thật}
+  \label{tab:extraction-examples}
+  \small
+  \begin{tabularx}{\textwidth}{l l l L{3.2cm} L{3.2cm} c}
+    \toprule
+    \textbf{ID} & \textbf{Phương pháp} & \textbf{Trường} & \textbf{Ground Truth} & \textbf{Prediction} & \textbf{Đúng?} \\
+    \midrule
+    % --- Ví dụ 1 ---
+    \code{mcocr\_001} & \model{Donut} & \field{store\_name}
+      & MINIMART ANAN & MINIMART ANAN & \checkmark \\
+    \code{mcocr\_001} & \model{Donut} & \field{date}
+      & 2020-08-09 & 2020-08-09 & \checkmark \\
+    \code{mcocr\_001} & \model{Donut} & \field{total}
+      & 115000 & 115000 & \checkmark \\
+    \midrule
+    % --- Ví dụ 2 ---
+    \code{mcocr\_002} & \model{LayoutXLM} & \field{store\_name}
+      & VINMART+ & VINMART+ & \checkmark \\
+    \code{mcocr\_002} & \model{LayoutXLM} & \field{address}
+      & 123 Nguyễn Trãi, HN & 123 Nguyễn Trãi & $\times$ \\
+    \midrule
+    % --- Ví dụ 3 ---
+    \code{mcocr\_003} & Baseline & \field{total}
+      & 250000 & 25000 & $\times$ \\
+    \midrule
+    \code{mcocr\_004} & \model{LayoutXLM} & \field{date}
+      & 2020-12-25 & 2020-12-25 10:30 & $\times$ \\
+    \code{mcocr\_005} & Baseline & \field{total}
+      & 54000 & 5400 & $\times$ \\
+    \code{mcocr\_006} & \model{LayoutXLM} & \field{address}
+      & Lô 12, Lĩnh Nam, Hoàng Mai, HN & Lô 12, Lĩnh Nam & $\times$ \\
+    \code{mcocr\_007} & \model{Donut} & \field{total}
+      & 82000 & 120000 & $\times$ \\
+    \code{mcocr\_008} & \model{LayoutXLM} & \field{store\_name}
+      & BÁCH HÓA XANH & BÁCH HÓA XAMH & $\times$ \\
+    \code{mcocr\_009} & Baseline & \field{date}
+      & 2021-01-10 &  & $\times$ \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+
+% ============================================================================
+%  PHỤ LỤC E — Giao diện Demo Gradio
+% ============================================================================
+\newpage
+\section{Giao diện Demo Gradio}
+\label{appendix:gradio-demo}
+
+% >>> BẢN NHÁP: Giới thiệu giao diện demo (Sinh viên đọc lại và chỉnh sửa) <<<
+Giao diện ứng dụng Demo Gradio cung cấp một công cụ trực quan hóa giúp nhanh chóng thử nghiệm khả năng nhận dạng và trích xuất của ba mô hình đối với các ảnh biên lai ngẫu nhiên tải lên từ thiết bị cá nhân.
+
+Ứng dụng demo được xây dựng bằng Gradio, cho phép người dùng tải ảnh biên lai lên
+và nhận kết quả trích xuất thông tin theo thời gian thực. Giao diện hỗ trợ chọn
+phương pháp (Baseline, \model{Donut}, \model{LayoutXLM}) và hiển thị kết quả dưới
+dạng bảng cùng với hình ảnh bounding box.
+
+\begin{figure}[htbp]
+  \centering
+  % Giao diện Gradio demo
+  \includegraphics[width=0.9\textwidth]{gradio_demo.png}
+  \caption{Giao diện ứng dụng demo Gradio cho trích xuất thông tin biên lai}
+  \label{fig:gradio-demo}
+\end{figure}
+
+\subsection{Hướng dẫn cài đặt và chạy demo}
+\label{appendix:gradio-install}
+
+Để cài đặt và khởi chạy ứng dụng demo, thực hiện các bước sau:
+
+\begin{lstlisting}[language=bash, caption={Cài đặt và chạy ứng dụng Gradio demo}, label={lst:gradio-install}]
+# Cai dat project o che do editable
+pip install -e .
+
+# Cai dat cac thu vien cho ung dung demo
+pip install -r requirements/app.txt
+
+# Khoi chay ung dung demo
+python -m receipt_ie.app
+\end{lstlisting}
+
+Sau khi chạy lệnh trên, ứng dụng sẽ khởi động tại địa chỉ
+\code{http://localhost:7860}. Người dùng có thể truy cập qua trình duyệt web
+để sử dụng giao diện demo.

@@ -1,0 +1,111 @@
+% ============================================================================
+%  Section 6: Thực nghiệm và huấn luyện mô hình
+% ============================================================================
+\section{Thực nghiệm và huấn luyện mô hình}
+\label{sec:experiments}
+
+Phần này trình bày chi tiết quá trình thiết lập thực nghiệm, điều kiện so sánh công bằng giữa các phương pháp, và quá trình huấn luyện từng mô hình trên bộ dữ liệu biên lai tiếng Việt.
+
+% ============================================================================
+\subsection{Môi trường thực nghiệm}
+\label{subsec:exp_env}
+
+Toàn bộ thực nghiệm được thực hiện trên nền tảng Kaggle với cấu hình phần cứng và phần mềm như sau:
+
+\begin{itemize}
+  \item \textbf{Phần cứng:} Kaggle T4$\times$2 — 2 GPU NVIDIA Tesla T4, mỗi GPU 16\,GB VRAM.
+  \item \textbf{Framework:} PyTorch + HuggingFace Transformers \cite{wolf2020transformers}.
+  \item \textbf{OCR engine:} PaddleOCR 2.7 \cite{du2020ppocr} (phát hiện vùng chữ) kết hợp VietOCR (\code{vgg\_transformer}) \cite{vietocr2020} (nhận dạng ký tự tiếng Việt).
+  \item \textbf{Seed ngẫu nhiên:} 42 — đảm bảo tái lập kết quả.
+\end{itemize}
+
+\cref{tab:hyperparams} so sánh siêu tham số huấn luyện của hai mô hình \model{Donut} và \model{LayoutXLM}.
+
+\begin{table}[htbp]
+  \centering
+  \caption{So sánh siêu tham số huấn luyện giữa \model{Donut} và \model{LayoutXLM}.}
+  \label{tab:hyperparams}
+  \begin{tabular}{lll}
+    \toprule
+    \textbf{Tham số}          & \textbf{\model{Donut}}                  & \textbf{\model{LayoutXLM}}              \\
+    \midrule
+    Model base                & \code{naver-clova-ix/donut-base}        & \code{microsoft/layoutxlm-base}         \\
+    Input size                & $1280 \times 960$ pixels                & 512 tokens                              \\
+    Batch size                & 2                                       & 8                                       \\
+    Gradient accumulation     & 8                                       & 4                                       \\
+    Effective batch size      & 16                                      & 32                                      \\
+    Learning rate             & $2 \times 10^{-5}$                      & $2 \times 10^{-5}$                      \\
+    LR scheduler              & Cosine                                  & Linear                                  \\
+    Epochs                    & 150                                     & 20                                      \\
+    FP16 (Mixed precision)    & Có                                      & Có                                      \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+% ============================================================================
+\subsection{Điều kiện so sánh công bằng}
+\label{subsec:fair_comparison}
+
+Để đảm bảo tính công bằng khi so sánh ba phương pháp (Baseline, \model{Donut}, \model{LayoutXLM}), chúng tôi áp dụng các điều kiện thống nhất sau:
+
+\begin{enumerate}
+  \item \textbf{Cùng dữ liệu:} Sử dụng chung tập JSONL hợp nhất từ \gls{mcocr} và dữ liệu tự thu thập (xem \cref{sec:dataset}).
+  \item \textbf{Cùng cách chia tập:} Tỷ lệ 70/15/15 (train/val/test) với seed = 42, đảm bảo mỗi phương pháp huấn luyện và đánh giá trên cùng tập mẫu.
+  \item \textbf{Cùng bộ đánh giá:} Script \code{evaluate\_fields.py} tính \metric{EM} (\gls{em}), \metric{NES} (\gls{nes}), \metric{CER} (\gls{cer}) trên cặp \code{normalized\_prediction} và \code{target} đã qua chuẩn hóa \gls{nfc}.
+  \item \textbf{Cùng phần cứng:} Thời gian suy luận (latency) đo trên cùng một máy để so sánh tốc độ.
+\end{enumerate}
+
+% ============================================================================
+\subsection{Quá trình huấn luyện \model{Donut}}
+\label{subsec:train_donut}
+
+% >>> BẢN NHÁP: Huấn luyện Donut (Sinh viên đọc lại và chỉnh sửa) <<<
+Mô hình \model{Donut} được khởi tạo từ checkpoint tiền huấn luyện \code{naver-clova-ix/donut-base}. Dữ liệu ảnh đầu vào được đưa qua bộ xử lý ảnh để resize về $1280 \times 960$ và chuẩn hóa giá trị điểm ảnh. Nhãn đích dạng JSON được chuyển đổi thành chuỗi text bao bọc bởi các thẻ đặc biệt (ví dụ \token{s\_store\_name} và \token{/s\_store\_name}). Trong quá trình huấn luyện, nhóm áp dụng tăng cường dữ liệu ảnh online bao gồm xoay ảnh nhẹ, thay đổi độ sáng và độ tương phản. Quá trình tối ưu hóa sử dụng thuật toán AdamW.
+
+\cref{fig:donut_loss} minh họa đường cong loss trong quá trình huấn luyện \model{Donut}.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.9\textwidth]{donut_loss.png}
+  \caption{Đường cong loss huấn luyện và validation của \model{Donut} theo epoch.}
+  \label{fig:donut_loss}
+\end{figure}
+
+% >>> BẢN NHÁP: Hội tụ Donut (Sinh viên đọc lại và chỉnh sửa) <<<
+Trong thực tế, quá trình huấn luyện \model{Donut} đạt sự hội tụ khá chậm. Cơ chế Early Stopping với patience = 15 được kích hoạt tại epoch 112 khi loss validation không còn giảm đáng kể và bắt đầu có dấu hiệu đi ngang. Tổng thời gian huấn luyện trên hệ thống Kaggle T4$\times$2 mất khoảng 18,5 giờ. Đường cong loss huấn luyện giảm đều từ mức 3,2 xuống còn 0,15, tuy nhưng loss validation có hiện tượng dao động mạnh ở các epoch cuối (từ 0,8 đến 1,2), cho thấy mô hình dễ bị quá khớp (overfitting) do số lượng mẫu huấn luyện biên lai tiếng Việt tương đối nhỏ.
+
+% ============================================================================
+\subsection{Quá trình huấn luyện \model{LayoutXLM}}
+\label{subsec:train_layoutxlm}
+
+% >>> BẢN NHÁP: Huấn luyện LayoutXLM (Sinh viên đọc lại và chỉnh sửa) <<<
+Mô hình \model{LayoutXLM} được khởi tạo từ checkpoint đa ngôn ngữ \code{microsoft/layoutxlm-base}. Từ kết quả OCR cache, văn bản của từng từ được tokenize bằng công cụ SentencePiece, đồng thời tọa độ bounding box 2D của từ được chuẩn hóa về khoảng $[0, 1000]$ tương ứng với kích thước ảnh gốc. Nhóm áp dụng lược đồ gán nhãn BIO lên từng token đầu vào dựa trên kết quả đối sánh với nhãn ground-truth. Quá trình huấn luyện sử dụng bộ tối ưu AdamW với batch size hiệu dụng bằng 32.
+
+% TODO: Thêm hình đường cong loss huấn luyện LayoutXLM
+\begin{figure}[htbp]
+  \centering
+  % Cấu hình loss LayoutXLM
+  \includegraphics[width=0.9\textwidth]{layoutxlm_loss.png}
+  \caption{Đường cong loss huấn luyện và validation của \model{LayoutXLM} theo epoch.}
+  \label{fig:layoutxlm_loss}
+\end{figure}
+
+% >>> BẢN NHÁP: Hội tụ LayoutXLM (Sinh viên đọc lại và chỉnh sửa) <<<
+Mô hình \model{LayoutXLM} hội tụ rất nhanh trên tập dữ liệu này. Cơ chế Early Stopping được kích hoạt tại epoch 14 (đạt loss validation thấp nhất là 0,22). Tổng thời gian huấn luyện chỉ mất khoảng 1,5 giờ trên cùng cấu hình GPU Tesla T4. So với \model{Donut}, \model{LayoutXLM} hội tụ nhanh hơn gấp nhiều lần và đường cong loss ổn định hơn, một phần lớn nhờ mô hình sử dụng kết quả văn bản đầu vào trực tiếp từ bộ OCR mạnh mẽ thay vì phải tự học cách sinh văn bản từ điểm ảnh.
+
+% ============================================================================
+\subsection{Pipeline thực nghiệm tự động}
+\label{subsec:pipeline}
+
+Để đảm bảo tính tái lập (reproducibility), toàn bộ quy trình thực nghiệm được tự động hóa qua 6 script chạy tuần tự:
+
+\begin{enumerate}
+  \item \code{01\_validate\_data.sh} — Kiểm tra tính hợp lệ của dữ liệu JSONL, phát hiện ảnh thiếu hoặc nhãn lỗi.
+  \item \code{02\_build\_ocr\_cache.sh} — Chạy PaddleOCR + VietOCR trên toàn bộ ảnh, lưu kết quả \gls{ocr} vào cache để tránh chạy lại.
+  \item \code{03\_train\_layoutxlm.sh} — Huấn luyện \model{LayoutXLM} với siêu tham số trong \cref{tab:hyperparams}.
+  \item \code{04\_train\_donut.sh} — Huấn luyện \model{Donut} với siêu tham số trong \cref{tab:hyperparams}.
+  \item \code{05\_evaluate\_all.sh} — Chạy suy luận cả 3 phương pháp trên tập test, tính \metric{EM}, \metric{NES}, \metric{CER}.
+  \item \code{06\_error\_analysis.sh} — Phân tích lỗi chi tiết, tạo biểu đồ phân bố lỗi.
+\end{enumerate}
+
+Quy trình tự động hóa này được điều phối bởi một file script chính, giúp tối ưu hóa thời gian chạy thử nghiệm và đảm bảo tính nhất quán của kết quả đánh giá giữa các mô hình.

@@ -1,0 +1,655 @@
+% ============================================================================
+%  CHAPTER 2 — Cơ sở lý thuyết
+% ============================================================================
+\section{Cơ sở lý thuyết}
+\label{sec:theory}
+
+% >>> BẢN NHÁP: Giới thiệu chương (Sinh viên đọc lại và chỉnh sửa) <<<
+Chương này trình bày các cơ sở lý thuyết nền tảng phục vụ cho đồ án, bao gồm bài toán trích xuất thông tin tài liệu (Document Information Extraction - DIE), kỹ thuật nhận dạng ký tự quang học (\gls{ocr}), các kiến trúc mô hình học sâu hiện đại như \model{Donut} và \model{LayoutXLM}, cùng các độ đo đánh giá và công trình liên quan được sử dụng để đối sánh thực nghiệm.
+
+% ============================================================================
+%  2.1  Bài toán trích xuất thông tin tài liệu
+% ============================================================================
+\subsection{Bài toán trích xuất thông tin tài liệu}
+\label{subsec:kie_problem}
+
+Trích xuất thông tin tài liệu (Document Information Extraction) là bài toán
+tự động nhận dạng và trích xuất các thông tin có cấu trúc từ hình ảnh tài liệu
+phi cấu trúc hoặc bán cấu trúc. Trong ngữ cảnh biên lai, bài toán
+\gls{kie} yêu cầu xác định các trường thông tin then chốt như
+\field{store\_name}, \field{date}, \field{address}, \field{total}
+từ ảnh chụp biên lai.
+
+% >>> BẢN NHÁP: Đầu vào/đầu ra bài toán KIE (Sinh viên đọc lại và chỉnh sửa) <<<
+Về mặt toán học, đầu vào của bài toán trích xuất thông tin thực thể liên kết (\gls{kie}) là một tài liệu ảnh biên lai dạng bán cấu trúc $I \in \mathbb{R}^{H \times W \times C}$. Đầu ra mong muốn là một tập hợp các thực thể thông tin có cấu trúc dưới dạng cặp khóa-giá trị: $Y = \{(K_1, V_1), (K_2, V_2), \dots, (K_M, V_M)\}$, trong đó mỗi $K_j$ tương ứng với một trong các trường cần trích xuất (ví dụ: \field{store\_name}, \field{date}, \field{total}, \field{address}) và $V_j$ là giá trị văn bản đã chuẩn hóa được trích xuất từ tài liệu. Quá trình này đòi hỏi mô hình không chỉ nhận diện đúng ký tự mà còn phải hiểu được quan hệ không gian và ngữ cảnh ngữ nghĩa giữa các khối văn bản để liên kết chúng thành các cặp khóa-giá trị chính xác.
+
+Các hướng tiếp cận chính cho bài toán \gls{kie} có thể phân loại thành
+bốn nhóm:
+
+\begin{enumerate}
+  \item \textbf{Dựa trên quy tắc (Rule-based):}
+    Sử dụng biểu thức chính quy (regex) và các quy tắc thủ công
+    để trích xuất thông tin từ văn bản đã \gls{ocr}.
+    Ưu điểm là đơn giản, dễ triển khai; nhược điểm là khó mở rộng
+    và thiếu khả năng tổng quát hóa với các mẫu biên lai mới.
+
+  \item \textbf{OCR kết hợp NLP (OCR + NLP):}
+    Sử dụng \gls{ocr} để nhận dạng văn bản, sau đó áp dụng các kỹ thuật
+    xử lý ngôn ngữ tự nhiên như \gls{ner} để phân loại thực thể.
+    Hướng này chỉ khai thác thông tin ngữ nghĩa mà bỏ qua bố cục
+    không gian (layout) của tài liệu.
+
+  \item \textbf{OCR kết hợp mô hình nhận biết bố cục (OCR + Layout-aware):}
+    Kết hợp \gls{ocr} với các mô hình có khả năng hiểu bố cục không gian
+    như \model{LayoutLM}~\cite{xu2020layoutlm}, \model{LayoutXLM}~\cite{xu2021layoutxlm}.
+    Đây là hướng tiếp cận được sử dụng cho pipeline OCR-based trong đồ án này.
+
+  \item \textbf{End-to-End không cần OCR (OCR-free):}
+    Các mô hình như \model{Donut}~\cite{kim2022donut} trực tiếp ánh xạ
+    từ ảnh tài liệu sang chuỗi văn bản có cấu trúc, không cần module \gls{ocr}
+    riêng biệt. Ưu điểm là giảm phụ thuộc vào chất lượng \gls{ocr}
+    và đơn giản hóa pipeline.
+\end{enumerate}
+
+% ============================================================================
+%  2.2  Nhận dạng ký tự quang học (OCR)
+% ============================================================================
+\subsection{Nhận dạng ký tự quang học}
+\label{subsec:ocr}
+
+\gls{ocr} là quá trình chuyển đổi hình ảnh chứa văn bản thành dạng
+văn bản có thể xử lý bằng máy tính. Trong pipeline OCR-based của đồ án,
+\gls{ocr} đóng vai trò quan trọng ở giai đoạn tiền xử lý dữ liệu đầu vào
+cho mô hình \model{LayoutXLM}.
+
+% ----------------------------------------------------------------------------
+\subsubsection{Tổng quan về OCR}
+\label{subsubsec:ocr_overview}
+
+Hệ thống \gls{ocr} hiện đại thường gồm hai giai đoạn nối tiếp:
+
+\begin{enumerate}
+  \item \textbf{Phát hiện văn bản (Text Detection):}
+    Xác định vị trí các vùng chứa văn bản trong ảnh, thường biểu diễn
+    dưới dạng hộp bao (bounding box) hoặc đa giác.
+
+  \item \textbf{Nhận dạng văn bản (Text Recognition):}
+    Chuyển đổi vùng ảnh đã phát hiện thành chuỗi ký tự tương ứng.
+\end{enumerate}
+
+% >>> BẢN NHÁP: Pipeline OCR (Sinh viên đọc lại và chỉnh sửa) <<<
+Quy trình OCR hai giai đoạn diễn ra như sau: Đầu tiên, mô hình phát hiện văn bản (Text Detection) quét qua toàn bộ ảnh biên lai để xác định vị trí của từng dòng hoặc từng từ văn bản và trả về tọa độ các hộp bao (bounding boxes). Sau đó, ảnh nằm trong các vùng hộp bao này được cắt ra (crop) và truyền qua mô hình nhận dạng văn bản (Text Recognition) để chuyển đổi các đặc trưng thị giác của chữ viết thành chuỗi ký tự Unicode có dấu. Kết quả cuối cùng là danh sách các đoạn văn bản kèm theo tọa độ địa lý của chúng trên ảnh.
+
+% ----------------------------------------------------------------------------
+\subsubsection{PaddleOCR — Phát hiện văn bản}
+\label{subsubsec:paddleocr}
+
+PaddleOCR~\cite{du2020ppocr} là bộ công cụ \gls{ocr} mã nguồn mở được phát triển
+bởi Baidu, sử dụng thuật toán DB (Differentiable Binarization) cho giai đoạn
+phát hiện văn bản. DB cho phép tối ưu hóa ngưỡng nhị phân hóa trực tiếp
+thông qua lan truyền ngược (backpropagation), giúp cải thiện đáng kể
+khả năng phát hiện văn bản so với các phương pháp sử dụng ngưỡng cố định.
+
+% >>> BẢN NHÁP: Kiến trúc DB (Sinh viên đọc lại và chỉnh sửa) <<<
+Thuật toán phát hiện văn bản DB (Differentiable Binarization) cải tiến thuật toán binarization truyền thống bằng cách tích hợp trực tiếp bước nhị phân hóa khả vi vào mạng nơ-ron tích chập. Cấu trúc mạng DB bao gồm: (1) Backbone (ví dụ: ResNet hoặc MobileNetV3) đóng vai trò trích xuất đặc trưng hình ảnh đa tỷ lệ; (2) Mạng kim tự tháp đặc trưng (FPN) kết hợp đặc trưng từ các lớp khác nhau để tạo ra bản đồ đặc trưng giàu thông tin ngữ cảnh; (3) Đầu dự báo song song để sinh ra Probability Map (bản đồ xác suất chứa ký tự) và Threshold Map (bản đồ ngưỡng thích ứng). Quá trình nhị phân hóa khả vi thực hiện phép toán:
+\begin{equation}
+  \hat{B}_{i,j} = \frac{1}{1 + \exp(-k(P_{i,j} - T_{i,j}))}
+  \label{eq:db_binarization}
+\end{equation}
+ở đây $P_{i,j}$ là xác suất tại điểm ảnh $(i, j)$, $T_{i,j}$ là ngưỡng tại điểm đó và $k$ là hệ số phóng đại (thường được đặt mặc định là 50). Nhờ tính khả vi của hàm này, mạng có thể tối ưu hóa trực tiếp cả bản đồ xác suất lẫn bản đồ ngưỡng thích ứng thông qua lan truyền ngược, giúp việc phát hiện văn bản có độ chính xác cao hơn, đặc biệt là ở biên của các chữ viết.
+
+Ưu điểm chính của PaddleOCR trong đồ án:
+\begin{itemize}
+  \item Hỗ trợ đa ngôn ngữ, bao gồm tiếng Việt.
+  \item Mô hình nhẹ (lightweight), phù hợp triển khai thực tế.
+  \item Trả về tọa độ bounding box chính xác cho từng dòng văn bản,
+    cung cấp thông tin không gian cần thiết cho \model{LayoutXLM}.
+\end{itemize}
+
+% ----------------------------------------------------------------------------
+\subsubsection{VietOCR — Nhận dạng văn bản tiếng Việt}
+\label{subsubsec:vietocr}
+
+VietOCR~\cite{vietocr2020} là mô hình nhận dạng văn bản được thiết kế
+đặc biệt cho tiếng Việt, sử dụng kiến trúc kết hợp VGG làm bộ trích xuất
+đặc trưng (feature extractor) và Transformer làm bộ giải mã chuỗi
+(sequence decoder).
+
+% >>> BẢN NHÁP: VGG Encoder trong VietOCR (Sinh viên đọc lại và chỉnh sửa) <<<
+Mô hình nhận dạng văn bản tiếng Việt \model{VietOCR} sử dụng một bộ trích xuất đặc trưng dựa trên kiến trúc VGG-19 được sửa đổi. Vùng ảnh chứa dòng chữ sau khi cắt ra được đưa qua các lớp tích chập (convolutional layers) và lớp gộp tối đa (max-pooling layers) của VGG để giảm kích thước không gian và trích xuất vector đặc trưng visual. Cụ thể, ảnh đầu vào kích thước $H \times W \times C$ được biến đổi thành bản đồ đặc trưng có kích thước $H' \times W' \times D$ (với $H' \ll H$ và $W' \ll W$). Sau đó, đặc trưng visual này được làm phẳng theo chiều rộng để tạo thành chuỗi các vector đặc trưng đại diện cho các lát cắt thẳng đứng dọc theo dòng chữ, trước khi đưa vào bộ giải mã Transformer Encoder-Decoder tuần tự để ánh xạ thành văn bản.
+
+Mô hình được huấn luyện với hàm mất mát \gls{ctc}~\cite{graves2006ctc},
+cho phép huấn luyện mà không cần căn chỉnh (alignment) giữa ảnh đầu vào
+và nhãn chuỗi ký tự. Cụ thể, \gls{ctc} định nghĩa xác suất phát ra
+ký tự $\pi_t$ tại bước thời gian $t$ như sau:
+
+\begin{equation}
+  P(\pi_t \mid \mathbf{x}) = y_t^{\pi_t}, \quad \pi_t \in L'
+  \label{eq:ctc_emission}
+\end{equation}
+
+\noindent
+trong đó $\mathbf{x}$ là chuỗi đặc trưng đầu vào,
+$y_t^{\pi_t}$ là xác suất đầu ra tại bước $t$ ứng với ký tự $\pi_t$,
+và $L' = L \cup \{\text{blank}\}$ là bộ ký tự mở rộng thêm ký tự trống.
+
+Xác suất của toàn bộ đường dẫn $\mathbf{\pi}$ có độ dài $T$ được tính bằng
+tích các xác suất tại từng bước thời gian:
+
+\begin{equation}
+  P(\mathbf{\pi} \mid \mathbf{x}) = \prod_{t=1}^{T} y_t^{\pi_t}
+  \label{eq:ctc_path}
+\end{equation}
+
+Do nhiều đường dẫn khác nhau có thể ánh xạ về cùng một nhãn đầu ra
+$\mathbf{y}$ thông qua hàm rút gọn $\mathcal{B}$ (loại bỏ ký tự trống
+và các ký tự lặp liên tiếp), xác suất tổng của nhãn $\mathbf{y}$
+được tính bằng tổng xác suất trên tất cả các đường dẫn hợp lệ:
+
+\begin{equation}
+  P(\mathbf{y} \mid \mathbf{x}) = \sum_{\mathbf{\pi} \in \mathcal{B}^{-1}(\mathbf{y})} P(\mathbf{\pi} \mid \mathbf{x})
+  \label{eq:ctc_total}
+\end{equation}
+
+Hàm mất mát \gls{ctc} được định nghĩa là logarit âm của xác suất này:
+
+\begin{equation}
+  \mathcal{L}_{\text{CTC}} = -\ln P(\mathbf{y} \mid \mathbf{x})
+  \label{eq:ctc_loss}
+\end{equation}
+
+Quá trình tính toán $P(\mathbf{y} \mid \mathbf{x})$ sử dụng thuật toán
+quy hoạch động forward-backward, cho phép tính hiệu quả tổng trên
+tất cả các đường dẫn mà không cần liệt kê toàn bộ.
+
+% ============================================================================
+%  2.3  Mô hình Donut
+% ============================================================================
+\subsection{Mô hình Donut}
+\label{subsec:donut}
+
+\model{Donut} (Document Understanding Transformer)~\cite{kim2022donut}
+là mô hình hiểu tài liệu theo hướng end-to-end không cần \gls{ocr}
+(OCR-free). Mô hình trực tiếp ánh xạ từ ảnh tài liệu sang chuỗi
+token có cấu trúc, loại bỏ hoàn toàn sự phụ thuộc vào module \gls{ocr}
+bên ngoài.
+
+% ----------------------------------------------------------------------------
+\subsubsection{Kiến trúc tổng quan}
+\label{subsubsec:donut_arch}
+
+Kiến trúc \model{Donut} gồm hai thành phần chính:
+
+\begin{itemize}
+  \item \textbf{Vision Encoder:} Swin Transformer~\cite{liu2021swin},
+    mã hóa ảnh tài liệu thành chuỗi đặc trưng thị giác
+    $\mathbf{z} = \{z_1, z_2, \ldots, z_n\}$.
+  \item \textbf{Text Decoder:} mBART~\cite{lewis2020bart},
+    giải mã chuỗi đặc trưng thị giác thành chuỗi token đầu ra
+    theo cơ chế tự hồi quy (autoregressive).
+\end{itemize}
+
+\begin{figure}[htbp]
+  \centering
+  % Ảnh kiến trúc Donut
+  \includegraphics[width=0.9\textwidth]{donut_architecture.png}
+  \caption{Kiến trúc tổng quan mô hình \model{Donut}~\cite{kim2022donut}.
+    Ảnh tài liệu được mã hóa bởi Swin Transformer, sau đó giải mã
+    thành chuỗi JSON bởi mBART Decoder.}
+  \label{fig:donut_arch}
+\end{figure}
+
+% ----------------------------------------------------------------------------
+\subsubsection{Vision Encoder: Swin Transformer}
+\label{subsubsec:swin}
+
+Swin Transformer~\cite{liu2021swin} là kiến trúc Transformer phân cấp
+cho thị giác máy tính, sử dụng cơ chế cửa sổ trượt (shifted window)
+để giảm độ phức tạp tính toán từ bậc hai xuống bậc tuyến tính
+theo kích thước ảnh.
+
+\paragraph{Window-based Multi-head Self-Attention (W-MSA).}
+Thay vì tính toán \gls{msa} trên toàn bộ ảnh, Swin Transformer chia ảnh
+thành các cửa sổ không chồng lấn có kích thước $M \times M$ pixel
+và thực hiện self-attention trong phạm vi từng cửa sổ.
+Cơ chế attention có dạng:
+
+\begin{equation}
+  \text{Attention}(Q, K, V) = \text{softmax}\left(\frac{QK^T}{\sqrt{d}} + B\right)V
+  \label{eq:swin_attention}
+\end{equation}
+
+\noindent
+trong đó:
+\begin{itemize}
+  \item $Q, K, V \in \mathbb{R}^{M^2 \times d}$ lần lượt là ma trận
+    Query, Key và Value, được chiếu tuyến tính từ các đặc trưng đầu vào.
+  \item $d$ là số chiều của mỗi head attention.
+  \item $B \in \mathbb{R}^{M^2 \times M^2}$ là ma trận thiên lệch vị trí
+    tương đối (relative position bias), được học trong quá trình huấn luyện.
+    Ma trận $B$ giúp mô hình nhận biết vị trí tương đối giữa các token
+    trong cùng cửa sổ mà không cần mã hóa vị trí tuyệt đối.
+\end{itemize}
+
+\paragraph{Shifted Window MSA (SW-MSA).}
+Để tạo kết nối giữa các cửa sổ liền kề, ở lớp Transformer kế tiếp,
+các cửa sổ được dịch chuyển $\lfloor M/2 \rfloor$ pixel theo cả hai chiều
+ngang và dọc. Cơ chế W-MSA và SW-MSA được xen kẽ nhau qua các lớp
+Transformer, cho phép thông tin lan truyền giữa các cửa sổ.
+
+% >>> BẢN NHÁP: Cơ chế SW-MSA (Sinh viên đọc lại và chỉnh sửa) <<<
+Sự kết hợp giữa hai cơ chế W-MSA (Window Multi-head Self-Attention) và SW-MSA (Shifted Window Multi-head Self-Attention) giải quyết triệt để vấn đề mất liên kết giữa các cửa sổ không chồng lấn. Trong khi W-MSA thực hiện tính toán self-attention độc lập bên trong mỗi cửa sổ kích thước $M \times M$ để tối ưu hóa tốc độ, lớp SW-MSA kế tiếp sẽ dịch chuyển tọa độ phân chia cửa sổ đi một đoạn $\lfloor M/2 \rfloor$ pixel. Nhờ sự dịch chuyển này, các cửa sổ mới sẽ đè lên ranh giới của các cửa sổ cũ, cho phép các token ở ranh giới giao tiếp và truyền thông tin qua lại, duy trì sự nhất quán ngữ cảnh toàn cục của hình ảnh.
+
+% ----------------------------------------------------------------------------
+\subsubsection{Text Decoder: mBART}
+\label{subsubsec:mbart}
+
+Bộ giải mã sử dụng kiến trúc mBART~\cite{lewis2020bart},
+một biến thể đa ngôn ngữ của \gls{bart}.
+Tại mỗi bước giải mã $i$, decoder thực hiện hai cơ chế attention:
+
+\paragraph{Self-Attention.}
+Mỗi token $\mathbf{s}_i$ trong chuỗi đầu ra chú ý tới tất cả
+các token trước đó $\mathbf{s}_{<i}$ (masked self-attention):
+
+\begin{equation}
+  \mathbf{h}_i^{\text{self}} = \text{Self-Attention}(\mathbf{s}_i, \mathbf{s}_{<i})
+  \label{eq:donut_self_attn}
+\end{equation}
+
+\paragraph{Cross-Attention.}
+Kết quả self-attention $\mathbf{h}_i^{\text{self}}$ được sử dụng
+làm query để chú ý tới chuỗi đặc trưng thị giác $\mathbf{z}$
+từ encoder:
+
+\begin{equation}
+  \mathbf{h}_i^{\text{cross}} = \text{softmax}\left(\frac{(\mathbf{h}_i^{\text{self}} W^Q)(\mathbf{z} W^K)^T}{\sqrt{d}}\right)(\mathbf{z} W^V)
+  \label{eq:donut_cross_attn}
+\end{equation}
+
+\noindent
+trong đó $W^Q, W^K, W^V$ là các ma trận trọng số chiếu tuyến tính
+cho Query, Key và Value tương ứng, và $d$ là số chiều attention head.
+
+\paragraph{Hàm mất mát huấn luyện.}
+\model{Donut} được huấn luyện bằng hàm cross-entropy trên chuỗi
+token đầu ra, với nhãn thực (teacher forcing) $y_{<i}^*$:
+
+\begin{equation}
+  \mathcal{L}_{\text{Donut}} = -\sum_{i=1}^{T} \log P(y_i \mid y_{<i}^*, \mathbf{z})
+  \label{eq:donut_loss}
+\end{equation}
+
+\noindent
+trong đó $T$ là độ dài chuỗi đầu ra và $\mathbf{z}$ là đặc trưng
+thị giác từ Swin Encoder.
+
+% ----------------------------------------------------------------------------
+\subsubsection{Ưu điểm và hạn chế}
+\label{subsubsec:donut_pros_cons}
+
+\paragraph{Ưu điểm.}
+\begin{itemize}
+  \item Loại bỏ hoàn toàn phụ thuộc vào module \gls{ocr},
+    giảm lỗi tích lũy từ giai đoạn nhận dạng văn bản.
+  \item Pipeline đơn giản, dễ huấn luyện và triển khai end-to-end.
+  \item Kiến trúc tổng quát, có thể áp dụng cho nhiều bài toán
+    hiểu tài liệu khác nhau bằng cách thay đổi prompt đầu vào.
+\end{itemize}
+
+\paragraph{Hạn chế.}
+\begin{itemize}
+  \item Yêu cầu dữ liệu huấn luyện lớn để đạt hiệu suất tốt.
+  \item Tốc độ suy luận (inference) chậm hơn so với pipeline OCR-based
+    do cơ chế giải mã tự hồi quy.
+  \item Khó khăn khi xử lý ảnh có độ phân giải cao hoặc tài liệu
+    nhiều trang.
+\end{itemize}
+
+% ============================================================================
+%  2.4  Mô hình LayoutXLM
+% ============================================================================
+\subsection{Mô hình LayoutXLM}
+\label{subsec:layoutxlm}
+
+\model{LayoutXLM}~\cite{xu2021layoutxlm} là mô hình tiền huấn luyện
+đa phương thức (multimodal) và đa ngôn ngữ (multilingual)
+cho bài toán hiểu tài liệu có bố cục phong phú.
+Mô hình kế thừa kiến trúc XLM-RoBERTa~\cite{conneau2020xlmr}
+và mở rộng bằng cách tích hợp thông tin văn bản, bố cục không gian 2D
+và đặc trưng thị giác.
+
+% ----------------------------------------------------------------------------
+\subsubsection{Kiến trúc tổng quan}
+\label{subsubsec:layoutxlm_arch}
+
+% >>> BẢN NHÁP: Tổng quan LayoutXLM (Sinh viên đọc lại và chỉnh sửa) <<<
+LayoutXLM là một mô hình học sâu đa phương thức được thiết kế để mở rộng khả năng hiểu tài liệu đa ngôn ngữ. Kiến trúc cốt lõi của LayoutXLM là Transformer Encoder, kế thừa trực tiếp từ XLM-RoBERTa nhưng tích hợp thêm các kênh thông tin về không gian 2D (bounding boxes) và đặc trưng thị giác (visual features) của từng vùng văn bản. Điều này giúp mô hình đồng thời biểu diễn được cả ngữ nghĩa của từ ngữ, vị trí vật lý của từ trên trang giấy và đặc điểm hình ảnh (font chữ, màu sắc, khung viền), giải quyết hiệu quả bài toán trích xuất thực thể từ tài liệu có cấu trúc bố cục phức tạp như hóa đơn.
+
+\begin{figure}[htbp]
+  \centering
+  % Ảnh kiến trúc LayoutXLM
+  \includegraphics[width=0.9\textwidth]{layoutxlm_architecture.png}
+  \caption{Kiến trúc mô hình \model{LayoutXLM}~\cite{xu2021layoutxlm}.
+    Mô hình kết hợp ba loại thông tin: văn bản, bố cục không gian 2D
+    và đặc trưng thị giác thông qua cơ chế nhúng đa phương thức.}
+  \label{fig:layoutxlm_arch}
+\end{figure}
+
+\model{LayoutXLM} sử dụng kiến trúc Transformer encoder với 12 lớp,
+kết hợp ba loại nhúng (embedding) khác nhau cho mỗi token đầu vào.
+Mô hình được tiền huấn luyện trên dữ liệu tài liệu đa ngôn ngữ
+với các tác vụ Masked Language Model (MLM), Text-Image Alignment (TIA)
+và Text-Image Matching (TIM).
+
+% ----------------------------------------------------------------------------
+\subsubsection{Nhúng đa phương thức}
+\label{subsubsec:multimodal_embedding}
+
+Mỗi token $w_i$ trong tài liệu được biểu diễn thông qua sự kết hợp
+của ba loại nhúng: nhúng văn bản, nhúng không gian 2D, và nhúng thị giác.
+
+\paragraph{Nhúng văn bản (Text Embedding).}
+Token $w_i$ được ánh xạ thành vector nhúng thông qua bảng từ vựng
+đã học:
+
+\begin{equation}
+  \mathbf{t}_i = \text{WordEmbedding}(w_i)
+  \label{eq:text_emb}
+\end{equation}
+
+\paragraph{Nhúng không gian 2D (2D Spatial Embedding).}
+Tọa độ bounding box $\text{bbox}_i = (x_1, y_1, x_2, y_2)$ của token
+được chuẩn hóa (normalize) về khoảng $[0, 1000]$ theo kích thước ảnh:
+
+\begin{align}
+  \hat{x} &= \left\lfloor \frac{x}{W_{\text{img}}} \times 1000 \right\rfloor, \qquad
+  \hat{y}  = \left\lfloor \frac{y}{H_{\text{img}}} \times 1000 \right\rfloor
+  \label{eq:bbox_norm}
+\end{align}
+
+\noindent
+trong đó $W_{\text{img}}$ và $H_{\text{img}}$ là chiều rộng và chiều cao
+của ảnh gốc. Chiều rộng $w$ và chiều cao $h$ của bounding box được tính là
+$w = x_2 - x_1$ và $h = y_2 - y_1$.
+Nhúng không gian được tính bằng tổng sáu thành phần nhúng:
+
+\begin{equation}
+  \mathbf{e}_{2D}(\text{bbox}_i) = \mathbf{e}_{x_1}(x_1) + \mathbf{e}_{y_1}(y_1) + \mathbf{e}_{x_2}(x_2) + \mathbf{e}_{y_2}(y_2) + \mathbf{e}_{w}(w) + \mathbf{e}_{h}(h)
+  \label{eq:spatial_emb}
+\end{equation}
+
+\noindent
+trong đó $\mathbf{e}_{x_1}, \mathbf{e}_{y_1}, \mathbf{e}_{x_2},
+\mathbf{e}_{y_2}, \mathbf{e}_{w}, \mathbf{e}_{h}$ là các bảng nhúng
+riêng biệt cho từng thành phần tọa độ.
+
+\paragraph{Nhúng thị giác (Visual Embedding).}
+Đặc trưng thị giác của vùng ứng với token $w_i$ được trích xuất
+bằng cơ chế \gls{roi} Align từ feature map của mạng \gls{cnn}:
+
+\begin{equation}
+  \mathbf{v}_i = \text{RoIAlign}(\text{FeatureMap}, \text{bbox}_i)\, W^V
+  \label{eq:visual_emb}
+\end{equation}
+
+\noindent
+trong đó $W^V$ là ma trận chiếu tuyến tính đưa đặc trưng thị giác
+về cùng không gian với các nhúng khác.
+
+\paragraph{Nhúng kết hợp.}
+Ba loại nhúng được cộng element-wise tạo thành biểu diễn đầu vào
+cho mỗi token:
+
+\begin{equation}
+  \mathbf{x}_i = \mathbf{t}_i + \mathbf{e}_{2D}(\text{bbox}_i) + \mathbf{v}_i
+  \label{eq:combined_emb}
+\end{equation}
+
+% ----------------------------------------------------------------------------
+\subsubsection{Spatial-aware Self-Attention}
+\label{subsubsec:spatial_attention}
+
+\model{LayoutXLM} sử dụng cơ chế self-attention có nhận biết không gian
+(spatial-aware), bổ sung thông tin thiên lệch vị trí 1D và 2D
+vào điểm attention giữa token $i$ và token $j$:
+
+\begin{equation}
+  \alpha_{ij} = \frac{\mathbf{q}_i \mathbf{k}_j^T}{\sqrt{d}} + b^{1D}(j - i) + b^{2D}_x(x_{1,i} - x_{1,j}) + b^{2D}_y(y_{1,i} - y_{1,j})
+  \label{eq:spatial_attn}
+\end{equation}
+
+\noindent
+trong đó:
+\begin{itemize}
+  \item $\mathbf{q}_i, \mathbf{k}_j$ là vector query và key tương ứng
+    với token $i$ và $j$.
+  \item $b^{1D}(j - i)$ là thiên lệch vị trí 1D (1D position bias),
+    mã hóa khoảng cách tuần tự giữa hai token.
+  \item $b^{2D}_x(x_{1,i} - x_{1,j})$ và $b^{2D}_y(y_{1,i} - y_{1,j})$
+    là các thiên lệch vị trí 2D (2D position bias),
+    mã hóa khoảng cách không gian theo trục $x$ và $y$
+    giữa tọa độ góc trên bên trái của hai bounding box.
+\end{itemize}
+
+Cơ chế này cho phép mô hình tự động học được rằng các token gần nhau
+về mặt không gian có xu hướng liên quan về mặt ngữ nghĩa,
+đặc biệt quan trọng trong tài liệu có bố cục phức tạp như biên lai.
+
+% ----------------------------------------------------------------------------
+\subsubsection{Token Classification với BIO tagging}
+\label{subsubsec:bio_tagging}
+
+Trong đồ án, \model{LayoutXLM} được fine-tune cho tác vụ phân loại
+token (token classification) sử dụng lược đồ gán nhãn \gls{bio}.
+Mỗi token trong tài liệu được gán một nhãn thuộc tập 9 nhãn
+được trình bày trong \cref{tab:bio_labels}.
+
+\begin{table}[htbp]
+  \centering
+  \caption{Hệ thống nhãn \gls{bio} cho bài toán trích xuất thông tin biên lai.}
+  \label{tab:bio_labels}
+  \begin{tabular}{clp{7cm}}
+    \toprule
+    \textbf{STT} & \textbf{Nhãn} & \textbf{Ý nghĩa} \\
+    \midrule
+    1 & \texttt{O}              & Token không thuộc trường thông tin nào \\
+    2 & \texttt{B-STORE\_NAME}  & Token đầu tiên của tên cửa hàng \\
+    3 & \texttt{I-STORE\_NAME}  & Token tiếp theo của tên cửa hàng \\
+    4 & \texttt{B-DATE}         & Token đầu tiên của ngày tháng \\
+    5 & \texttt{I-DATE}         & Token tiếp theo của ngày tháng \\
+    6 & \texttt{B-TOTAL}        & Token đầu tiên của tổng tiền \\
+    7 & \texttt{I-TOTAL}        & Token tiếp theo của tổng tiền \\
+    8 & \texttt{B-ADDRESS}      & Token đầu tiên của địa chỉ \\
+    9 & \texttt{I-ADDRESS}      & Token tiếp theo của địa chỉ \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+Trong lược đồ \gls{bio}, tiền tố \texttt{B-} (Begin) đánh dấu
+token bắt đầu một thực thể mới, tiền tố \texttt{I-} (Inside) đánh dấu
+các token tiếp theo trong cùng thực thể, và \texttt{O} (Outside)
+cho các token không thuộc bất kỳ trường nào.
+
+Lớp phân loại tuyến tính (linear classification head) được thêm
+trên đầu ra của Transformer encoder, và mô hình được huấn luyện
+bằng hàm cross-entropy loss trên tập nhãn:
+
+\begin{equation}
+  \mathcal{L}_{\text{LayoutXLM}} = -\sum_{i=1}^{N} \log P(y_i \mid \mathbf{x})
+  \label{eq:layoutxlm_loss}
+\end{equation}
+
+\noindent
+trong đó $N$ là số token trong tài liệu, $y_i$ là nhãn \gls{bio}
+đúng của token thứ $i$, và $\mathbf{x}$ là biểu diễn đa phương thức
+đầu vào.
+
+% ----------------------------------------------------------------------------
+\subsubsection{Ưu điểm và hạn chế}
+\label{subsubsec:layoutxlm_pros_cons}
+
+\paragraph{Ưu điểm.}
+\begin{itemize}
+  \item Khai thác đồng thời ba loại thông tin: văn bản, bố cục
+    và thị giác, giúp hiểu tài liệu toàn diện hơn.
+  \item Hỗ trợ đa ngôn ngữ nhờ tiền huấn luyện trên dữ liệu
+    đa ngôn ngữ (bao gồm tiếng Việt).
+  \item Cơ chế spatial-aware attention tận dụng hiệu quả
+    thông tin bố cục không gian của tài liệu.
+  \item Phù hợp với bài toán token classification, cho kết quả
+    cấp token (chi tiết hơn so với hướng generative).
+\end{itemize}
+
+\paragraph{Hạn chế.}
+\begin{itemize}
+  \item Phụ thuộc vào chất lượng \gls{ocr} ở giai đoạn tiền xử lý.
+    Lỗi \gls{ocr} sẽ lan truyền trực tiếp tới kết quả trích xuất.
+  \item Pipeline phức tạp hơn, gồm nhiều bước: \gls{ocr},
+    tiền xử lý bounding box, gán nhãn, và suy luận.
+  \item Cần dữ liệu gán nhãn cấp token (token-level annotation),
+    tốn chi phí chuẩn bị hơn so với gán nhãn cấp tài liệu.
+\end{itemize}
+
+% ============================================================================
+%  2.5  Các độ đo đánh giá
+% ============================================================================
+\subsection{Các độ đo đánh giá}
+\label{subsec:metrics}
+
+% >>> BẢN NHÁP: Giới thiệu các độ đo (Sinh viên đọc lại và chỉnh sửa) <<<
+Để đánh giá một cách toàn diện và chính xác hiệu năng của các mô hình trích xuất thông tin, đồ án sử dụng một bộ chỉ số đa chiều bao gồm các độ đo về độ chính xác ký tự, độ tương đồng ngữ nghĩa cũng như hiệu năng vận hành thực tế. Các chỉ số này giúp phân tích chi tiết điểm mạnh, điểm yếu của từng mô hình trên các khía cạnh khác nhau.
+
+Để đánh giá và so sánh hiệu suất hai hướng tiếp cận, đồ án sử dụng
+bốn độ đo được trình bày chi tiết dưới đây và tổng hợp
+trong \cref{tab:metrics_summary}.
+
+% ----------------------------------------------------------------------------
+\subsubsection{Exact Match (EM)}
+\label{subsubsec:em}
+
+\gls{em} đo tỷ lệ các trường được trích xuất khớp hoàn toàn
+(chính xác từng ký tự) với nhãn thực:
+
+\begin{equation}
+  \metric{EM} = \frac{\text{Số trường khớp chính xác}}{\text{Tổng số trường}}
+  \label{eq:em}
+\end{equation}
+
+Đây là độ đo nghiêm ngặt nhất, yêu cầu kết quả trích xuất phải
+hoàn toàn giống với giá trị tham chiếu. \gls{em} phù hợp để đánh giá
+các trường có định dạng cố định như \field{date} và \field{total}.
+
+% ----------------------------------------------------------------------------
+\subsubsection{Normalized Edit Similarity (NES)}
+\label{subsubsec:nes}
+
+\gls{nes} đo mức độ tương đồng giữa chuỗi dự đoán và chuỗi tham chiếu,
+dựa trên khoảng cách biên tập Levenshtein~\cite{levenshtein1966binary}:
+
+\begin{equation}
+  \metric{NES} = 1 - \frac{\text{Levenshtein}(\text{pred}, \text{gold})}{\max\bigl(\text{len}(\text{pred}),\, \text{len}(\text{gold})\bigr)}
+  \label{eq:nes}
+\end{equation}
+
+\noindent
+trong đó $\text{Levenshtein}(\text{pred}, \text{gold})$ là số phép biến đổi
+tối thiểu (chèn, xóa, thay thế ký tự) để chuyển chuỗi dự đoán thành
+chuỗi tham chiếu. \gls{nes} có giá trị trong khoảng $[0, 1]$,
+giá trị càng cao thì kết quả trích xuất càng tốt.
+
+% ----------------------------------------------------------------------------
+\subsubsection{Character Error Rate (CER)}
+\label{subsubsec:cer}
+
+\gls{cer} đo tỷ lệ lỗi ở cấp độ ký tự, tính bằng khoảng cách biên tập
+Levenshtein chia cho độ dài chuỗi tham chiếu:
+
+\begin{equation}
+  \metric{CER} = \frac{\text{Levenshtein}(\text{pred}, \text{gold})}{\text{len}(\text{gold})}
+  \label{eq:cer}
+\end{equation}
+
+\noindent
+Giá trị \gls{cer} càng thấp thì kết quả càng tốt.
+\gls{cer} có thể lớn hơn 1 khi chuỗi dự đoán dài hơn đáng kể
+so với chuỗi tham chiếu.
+
+% ----------------------------------------------------------------------------
+\subsubsection{End-to-End Latency}
+\label{subsubsec:latency}
+
+End-to-End Latency đo tổng thời gian xử lý từ khi nhận ảnh đầu vào
+đến khi trả về kết quả trích xuất, bao gồm tất cả các bước
+trong pipeline (tiền xử lý, \gls{ocr}, suy luận mô hình, hậu xử lý).
+Đơn vị tính là giây/ảnh (s/image).
+
+% >>> BẢN NHÁP: Đo Latency (Sinh viên đọc lại và chỉnh sửa) <<<
+Để đảm bảo tính khách quan và nhất quán trong so sánh, thời gian xử lý (Latency) của tất cả các phương pháp được đo trên cùng một cấu hình phần cứng (sử dụng GPU NVIDIA Tesla T4 16GB). Quy trình đo latency bao gồm bước chạy khởi động (warm-up) với 50 ảnh đầu tiên để nạp mô hình vào bộ nhớ GPU và ổn định tài nguyên hệ thống. Sau đó, tổng thời gian xử lý toàn bộ pipeline được tính trung bình trên toàn bộ tập kiểm thử gồm 234 ảnh. Latency đo được đại diện cho tốc độ phản hồi thực tế của hệ thống đối với mỗi yêu cầu trích xuất.
+
+\begin{table}[htbp]
+  \centering
+  \caption{Tổng hợp các độ đo đánh giá được sử dụng trong đồ án.}
+  \label{tab:metrics_summary}
+  \begin{tabular}{llcl}
+    \toprule
+    \textbf{Độ đo} & \textbf{Viết tắt} & \textbf{Hướng} & \textbf{Mô tả} \\
+    \midrule
+    Exact Match               & \gls{em}  & $\uparrow$ & Tỷ lệ khớp chính xác toàn bộ trường \\
+    Normalized Edit Similarity & \gls{nes} & $\uparrow$ & Độ tương đồng biên tập chuẩn hóa \\
+    Character Error Rate      & \gls{cer} & $\downarrow$ & Tỷ lệ lỗi ở cấp ký tự \\
+    End-to-End Latency        & ---       & $\downarrow$ & Thời gian xử lý (giây/ảnh) \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+% ============================================================================
+%  2.6  Các công trình liên quan
+% ============================================================================
+\subsection{Các công trình liên quan}
+\label{subsec:related_work}
+
+% >>> BẢN NHÁP: Dẫn dắt Related Work (Sinh viên đọc lại và chỉnh sửa) <<<
+Bài toán hiểu tài liệu (Document Understanding) và trích xuất thông tin đã thu hút nhiều sự quan tâm của cộng đồng nghiên cứu AI trong những năm gần đây với hàng loạt tập dữ liệu chuẩn và kiến trúc mô hình đột phá được đề xuất. Dưới đây là các công trình tiêu biểu đóng vai trò nền tảng hoặc có liên quan trực tiếp đến định hướng thực hiện đồ án.
+
+Phần này trình bày các công trình nghiên cứu liên quan trực tiếp
+đến đề tài, bao gồm tập dữ liệu, mô hình nền tảng
+và các cuộc thi liên quan.
+
+\paragraph{MC-OCR 2021.}
+MC-OCR (Mobile-Captured OCR)~\cite{mcocr2021} là cuộc thi do Zalo AI
+tổ chức năm 2021, tập trung vào bài toán trích xuất thông tin
+từ ảnh biên lai chụp bằng điện thoại di động.
+Cuộc thi cung cấp tập dữ liệu biên lai tiếng Việt được sử dụng
+làm nền tảng cho dữ liệu huấn luyện và đánh giá trong đồ án này.
+% >>> BẢN NHÁP: Đội dẫn đầu MC-OCR (Sinh viên đọc lại và chỉnh sửa) <<<
+Trong cuộc thi MC-OCR 2021, các đội thi dẫn đầu chủ yếu sử dụng các giải pháp kết hợp hai giai đoạn (two-stage pipeline). Giai đoạn đầu tiên tập trung tối ưu hóa mô hình phát hiện hộp bao bằng cách sử dụng các kiến trúc mạnh mẽ như DBNet hoặc YOLOv5. Giai đoạn thứ hai sử dụng các mô hình ngôn ngữ lớn kết hợp thông tin đa phương thức như LayoutLM, LayoutLMv2 hoặc các mô hình sequence-to-sequence như T5 để trích xuất thông tin thực thể. Các đội thi cũng áp dụng các kỹ thuật tăng cường dữ liệu ảnh (data augmentation) mạnh mẽ và các quy tắc hậu xử lý văn bản chuyên sâu để xử lý tiếng Việt dấu câu.
+
+\paragraph{CORD.}
+CORD (Consolidated Receipt Dataset)~\cite{park2019cord} là tập dữ liệu
+biên lai quốc tế với gán nhãn chi tiết ở nhiều cấp độ.
+\model{Donut} được tiền huấn luyện và đánh giá trên CORD,
+cung cấp benchmark tham chiếu cho bài toán trích xuất thông tin biên lai.
+
+\paragraph{LayoutLM và LayoutLMv3.}
+\model{LayoutLM}~\cite{xu2020layoutlm} là mô hình tiên phong
+trong việc kết hợp thông tin văn bản và bố cục 2D cho bài toán
+hiểu tài liệu, dựa trên kiến trúc BERT.
+\model{LayoutLMv3}~\cite{huang2022layoutlmv3} mở rộng thêm bằng cách
+tích hợp đặc trưng thị giác và sử dụng cơ chế masking thống nhất
+cho cả văn bản và hình ảnh.
+\model{LayoutXLM}~\cite{xu2021layoutxlm} kế thừa các ý tưởng này
+và mở rộng sang đa ngôn ngữ, là lựa chọn phù hợp cho tiếng Việt
+trong đồ án.
+
+\paragraph{Transformer.}
+Kiến trúc Transformer~\cite{vaswani2017attention} là nền tảng
+cho hầu hết các mô hình được sử dụng trong đồ án, bao gồm
+Swin Transformer (encoder của \model{Donut}),
+mBART (decoder của \model{Donut}),
+và XLM-RoBERTa (backbone của \model{LayoutXLM}).
+Cơ chế \gls{msa} của Transformer cho phép mô hình
+nắm bắt các quan hệ phụ thuộc xa trong chuỗi đầu vào.
+
+% >>> BẢN NHÁP: Các công trình khác (Sinh viên đọc lại và chỉnh sửa) <<<
+Bên cạnh các mô hình được sử dụng chính trong đồ án, một số nghiên cứu gần đây cũng đề xuất các tiếp cận đáng chú ý như \model{Pix2Struct}~\cite{lee2023pix2struct} - mô hình tiền huấn luyện từ ảnh sang HTML cho các tác vụ hiểu giao diện và tài liệu, hoặc \model{TrOCR}~\cite{li2023trocr} - mô hình OCR dựa hoàn toàn trên kiến trúc Transformer cho cả hai giai đoạn detection và recognition. Các công trình này mở ra nhiều hướng đi mới cho việc tối ưu hóa hiệu năng trích xuất thông tin từ tài liệu bán cấu trúc trong tương lai.

@@ -1,0 +1,142 @@
+% ============================================================================
+%  MAIN.TEX — Báo cáo Đồ án Thị Giác Máy Tính
+%  Đề tài: Trích xuất thông tin biên lai tiếng Việt
+%  Compiler: XeLaTeX | Overleaf: Menu → Compiler → XeLaTeX
+% ============================================================================
+\documentclass[12pt,a4paper]{article}
+\input{preamble}
+
+\begin{document}
+
+% ============================================================================
+%  TRANG BÌA
+% ============================================================================
+\begin{titlepage}
+  \begin{center}
+    % --- Logo và tên trường ---
+    \includegraphics[width=3cm]{huce_logo.jpg}\\[0.3cm]
+    {\large\textbf{BỘ GIÁO DỤC VÀ ĐÀO TẠO}}\\[0.1cm]
+    {\Large\textbf{TRƯỜNG ĐẠI HỌC XÂY DỰNG HÀ NỘI}}\\[0.1cm]
+    {\large\textbf{KHOA CÔNG NGHỆ THÔNG TIN}}\\[0.3cm]
+    
+    \rule{\textwidth}{1pt}\\[0.3cm]
+    
+    % --- Loại đồ án ---
+    {\large ĐỒ ÁN MÔN HỌC}\\[0.2cm]
+    {\large\textbf{THỊ GIÁC MÁY TÍNH}}\\[0.8cm]
+    
+    % --- Tên đề tài ---
+    {\LARGE\bfseries\color{huce-blue}
+      TRÍCH XUẤT THÔNG TIN \\[0.3cm]
+      BIÊN LAI TIẾNG VIỆT \\[0.3cm]
+    }
+    {\large\itshape
+      So sánh kiến trúc Donut (OCR-free) \\
+      và VietOCR + LayoutXLM (OCR-based)
+    }\\[1.2cm]
+    
+    \rule{\textwidth}{1pt}\\[0.8cm]
+    
+    % --- Thông tin sinh viên & GVHD ---
+    \begin{minipage}[t]{0.45\textwidth}
+      \begin{flushleft}
+        \textbf{Giảng viên hướng dẫn:}\\[0.2cm]
+        ThS. Nguyễn Đình Quý\\[0.5cm]
+        \textbf{Bộ môn:}\\[0.2cm]
+        Khoa học máy tính
+      \end{flushleft}
+    \end{minipage}
+    \hfill
+    \begin{minipage}[t]{0.45\textwidth}
+      \begin{flushleft}
+        \textbf{Sinh viên thực hiện:}\\[0.2cm]
+        Trần Phùng Đức Anh - 0204168\\[0.1cm]
+        Nguyễn Minh Năng - 0211668\\[0.1cm]
+        Nguyễn Việt Hùng - 0208768\\[0.4cm]
+        \textbf{Lớp:}\\[0.2cm]
+        68CS2
+      \end{flushleft}
+    \end{minipage}
+    
+    \vfill
+    
+    % --- Nơi và năm ---
+    {\large Hà Nội, \the\year}
+  \end{center}
+\end{titlepage}
+
+% ============================================================================
+%  LỜI CẢM ƠN (tuỳ chọn)
+% ============================================================================
+\newpage
+\section*{Lời cảm ơn}
+\addcontentsline{toc}{section}{Lời cảm ơn}
+% >>> BẢN NHÁP: Lời cảm ơn (Sinh viên có thể đọc lại và chỉnh sửa) <<<
+Lời đầu tiên, chúng em xin bày tỏ lòng biết ơn sâu sắc tới ThS. Nguyễn Đình Quý, giảng viên bộ môn Khoa học máy tính, Khoa Công nghệ thông tin, Trường Đại học Xây dựng Hà Nội. Thầy đã tận tình hướng dẫn, định hướng khoa học và cung cấp những chỉ dẫn vô cùng quý báu trong suốt quá trình nghiên cứu và hoàn thành đồ án môn học Thị giác máy tính này.
+
+Chúng em cũng xin gửi lời cảm ơn đến các thầy cô giáo trong Khoa Công nghệ thông tin đã truyền đạt những kiến thức nền tảng bổ ích, tạo điều kiện thuận lợi nhất để chúng em thực hiện đề tài. 
+
+Cuối cùng, xin cảm ơn gia đình, bạn bè và tập thể lớp 68CS2 đã luôn động viên, hỗ trợ và đóng góp ý kiến để nhóm hoàn thiện báo cáo đồ án này một cách tốt nhất. Do kiến thức và kinh nghiệm thực tế còn hạn chế, báo cáo không tránh khỏi những thiếu sót. Chúng em rất mong nhận được sự đóng góp và chỉ bảo của quý thầy cô.
+
+Chúng em xin chân thành cảm ơn!
+\begin{flushright}
+  \textit{Hà Nội, năm \the\year}\\
+  \textbf{Nhóm sinh viên thực hiện}
+\end{flushright}
+
+\newpage
+
+% ============================================================================
+%  MỤC LỤC, DANH MỤC HÌNH, DANH MỤC BẢNG
+% ============================================================================
+\tableofcontents
+\newpage
+\listoffigures
+\addcontentsline{toc}{section}{Danh mục hình ảnh}
+\newpage
+\listoftables
+\addcontentsline{toc}{section}{Danh mục bảng biểu}
+\newpage
+
+% ============================================================================
+%  DANH MỤC TỪ VIẾT TẮT
+% ============================================================================
+\printglossary[type=\acronymtype, title={Danh mục từ viết tắt}]
+\addcontentsline{toc}{section}{Danh mục từ viết tắt}
+\newpage
+
+% ============================================================================
+%  NỘI DUNG CHÍNH
+% ============================================================================
+\input{chapters/00_abstract}
+\newpage
+\input{chapters/01_introduction}
+\newpage
+\input{chapters/02_theory}
+\newpage
+\input{chapters/03_dataset}
+\newpage
+\input{chapters/04_preprocessing}
+\newpage
+\input{chapters/05_methodology}
+\newpage
+\input{chapters/06_experiments}
+\newpage
+\input{chapters/07_results}
+\newpage
+\input{chapters/08_conclusion}
+
+% ============================================================================
+%  TÀI LIỆU THAM KHẢO
+% ============================================================================
+\newpage
+\printbibliography[title={Tài liệu tham khảo}]
+\addcontentsline{toc}{section}{Tài liệu tham khảo}
+
+% ============================================================================
+%  PHỤ LỤC
+% ============================================================================
+\newpage
+\input{chapters/appendix}
+
+\end{document}

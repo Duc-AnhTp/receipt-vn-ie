@@ -1,0 +1,233 @@
+% ============================================================================
+%  PREAMBLE — Báo cáo đồ án Thị Giác Máy Tính
+%  Compiler: XeLaTeX (Overleaf: Menu → Compiler → XeLaTeX)
+% ============================================================================
+
+% --- Font & Ngôn ngữ tiếng Việt ---
+\usepackage{fontspec}
+\defaultfontfeatures{Ligatures=TeX}
+\setmainfont{Times New Roman}        % Font chính — hỗ trợ tốt tiếng Việt
+\setsansfont{Arial}                  % Font sans-serif
+\setmonofont{Courier New}            % Font code
+\usepackage[vietnamese,english]{babel}
+\selectlanguage{vietnamese}
+
+% --- Trang & Layout ---
+\usepackage[
+  a4paper,
+  top=25mm,
+  bottom=25mm,
+  left=30mm,    % Lề trái rộng hơn (đóng gáy)
+  right=20mm,
+  headheight=15pt
+]{geometry}
+
+\usepackage{setspace}
+\onehalfspacing                      % Giãn dòng 1.5
+
+% --- Header / Footer ---
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small\leftmark}
+\fancyhead[R]{\small Đồ án TGMT}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\footrulewidth}{0pt}
+
+% Trang đầu mỗi chương dùng plain style
+\fancypagestyle{plain}{
+  \fancyhf{}
+  \fancyfoot[C]{\thepage}
+  \renewcommand{\headrulewidth}{0pt}
+}
+
+% --- Heading style ---
+\usepackage{titlesec}
+\titleformat{\section}
+  {\Large\bfseries}{\thesection.}{0.5em}{}
+\titleformat{\subsection}
+  {\large\bfseries}{\thesubsection.}{0.5em}{}
+\titleformat{\subsubsection}
+  {\normalsize\bfseries}{\thesubsubsection.}{0.5em}{}
+
+% --- Toán học ---
+\usepackage{amsmath, amssymb, amsfonts}
+\usepackage{mathtools}
+
+% --- Hình ảnh ---
+\usepackage{graphicx}
+\graphicspath{{figures/}}            % Thư mục hình mặc định
+\usepackage{float}
+\usepackage{subcaption}
+\usepackage{wrapfig}
+
+% --- Bảng biểu ---
+\usepackage{booktabs}                % \toprule, \midrule, \bottomrule
+\usepackage{tabularx}
+\usepackage{multirow}
+\usepackage{makecell}                % Xuống dòng trong ô bảng
+\usepackage{array}
+\newcolumntype{C}[1]{>{\centering\arraybackslash}m{#1}}  % Cột căn giữa
+\newcolumntype{L}[1]{>{\raggedright\arraybackslash}m{#1}} % Cột căn trái
+
+% --- Caption ---
+\usepackage[
+  font=small,
+  labelfont=bf,
+  format=hang,
+  justification=centering
+]{caption}
+
+% --- Màu sắc ---
+\usepackage[dvipsnames,svgnames,x11names]{xcolor}
+\definecolor{huce-blue}{RGB}{0, 51, 102}     % Xanh HUCE
+\definecolor{huce-gold}{RGB}{204, 153, 0}    % Vàng HUCE
+\definecolor{code-bg}{RGB}{245, 245, 245}    % Nền code
+\definecolor{link-blue}{RGB}{0, 102, 204}    % Link
+
+% --- Code listing ---
+\usepackage{listings}
+\lstset{
+  basicstyle=\small\ttfamily,
+  backgroundcolor=\color{code-bg},
+  breaklines=true,
+  frame=single,
+  rulecolor=\color{gray!40},
+  numbers=left,
+  numberstyle=\tiny\color{gray},
+  numbersep=8pt,
+  tabsize=2,
+  showstringspaces=false,
+  captionpos=b,
+  extendedchars=true,
+  inputencoding=utf8,
+  literate=
+    {á}{{\'a}}1 {à}{{\`a}}1 {ả}{{\h a}}1 {ã}{{\~a}}1 {ạ}{{\.a}}1
+    {ă}{{\u a}}1 {ắ}{{\'\u a}}1 {ằ}{{\`\u a}}1 {ẳ}{{\h\u a}}1 {ẵ}{{\~\u a}}1 {ặ}{{\.{\u a}}}1
+    {â}{{\^a}}1 {ấ}{{\'\^a}}1 {ầ}{{\`\^a}}1 {ẩ}{{\h\^a}}1 {ẫ}{{\~\^a}}1 {ậ}{{\.{\^a}}}1
+    {é}{{\'e}}1 {è}{{\`e}}1 {ẻ}{{\h e}}1 {ẽ}{{\~e}}1 {ẹ}{{\.e}}1
+    {ê}{{\^e}}1 {ế}{{\'\^e}}1 {ề}{{\`\^e}}1 {ể}{{\h\^e}}1 {ễ}{{\~\^e}}1 {ệ}{{\.{\^e}}}1
+    {í}{{\'i}}1 {ì}{{\`i}}1 {ỉ}{{\h i}}1 {ĩ}{{\~i}}1 {ị}{{\.i}}1
+    {ó}{{\'o}}1 {ò}{{\`o}}1 {ỏ}{{\h o}}1 {õ}{{\~o}}1 {ọ}{{\.o}}1
+    {ô}{{\^o}}1 {ố}{{\'\^o}}1 {ồ}{{\`\^o}}1 {ổ}{{\h\^o}}1 {ỗ}{{\~\^o}}1 {ộ}{{\.{\^o}}}1
+    {ơ}{{\horn o}}1 {ớ}{{\'\horn o}}1 {ờ}{{\`\horn o}}1 {ở}{{\h\horn o}}1 {ỡ}{{\~\horn o}}1 {ợ}{{\.{\horn o}}}1
+    {ú}{{\'u}}1 {ù}{{\`u}}1 {ủ}{{\h u}}1 {ũ}{{\~u}}1 {ụ}{{\.u}}1
+    {ư}{{\horn u}}1 {ứ}{{\'\horn u}}1 {ừ}{{\`\horn u}}1 {ử}{{\h\horn u}}1 {ữ}{{\~\horn u}}1 {ự}{{\.{\horn u}}}1
+    {ý}{{\'y}}1 {ỳ}{{\`y}}1 {ỷ}{{\h y}}1 {ỹ}{{\~y}}1 {ỵ}{{\.y}}1
+    {đ}{{\dj}}1 {Đ}{{\DJ}}1,
+}
+
+\lstdefinestyle{python}{
+  language=Python,
+  keywordstyle=\color{blue}\bfseries,
+  stringstyle=\color{red!60!black},
+  commentstyle=\color{green!50!black}\itshape,
+}
+\lstdefinestyle{json}{
+  basicstyle=\small\ttfamily,
+  stringstyle=\color{red!60!black},
+  morestring=[b]",
+}
+\lstdefinestyle{yaml}{
+  basicstyle=\small\ttfamily,
+  keywordstyle=\color{blue}\bfseries,
+  commentstyle=\color{green!50!black}\itshape,
+}
+
+% --- Thuật toán ---
+\usepackage[ruled,vlined,linesnumbered]{algorithm2e}
+\SetAlgorithmName{Thuật toán}{Thuật toán}{Danh sách thuật toán}
+
+% --- Highlight box ---
+\usepackage[most]{tcolorbox}
+\newtcolorbox{notebox}[1][]{
+  colback=blue!5!white,
+  colframe=huce-blue,
+  fonttitle=\bfseries,
+  title=#1,
+  arc=2mm,
+  boxrule=0.5pt
+}
+\newtcolorbox{warnbox}[1][]{
+  colback=red!5!white,
+  colframe=red!70!black,
+  fonttitle=\bfseries,
+  title=#1,
+  arc=2mm,
+  boxrule=0.5pt
+}
+
+% --- Danh sách ---
+\usepackage{enumitem}
+\setlist{nosep, leftmargin=*}        % Compact lists
+
+% --- Tham chiếu chéo ---
+\usepackage[
+  colorlinks=true,
+  linkcolor=huce-blue,
+  citecolor=huce-blue,
+  urlcolor=link-blue,
+  bookmarks=true,
+  bookmarksnumbered=true
+]{hyperref}
+\usepackage[nameinlink,noabbrev]{cleveref}
+
+% Tên tiếng Việt cho cleveref
+\crefname{figure}{Hình}{Hình}
+\crefname{table}{Bảng}{Bảng}
+\crefname{equation}{Công thức}{Công thức}
+\crefname{section}{Mục}{Mục}
+\crefname{chapter}{Chương}{Chương}
+\crefname{algorithm}{Thuật toán}{Thuật toán}
+\crefname{appendix}{Phụ lục}{Phụ lục}
+\crefname{listing}{Đoạn mã}{Đoạn mã}
+
+% --- Tài liệu tham khảo ---
+\usepackage[
+  backend=biber,
+  style=ieee,
+  sorting=nyt,
+  maxbibnames=99
+]{biblatex}
+\addbibresource{references.bib}
+
+% --- Glossary / Danh mục từ viết tắt ---
+\usepackage[acronym,toc]{glossaries}
+\makeglossaries
+
+% Định nghĩa từ viết tắt
+\newacronym{ocr}{OCR}{Optical Character Recognition — Nhận dạng ký tự quang học}
+\newacronym{ie}{IE}{Information Extraction — Trích xuất thông tin}
+\newacronym{ner}{NER}{Named Entity Recognition — Nhận dạng thực thể có tên}
+\newacronym{bio}{BIO}{Begin-Inside-Outside — Lược đồ gán nhãn chuỗi}
+\newacronym{em}{EM}{Exact Match — Khớp chính xác}
+\newacronym{nes}{NES}{Normalized Edit Similarity — Độ tương đồng biên tập chuẩn hoá}
+\newacronym{cer}{CER}{Character Error Rate — Tỷ lệ lỗi ký tự}
+\newacronym{nfc}{NFC}{Unicode Normalization Form Composed — Dạng chuẩn hoá Unicode tổ hợp}
+\newacronym{ctc}{CTC}{Connectionist Temporal Classification — Phân loại thời gian kết nối}
+\newacronym{mcocr}{MC-OCR}{Mobile-Captured OCR — Nhận dạng ký tự chụp di động}
+\newacronym{cnn}{CNN}{Convolutional Neural Network — Mạng nơ-ron tích chập}
+\newacronym{lstm}{LSTM}{Long Short-Term Memory — Bộ nhớ dài-ngắn hạn}
+\newacronym{bart}{BART}{Bidirectional and Auto-Regressive Transformers}
+\newacronym{msa}{MSA}{Multi-head Self-Attention — Tự chú ý đa đầu}
+\newacronym{kie}{KIE}{Key Information Extraction — Trích xuất thông tin then chốt}
+\newacronym{iou}{IoU}{Intersection over Union — Tỷ lệ giao trên hợp}
+\newacronym{roi}{RoI}{Region of Interest — Vùng quan tâm}
+\newacronym{fpn}{FPN}{Feature Pyramid Network — Mạng kim tự tháp đặc trưng}
+
+% --- Custom commands ---
+\newcommand{\field}[1]{\texttt{\textbf{#1}}}         % Tên trường: \field{store\_name}
+\newcommand{\model}[1]{\textsc{#1}}                  % Tên model: \model{Donut}
+\newcommand{\metric}[1]{\textit{#1}}                 % Tên metric: \metric{EM}
+\newcommand{\token}[1]{\texttt{<#1>}}                % Token: \token{s\_receipt\_ie}
+\newcommand{\code}[1]{\texttt{#1}}                   % Inline code
+
+% --- Đánh số hình/bảng theo section ---
+\numberwithin{figure}{section}
+\numberwithin{table}{section}
+\numberwithin{equation}{section}
+
+% --- Depth of TOC ---
+\setcounter{tocdepth}{3}
+\setcounter{secnumdepth}{3}

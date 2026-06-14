@@ -1,0 +1,377 @@
+% ============================================================================
+%  SECTION 5 — Phương pháp thực hiện
+% ============================================================================
+\section{Phương pháp thực hiện}
+\label{sec:methodology}
+
+% >>> BẢN NHÁP: Giới thiệu chương (Sinh viên đọc lại và chỉnh sửa) <<<
+Chương này trình bày chi tiết thiết kế hệ thống và phương pháp thực hiện của ba hướng tiếp cận (pipeline) khác nhau nhằm giải quyết bài toán trích xuất thông tin biên lai tiếng Việt, bao gồm phương pháp Baseline dựa trên biểu thức chính quy, mô hình sinh End-to-End Donut, và mô hình phân loại chuỗi LayoutXLM kết hợp nhận dạng văn bản VietOCR.
+
+% ============================================================================
+\subsection{Tổng quan kiến trúc hệ thống}
+\label{subsec:system_overview}
+
+% >>> BẢN NHÁP: Giới thiệu hệ thống (Sinh viên đọc lại và chỉnh sửa) <<<
+Hệ thống được thiết kế dạng module hóa cho phép kiểm thử và so sánh độc lập các kiến trúc. Sơ đồ kiến trúc tổng quan của ba phương pháp được mô tả chi tiết trong Hình 5.1 dưới đây.
+Hệ thống nhận đầu vào là ảnh biên lai và đầu ra là tệp JSON chứa bốn trường thông tin:
+\field{store\_name}, \field{date}, \field{total}, \field{address}.
+
+\begin{itemize}
+  \item \textbf{Pipeline 1 — Baseline (Rule-based):}
+    Ảnh $\rightarrow$ \gls{ocr} (PaddleOCR + VietOCR) $\rightarrow$
+    Luật / Regex $\rightarrow$ JSON.
+
+  \item \textbf{Pipeline 2 — \model{Donut} (OCR-free):}
+    Ảnh $\rightarrow$ Swin Encoder $\rightarrow$ \gls{bart} Decoder
+    $\rightarrow$ JSON.
+
+  \item \textbf{Pipeline 3 — VietOCR + \model{LayoutXLM} (OCR-based):}
+    Ảnh $\rightarrow$ \gls{ocr} $\rightarrow$ Token + BBox $\rightarrow$
+    \model{LayoutXLM} $\rightarrow$ \gls{bio} $\rightarrow$ JSON.
+\end{itemize}
+
+\begin{figure}[htbp]
+  \centering
+  % Kiến trúc tổng quan 3 pipeline
+  \includegraphics[width=\textwidth]{pipeline_overview.png}
+  \caption{Sơ đồ tổng quan kiến trúc ba pipeline trích xuất thông tin biên lai.}
+  \label{fig:pipeline_overview}
+\end{figure}
+
+
+% ============================================================================
+\subsection{Baseline: OCR + Trích xuất dựa trên luật (Rule-based)}
+\label{subsec:baseline}
+
+% >>> BẢN NHÁP: Ý tưởng Baseline (Sinh viên đọc lại và chỉnh sửa) <<<
+Phương pháp Baseline hoạt động như một hệ chuyên gia đơn giản. Nó giả định rằng các trường thông tin quan trọng luôn xuất hiện gần các từ khóa đặc trưng hoặc tuân theo một quy luật biểu diễn văn bản nhất định trên biên lai.
+Phương pháp này sử dụng các quy tắc thủ công (heuristic) và
+biểu thức chính quy (regular expression — regex) để trích xuất thông tin từ
+kết quả \gls{ocr}. Đây là phương pháp đơn giản nhất, không yêu cầu huấn luyện
+mô hình học sâu, nhưng phụ thuộc mạnh vào chất lượng \gls{ocr} và tính nhất
+quán của bố cục biên lai.
+
+% ----------------------------------------------------------------------------
+\subsubsection{Pipeline tổng quan}
+\label{subsubsec:baseline_pipeline}
+
+Quy trình xử lý gồm hai bước chính:
+
+\begin{enumerate}
+  \item \textbf{Nhận dạng văn bản:} Ảnh biên lai được đưa qua bộ phát hiện
+    vùng chữ PaddleOCR \cite{du2020ppocr} và bộ nhận dạng VietOCR
+    \cite{vietocr2020} để thu được danh sách các cặp (văn bản, bounding box)
+    sắp xếp theo thứ tự đọc (reading order).
+
+  \item \textbf{Trích xuất theo luật:} Áp dụng các quy tắc heuristic và regex
+    riêng cho từng trường thông tin để trích xuất giá trị từ danh sách văn bản.
+\end{enumerate}
+
+% ----------------------------------------------------------------------------
+\subsubsection{Quy tắc trích xuất cụ thể}
+\label{subsubsec:baseline_rules}
+
+% >>> BẢN NHÁP: Logic quy tắc Baseline (Sinh viên đọc lại và chỉnh sửa) <<<
+Logic hoạt động cụ thể cho từng trường như sau:
+\begin{itemize}
+  \item \textbf{Tên cửa hàng (\field{store\_name}):} Do tên thương hiệu thường in to và nằm ở đầu hóa đơn, logic Baseline sẽ quét tối đa 4 dòng đầu tiên của kết quả OCR. Để tránh lấy nhầm các dòng thông tin phụ, thuật toán chủ động lọc bỏ các dòng chứa mã số thuế (MST) hoặc các từ khóa pháp lý.
+  \item \textbf{Ngày tháng (\field{date}):} Áp dụng lần lượt các mẫu biểu thức chính quy (Regex) để tìm các cấu trúc ngày tháng phổ biến trong tiếng Việt (ngày/tháng/năm). Thuật toán loại bỏ các tiền tố ngày giờ để chỉ lấy phần ngày thô.
+  \item \textbf{Tổng tiền (\field{total}):} Quét toàn bộ kết quả văn bản để định vị các từ khóa chỉ tổng tiền như "Tổng cộng", "Thanh toán". Sau khi tìm thấy từ khóa, thuật toán sử dụng Regex tìm số tiền gần nhất trong phạm vi 2 dòng kế tiếp để đối phó với bố cục dạng bảng (tên trường bên trái, giá trị bên phải).
+  \item \textbf{Địa chỉ (\field{address}):} Định vị dòng văn bản chứa các từ khóa chỉ địa danh hành chính tiếng Việt như "quận", "phường", "đường" và lấy toàn bộ dòng đó làm địa chỉ.
+\end{itemize}
+Các quy tắc trích xuất được thiết kế dựa trên quan sát thực nghiệm trên tập
+dữ liệu biên lai tiếng Việt. \Cref{tab:baseline_rules} tóm tắt các quy tắc
+chính cho từng trường.
+
+\begin{table}[htbp]
+  \centering
+  \caption{Quy tắc trích xuất cho từng trường thông tin trong pipeline baseline.}
+  \label{tab:baseline_rules}
+  \begin{tabularx}{\textwidth}{@{} l X @{}}
+    \toprule
+    \textbf{Trường} & \textbf{Mô tả quy tắc} \\
+    \midrule
+    \field{store\_name}
+      & Lấy các dòng văn bản đầu tiên (tối đa 4 dòng), bỏ qua các dòng
+        bắt đầu bằng tiền tố: \code{cửa hàng}, \code{siêu thị},
+        \code{mst}. \\
+    \addlinespace
+    \field{date}
+      & Tìm chuỗi khớp regex ngày tháng, bỏ qua các từ khoá:
+        \code{ngày}, \code{date}, \code{time}. \\
+    \addlinespace
+    \field{total}
+      & Tìm từ khoá tổng tiền (\code{tổng cộng}, \code{thanh toán},
+        \code{total}, \code{phải trả}), sau đó trích xuất số tiền trong
+        phạm vi 2 dòng từ vị trí từ khoá. \\
+    \addlinespace
+    \field{address}
+      & Tìm dòng chứa từ khoá địa chỉ: \code{địa chỉ}, \code{đường},
+        \code{phường}, \code{quận}, \code{huyện}, \code{tỉnh},
+        \code{thành phố}. \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+Các mẫu regex được sử dụng cho trường \field{date} và \field{total} được
+trình bày trong \cref{lst:baseline_regex}.
+
+\begin{lstlisting}[
+  style=python,
+  caption={Các mẫu regex dùng trong pipeline baseline.},
+  label={lst:baseline_regex}
+]
+# --- Regex cho truong date ---
+DATE_PATTERNS = [
+    r'(\d{1,2})[/-](\d{1,2})[/-](\d{4})',   # dd/mm/yyyy hoac dd-mm-yyyy
+    r'(\d{1,2})[/-](\d{1,2})[/-](\d{2})',    # dd/mm/yy
+    r'(\d{4})[/-](\d{1,2})[/-](\d{1,2})',    # yyyy/mm/dd (ISO)
+]
+DATE_IGNORE_KW = ['ngay', 'date', 'time']
+
+# --- Regex cho truong total ---
+TOTAL_KEYWORDS = ['tong cong', 'thanh toan', 'total', 'phai tra']
+MONEY_PATTERN  = r'\d[\d\.,\s]*'   # so tien: 150.000, 1,500,000
+TOTAL_SEARCH_RANGE = 2              # tim trong 2 dong tu vi tri keyword
+\end{lstlisting}
+
+
+% ============================================================================
+\subsection{Donut: End-to-End OCR-free}
+\label{subsec:donut_methodology}
+
+% >>> BẢN NHÁP: Giới thiệu Donut (Sinh viên đọc lại và chỉnh sửa) <<<
+Mô hình Donut được lựa chọn nhằm kiểm thử giả thuyết liệu một mạng nơ-ron có thể tự động học cách "đọc" và "hiểu" bố cục biên lai trực tiếp từ điểm ảnh mà không cần thông qua bước nhận dạng ký tự quang học rời rạc hay không. Tiếp cận này giúp loại bỏ hoàn toàn sự phụ thuộc vào chất lượng của bộ máy OCR độc lập.
+\model{Donut} (Document Understanding Transformer) \cite{kim2022donut} là mô
+hình end-to-end không cần bước \gls{ocr} riêng biệt. Mô hình sử dụng kiến
+trúc encoder-decoder: encoder là Swin Transformer \cite{liu2021swin} trích xuất
+đặc trưng hình ảnh, decoder là \gls{bart} \cite{lewis2020bart} sinh chuỗi
+văn bản đầu ra chứa thông tin cần trích xuất.
+
+% ----------------------------------------------------------------------------
+\subsubsection{Chuẩn bị dữ liệu}
+\label{subsubsec:donut_data}
+
+% >>> BẢN NHÁP: Chọn format chuỗi đích (Sinh viên đọc lại và chỉnh sửa) <<<
+Định dạng chuỗi đích sử dụng cấu trúc thẻ tương tự XML giúp biểu diễn mối quan hệ phân cấp và nhãn của từng trường thông tin một cách tường minh. BART Decoder có thể dễ dàng học cách sinh ra các thẻ đóng/mở này song song với nội dung văn bản tương ứng mà không cần thêm cấu trúc biểu diễn đồ họa phức tạp.
+Mỗi mẫu huấn luyện là một cặp (ảnh biên lai, chuỗi đích). Chuỗi đích được
+định dạng bằng các token đặc biệt đánh dấu từng trường thông tin. Ảnh đầu vào
+được resize về kích thước $1280 \times 960$ pixel, giữ nguyên tỷ lệ khung hình
+(aspect ratio) bằng cách thêm padding.
+
+Ví dụ chuỗi đích cho một biên lai:
+
+\begin{lstlisting}[
+  style=yaml,
+  caption={Ví dụ chuỗi đích (target string) cho mô hình \model{Donut}.},
+  label={lst:donut_target}
+]
+<s_receipt_ie>
+  <s_store_name>CUA HANG TIEN LOI GS25</s_store_name>
+  <s_date>15/03/2024</s_date>
+  <s_total>125.000</s_total>
+  <s_address>123 Nguyen Trai, Thanh Xuan, Ha Noi</s_address>
+</s_receipt_ie>
+\end{lstlisting}
+
+% ----------------------------------------------------------------------------
+\subsubsection{Cấu hình huấn luyện}
+\label{subsubsec:donut_training}
+
+% >>> BẢN NHÁP: Chọn siêu tham số Donut (Sinh viên đọc lại và chỉnh sửa) <<<
+Các siêu tham số của Donut được thiết lập tối ưu cho bộ nhớ VRAM 16GB của GPU Tesla T4. Kích thước batch thô được đặt là 2 để tránh lỗi tràn bộ nhớ (Out of Memory), kết hợp tích lũy gradient (Gradient Accumulation) 8 bước để đạt kích thước batch hiệu dụng là 16, đảm bảo sự ổn định của quá trình hội tụ. Tỷ lệ Warmup 0.1 và bộ lập lịch Cosine giúp mô hình thích ứng dần với bộ từ vựng mới.
+\Cref{tab:donut_config} trình bày cấu hình huấn luyện của mô hình
+\model{Donut}.
+
+\begin{table}[htbp]
+  \centering
+  \caption{Cấu hình huấn luyện mô hình \model{Donut}.}
+  \label{tab:donut_config}
+  \begin{tabular}{@{} l l @{}}
+    \toprule
+    \textbf{Tham số} & \textbf{Giá trị} \\
+    \midrule
+    Pretrained model         & \code{naver-clova-ix/donut-base} \\
+    Max length               & 768 tokens \\
+    Epochs                   & 150 \\
+    Batch size               & 2 \\
+    Gradient accumulation    & 8 (effective batch size = 16) \\
+    Learning rate            & $2 \times 10^{-5}$ \\
+    LR scheduler             & Cosine \\
+    Warmup ratio             & 0.1 \\
+    FP16                     & Có \\
+    Gradient checkpointing   & Có \\
+    Early stopping patience  & 15 epochs \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+% ----------------------------------------------------------------------------
+\subsubsection{Suy luận (Inference)}
+\label{subsubsec:donut_inference}
+
+% >>> BẢN NHÁP: Quy trình suy luận Donut (Sinh viên đọc lại và chỉnh sửa) <<<
+Trong quá trình suy luận, Donut nhận đầu vào là ảnh biên lai và từ khóa khởi tạo (prompt) \token{s\_receipt\_ie}. Decoder sẽ sinh tuần tự các token tiếp theo. Trong trường hợp mô hình sinh chuỗi bị lỗi cấu trúc thẻ XML (ví dụ thiếu thẻ đóng \token{/s\_store\_name}), thuật toán hậu xử lý sẽ tự động áp dụng các biểu thức chính quy sửa lỗi để khôi phục cấu trúc JSON hoặc gán giá trị rỗng cho trường bị lỗi để tránh gây sập hệ thống.
+Trong giai đoạn suy luận, mô hình \model{Donut} nhận ảnh biên lai làm đầu vào
+và sinh chuỗi văn bản thông qua beam search với \code{num\_beams=2}. Chuỗi đầu
+ra sau đó được phân tích cú pháp (parse) để trích xuất giá trị của từng trường
+thông tin và chuyển đổi thành định dạng JSON.
+
+Quy trình suy luận:
+\begin{enumerate}
+  \item Ảnh biên lai được resize về $1280 \times 960$ và đưa qua encoder.
+  \item Decoder sinh chuỗi đầu ra sử dụng beam search
+    (\code{num\_beams=2}).
+  \item Chuỗi đầu ra được parse bằng regex để trích xuất nội dung giữa
+    các cặp token \token{s\_field} và \token{/s\_field}.
+  \item Kết quả được ghi vào tệp JSON.
+\end{enumerate}
+
+
+% ============================================================================
+\subsection{VietOCR + LayoutXLM: OCR-based Layout-aware}
+\label{subsec:layoutxlm_methodology}
+
+% >>> BẢN NHÁP: Tiếp cận kết hợp LayoutXLM (Sinh viên đọc lại và chỉnh sửa) <<<
+Tiếp cận kết hợp VietOCR và LayoutXLM tận dụng tối đa sức mạnh của mô hình đa phương thức. Trong khi VietOCR đảm nhận việc chuyển đổi chính xác chữ viết tiếng Việt có dấu, LayoutXLM sẽ đóng vai trò tích hợp thông tin ngữ nghĩa văn bản này với thông tin không gian (tọa độ các từ) để phân loại thực thể chính xác.
+Hướng tiếp cận thứ ba kết hợp kết quả \gls{ocr} với mô hình
+\model{LayoutXLM}~\cite{xu2021layoutxlm} — một mô hình đa phương thức
+(multimodal) được tiền huấn luyện trên dữ liệu đa ngôn ngữ, có khả năng
+khai thác đồng thời ba loại thông tin: văn bản (text), bố cục không gian
+(layout/bounding box) và hình ảnh (visual features). Bài toán trích xuất
+thông tin được quy về bài toán gán nhãn chuỗi (sequence labeling) sử dụng
+lược đồ \gls{bio}.
+
+% ----------------------------------------------------------------------------
+\subsubsection{Chuẩn bị dữ liệu}
+\label{subsubsec:layoutxlm_data}
+
+% >>> BẢN NHÁP: Quy trình matching OCR box (Sinh viên đọc lại và chỉnh sửa) <<<
+Quy trình đối sánh được thực hiện như sau: Do nhãn ground-truth chỉ chứa văn bản thô cho mỗi trường mà không có tọa độ của từng từ đơn lẻ, thuật toán sẽ tính toán chỉ số giao trên hợp (IoU) giữa hộp bao của mỗi từ nhận diện được bởi OCR với hộp bao của các trường thông tin thực tế. Từ nào có IoU $\geq 0.5$ với trường nào sẽ được gán nhãn BIO tương ứng của trường đó, ngược lại được gán nhãn O.
+\textbf{Đầu vào:} Kết quả \gls{ocr} từ cache bao gồm văn bản và bounding box
+cho từng từ (word-level).
+
+\textbf{Gán nhãn \gls{bio}:} Mỗi từ trong kết quả \gls{ocr} được gán nhãn
+\gls{bio} bằng cách đối sánh bounding box của từ đó với bounding box của
+ground-truth. Hai bounding box được coi là khớp khi giá trị \gls{iou} vượt
+ngưỡng $0.5$:
+\begin{equation}
+  \gls{iou}(A, B) = \frac{|A \cap B|}{|A \cup B|} \geq 0.5
+  \label{eq:iou_threshold}
+\end{equation}
+
+\textbf{Tokenization:} Văn bản được tokenize bằng tokenizer của
+\model{LayoutXLM} với \code{max\_length=512} và \code{doc\_stride=128}
+để xử lý các biên lai dài vượt quá giới hạn token.
+
+\begin{figure}[htbp]
+  \centering
+  % Minh hoạ gán nhãn BIO trên ảnh biên lai
+  \includegraphics[width=0.9\textwidth]{bio_tagging_example.png}
+  \caption{Ví dụ gán nhãn \gls{bio} cho các từ trên biên lai.}
+  \label{fig:bio_tagging_example}
+\end{figure}
+
+% ----------------------------------------------------------------------------
+\subsubsection{Cấu hình huấn luyện}
+\label{subsubsec:layoutxlm_training}
+
+% >>> BẢN NHÁP: Chọn siêu tham số LayoutXLM (Sinh viên đọc lại và chỉnh sửa) <<<
+Siêu tham số của LayoutXLM được tinh chỉnh để tận dụng tối đa mô hình pre-trained \code{layoutxlm-base}. Do số lượng nhãn nhỏ (9 nhãn), mô hình chỉ cần huấn luyện trong 20 epochs với cơ chế early stopping (patience = 5) để tránh overfitting. Tốc độ học $2 \times 10^{-5}$ kết hợp với linear decay giúp điều chỉnh nhẹ nhàng các trọng số của lớp phân loại mới.
+\Cref{tab:layoutxlm_config} trình bày cấu hình huấn luyện của mô hình
+\model{LayoutXLM}.
+
+\begin{table}[htbp]
+  \centering
+  \caption{Cấu hình huấn luyện mô hình \model{LayoutXLM}.}
+  \label{tab:layoutxlm_config}
+  \begin{tabular}{@{} l l @{}}
+    \toprule
+    \textbf{Tham số} & \textbf{Giá trị} \\
+    \midrule
+    Pretrained model         & \code{microsoft/layoutxlm-base} \\
+    Max length               & 512 tokens \\
+    Doc stride               & 128 \\
+    Số nhãn (labels)         & 9 nhãn \gls{bio} \\
+    Epochs                   & 20 \\
+    Batch size               & 8 \\
+    Gradient accumulation    & 4 (effective batch size = 32) \\
+    Learning rate            & $2 \times 10^{-5}$ \\
+    LR scheduler             & Linear \\
+    Warmup ratio             & 0.1 \\
+    FP16                     & Có \\
+    Early stopping patience  & 5 epochs \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+Hệ thống nhãn \gls{bio} gồm 9 nhãn được mô tả trong \cref{tab:bio_labels_methodology}.
+
+\begin{table}[htbp]
+  \centering
+  \caption{Danh sách 9 nhãn \gls{bio} sử dụng trong mô hình \model{LayoutXLM}.}
+  \label{tab:bio_labels_methodology}
+  \begin{tabular}{@{} l l @{}}
+    \toprule
+    \textbf{Nhãn} & \textbf{Mô tả} \\
+    \midrule
+    \code{O}              & Không thuộc trường thông tin nào \\
+    \code{B-STORE\_NAME}  & Bắt đầu tên cửa hàng \\
+    \code{I-STORE\_NAME}  & Tiếp tục tên cửa hàng \\
+    \code{B-DATE}         & Bắt đầu ngày \\
+    \code{I-DATE}         & Tiếp tục ngày \\
+    \code{B-TOTAL}        & Bắt đầu tổng tiền \\
+    \code{I-TOTAL}        & Tiếp tục tổng tiền \\
+    \code{B-ADDRESS}      & Bắt đầu địa chỉ \\
+    \code{I-ADDRESS}      & Tiếp tục địa chỉ \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+% ----------------------------------------------------------------------------
+\subsubsection{Suy luận và hậu xử lý (Inference \& Post-processing)}
+\label{subsubsec:layoutxlm_inference}
+
+% >>> BẢN NHÁP: Thuật toán gộp nhãn BIO (Sinh viên đọc lại và chỉnh sửa) <<<
+Thuật toán gộp nhãn (Span Aggregation) hoạt động theo nguyên lý máy trạng thái: Khi gặp nhãn bắt đầu thực thể \code{B-[FIELD]}, thuật toán khởi tạo một span mới. Các token tiếp theo có nhãn \code{I-[FIELD]} cùng loại sẽ được nối tiếp vào span hiện tại. Khi gặp nhãn \code{O} hoặc nhãn \code{B-} của thực thể khác, span hiện tại được đóng lại, toàn bộ văn bản của các token trong span được ghép nối theo khoảng cách không gian và lưu vào trường tương ứng của kết quả.
+Quy trình suy luận của pipeline \model{LayoutXLM}:
+
+\begin{enumerate}
+  \item \textbf{Dự đoán nhãn \gls{bio}:} Mô hình \model{LayoutXLM} nhận
+    đầu vào gồm token, bounding box và ảnh, sau đó dự đoán nhãn \gls{bio}
+    cho từng token.
+
+  \item \textbf{Gộp span:} Các token liên tiếp có cùng nhãn thực thể
+    (B-\textit{field} tiếp nối bởi I-\textit{field}) được gộp lại thành
+    một span hoàn chỉnh, từ đó trích xuất văn bản tương ứng cho từng trường.
+
+  \item \textbf{Chuẩn hoá:} Văn bản trích xuất được chuẩn hoá (loại bỏ
+    khoảng trắng thừa, chuẩn hoá Unicode \gls{nfc}) trước khi ghi vào
+    tệp JSON đầu ra.
+\end{enumerate}
+
+
+% ============================================================================
+\subsection{Hậu xử lý chung (Post-processing)}
+\label{subsec:postprocessing}
+
+% >>> BẢN NHÁP: Logic hậu xử lý (Sinh viên đọc lại và chỉnh sửa) <<<
+Hậu xử lý chung là bước bắt buộc để loại bỏ các sai khác nhỏ về định dạng không liên quan đến chất lượng trích xuất (như khoảng trắng thừa hoặc viết hoa/viết thường), đảm bảo việc so sánh giữa các phương pháp diễn ra trên cùng một tiêu chuẩn công bằng.
+Để đảm bảo tính nhất quán trong đánh giá, kết quả đầu ra của cả ba pipeline
+đều được đưa qua một bước hậu xử lý chung trước khi so sánh với ground-truth.
+Các bước hậu xử lý bao gồm:
+
+\begin{itemize}
+  \item \textbf{Chuẩn hoá Unicode:} Chuyển đổi toàn bộ văn bản về dạng
+    \gls{nfc} để thống nhất cách biểu diễn ký tự tiếng Việt.
+
+  \item \textbf{Chuẩn hoá khoảng trắng:} Loại bỏ khoảng trắng đầu/cuối
+    và thay thế các chuỗi khoảng trắng liên tiếp bằng một khoảng trắng đơn.
+
+  \item \textbf{Chuyển chữ thường:} Chuyển toàn bộ văn bản về chữ thường
+    để loại bỏ ảnh hưởng của sự khác biệt hoa/thường trong đánh giá.
+
+  \item \textbf{Định dạng thống nhất:} Đảm bảo tất cả các trường đầu ra
+    đều có mặt trong tệp JSON, sử dụng chuỗi rỗng cho các trường không
+    trích xuất được.
+\end{itemize}

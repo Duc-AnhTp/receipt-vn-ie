@@ -1,0 +1,148 @@
+% ============================================================================
+%  REFERENCES.BIB — Tài liệu tham khảo
+% ============================================================================
+
+% --- Mô hình chính ---
+@inproceedings{kim2022donut,
+  author    = {Kim, Geewook and Hong, Teakgyu and Yim, Moonbin and Nam, JeongYeon and Park, Jinyoung and Yim, Jinyeong and Hwang, Wonseok and Yun, Sangdoo and Han, Dongyoon and Park, Seunghyun},
+  title     = {{OCR}-Free Document Understanding Transformer},
+  booktitle = {European Conference on Computer Vision (ECCV)},
+  year      = {2022},
+  pages     = {498--517},
+  publisher = {Springer},
+}
+
+@article{xu2021layoutxlm,
+  author    = {Xu, Yiheng and Lv, Tengchao and Cui, Lei and Wang, Guoxin and Lu, Yijuan and Florêncio, Dinei and Zhang, Cha and Wei, Furu},
+  title     = {{LayoutXLM}: Multimodal Pre-training for Multilingual Visually-rich Document Understanding},
+  journal   = {arXiv preprint arXiv:2104.08836},
+  year      = {2021},
+}
+
+@inproceedings{xu2020layoutlm,
+  author    = {Xu, Yiheng and Li, Minghao and Cui, Lei and Huang, Shaohan and Wei, Furu and Zhou, Ming},
+  title     = {{LayoutLM}: Pre-training of Text and Layout for Document Image Understanding},
+  booktitle = {Proceedings of the 26th ACM SIGKDD International Conference on Knowledge Discovery \& Data Mining},
+  year      = {2020},
+  pages     = {1192--1200},
+}
+
+@inproceedings{huang2022layoutlmv3,
+  author    = {Huang, Yupan and Lv, Tengchao and Cui, Lei and Lu, Yutong and Wei, Furu},
+  title     = {{LayoutLMv3}: Pre-training for Document {AI} with Unified Text and Image Masking},
+  booktitle = {Proceedings of the 30th ACM International Conference on Multimedia},
+  year      = {2022},
+  pages     = {4083--4091},
+}
+
+% --- OCR ---
+@article{du2020ppocr,
+  author    = {Du, Yuning and Chen, Chenxia and Li, Ruoyu and Ji, Yehua and Wu, Yanjun and Yu, Dianhai},
+  title     = {{PP-OCR}: A Practical Ultra Lightweight {OCR} System},
+  journal   = {arXiv preprint arXiv:2009.09941},
+  year      = {2020},
+}
+
+@misc{vietocr2020,
+  author    = {Nguyen, Phuoc Quang and Bui, Thien},
+  title     = {{VietOCR}: Transformers-based {V}ietnamese Optical Character Recognition},
+  year      = {2020},
+  howpublished = {\url{https://github.com/pbcquoc/vietocr}},
+}
+
+% --- Backbone / Kiến trúc nền ---
+@inproceedings{liu2021swin,
+  author    = {Liu, Ze and Lin, Yutong and Cao, Yue and Hu, Han and Wei, Yixuan and Zhang, Zheng and Lin, Stephen and Guo, Baining},
+  title     = {Swin Transformer: Hierarchical Vision Transformer using Shifted Windows},
+  booktitle = {Proceedings of the IEEE/CVF International Conference on Computer Vision (ICCV)},
+  year      = {2021},
+  pages     = {10012--10022},
+}
+
+@article{lewis2020bart,
+  author    = {Lewis, Mike and Liu, Yinhan and Goyal, Naman and Ghazvininejad, Marjan and Mohamed, Abdelrahman and Levy, Omer and Stoyanov, Veselin and Zettlemoyer, Luke},
+  title     = {{BART}: Denoising Sequence-to-Sequence Pre-training for Natural Language Generation, Translation, and Comprehension},
+  journal   = {arXiv preprint arXiv:1910.13461},
+  year      = {2020},
+}
+
+@article{conneau2020xlmr,
+  author    = {Conneau, Alexis and Khandelwal, Kartikay and Goyal, Naman and Chaudhary, Vishrav and Wenzek, Guillaume and Guzmán, Francisco and Grave, Edouard and Ott, Myle and Zettlemoyer, Luke and Stoyanov, Veselin},
+  title     = {Unsupervised Cross-lingual Representation Learning at Scale},
+  journal   = {Proceedings of the 58th Annual Meeting of the Association for Computational Linguistics},
+  year      = {2020},
+  pages     = {8440--8451},
+}
+
+@inproceedings{vaswani2017attention,
+  author    = {Vaswani, Ashish and Shazeer, Noam and Parmar, Niki and Uszkoreit, Jakob and Jones, Llion and Gomez, Aidan N and Kaiser, Łukasz and Polosukhin, Illia},
+  title     = {Attention Is All You Need},
+  booktitle = {Advances in Neural Information Processing Systems (NeurIPS)},
+  year      = {2017},
+  volume    = {30},
+}
+
+% --- CTC Loss ---
+@inproceedings{graves2006ctc,
+  author    = {Graves, Alex and Fernández, Santiago and Gomez, Faustino and Schmidhuber, Jürgen},
+  title     = {Connectionist Temporal Classification: Labelling Unsegmented Sequence Data with Recurrent Neural Networks},
+  booktitle = {Proceedings of the 23rd International Conference on Machine Learning (ICML)},
+  year      = {2006},
+  pages     = {369--376},
+}
+
+% --- Tập dữ liệu ---
+@inproceedings{park2019cord,
+  author    = {Park, Seunghyun and Shin, Seung and Lee, Bado and Lee, Junyeop and Surh, Jaeheung and Seo, Minjoon and Lee, Hwalsuk},
+  title     = {{CORD}: A Consolidated Receipt Dataset for Post-{OCR} Parsing},
+  booktitle = {Workshop on Document Intelligence at NeurIPS},
+  year      = {2019},
+}
+
+@misc{mcocr2021,
+  author    = {{Zalo AI}},
+  title     = {{MC-OCR} 2021: Mobile-Captured {OCR} Challenge},
+  year      = {2021},
+  howpublished = {\url{https://ai.zalo.vn/mc-ocr}},
+}
+
+% --- Edit Distance ---
+@article{levenshtein1966binary,
+  author    = {Levenshtein, Vladimir I},
+  title     = {Binary Codes Capable of Correcting Deletions, Insertions, and Reversals},
+  journal   = {Soviet Physics Doklady},
+  year      = {1966},
+  volume    = {10},
+  number    = {8},
+  pages     = {707--710},
+}
+
+% --- Framework & Tools ---
+@article{wolf2020transformers,
+  author    = {Wolf, Thomas and Debut, Lysandre and Sanh, Victor and others},
+  title     = {Transformers: State-of-the-Art Natural Language Processing},
+  journal   = {Proceedings of the 2020 Conference on Empirical Methods in Natural Language Processing: System Demonstrations},
+  year      = {2020},
+  pages     = {38--45},
+}
+
+@misc{gradio2023,
+  author    = {Abid, Abubakar and Abdalla, Ali and Abid, Ali and Khan, Dawood and Alfozan, Abdulrahman and Zou, James},
+  title     = {Gradio: Hassle-Free Sharing and Testing of {ML} Models in the Wild},
+  year      = {2019},
+  howpublished = {\url{https://gradio.app}},
+}
+
+@inproceedings{lee2023pix2struct,
+  author    = {Lee, Kenton and Joshi, Mandar and Turc, Iulia and Hu, Hexiang and Liu, Fangyu and Eisenschlos, Julian and Krizhevsky, Alex and Morrison, Christoph and Wang, Yi-Mian},
+  title     = {{Pix2Struct}: Screenshot Parsing as Pretraining for Visual Language Understanding},
+  booktitle = {International Conference on Machine Learning (ICML)},
+  year      = {2023},
+}
+
+@inproceedings{li2023trocr,
+  author    = {Li, Minghao and Lv, Tengchao and Chen, Jingye and Cui, Lei and Lu, Yutong and Florencio, Dinei and Zhang, Cha and Wei, Furu},
+  title     = {{TrOCR}: Transformer-based Optical Character Recognition with Pre-trained Models},
+  booktitle = {Proceedings of the AAAI Conference on Artificial Intelligence},
+  year      = {2023},
+}

@@ -1,0 +1,114 @@
+% ============================================================================
+%  CHƯƠNG 1: TỔNG QUAN ĐỀ TÀI
+% ============================================================================
+
+\section{Tổng quan đề tài}
+\label{sec:introduction}
+
+% >>> BẢN NHÁP: Giới thiệu chương (Sinh viên đọc lại và chỉnh sửa) <<<
+Chương này sẽ giới thiệu khái quát về đề tài nghiên cứu, nêu bật tính cấp thiết của việc số hóa tài liệu hóa đơn tại Việt Nam, đồng thời làm rõ mục tiêu, phạm vi và những đóng góp khoa học chính mà đồ án đã đạt được. Cuối cùng, cấu trúc tổng quát của toàn bộ báo cáo cũng sẽ được tóm tắt chi tiết ở phần cuối chương.
+
+% ----------------------------------------------------------------------------
+\subsection{Đặt vấn đề}
+\label{subsec:problem-statement}
+
+% >>> BẢN NHÁP: Đặt vấn đề (Sinh viên đọc lại và chỉnh sửa) <<<
+Với sự phát triển mạnh mẽ của kinh tế số và thương mại điện tử, hàng triệu giao dịch mua sắm diễn ra mỗi ngày tại các siêu thị, cửa hàng tiện lợi và các hộ kinh doanh cá thể tại Việt Nam. Lượng biên lai, hóa đơn bán lẻ phát sinh là vô cùng khổng lồ. Việc nhập liệu, đối soát thủ công các thông tin này vào các phần mềm kế toán không chỉ gây mất nhiều thời gian, chi phí nhân sự mà còn dễ xảy ra sai sót không đáng có. Do đó, nhu cầu tự động hóa quy trình số hóa hóa đơn bằng kỹ thuật nhận dạng ký tự quang học (\gls{ocr}) và trích xuất thông tin thực thể liên kết (\gls{ie}) đang trở thành một đòi hỏi cấp thiết.
+
+Tuy nhiên, bài toán trích xuất thông tin biên lai tại Việt Nam vẫn đối mặt với nhiều thách thức lớn từ thực tế. Ảnh đầu vào thường được chụp bởi người dùng bằng thiết bị di động cá nhân, dẫn đến hiện tượng ảnh bị mờ, nghiêng, thiếu sáng hoặc bị phản quang. Bên cạnh đó, các biên lai tiếng Việt có bố cục cực kỳ đa dạng, font chữ không đồng nhất, giấy in nhiệt dễ bị mờ theo thời gian. Đặc biệt, đặc trưng tiếng Việt với hệ thống dấu thanh phức tạp đặt ra yêu cầu rất cao cho hệ thống nhận dạng, nhằm tránh các lỗi dịch nghĩa do sai lệch ký tự.
+
+% ----------------------------------------------------------------------------
+\subsection{Mục tiêu đề tài}
+\label{subsec:objectives}
+
+% >>> BẢN NHÁP: Mục tiêu đề tài (Sinh viên đọc lại và chỉnh sửa) <<<
+Mục tiêu cốt lõi của đồ án là thiết kế và hiện thực hóa một giải pháp trích xuất tự động các trường thông tin quan trọng từ ảnh chụp biên lai tiếng Việt một cách hiệu quả và chính xác, đáp ứng các tiêu chuẩn ứng dụng thực tế.
+
+Đề tài tập trung trích xuất 4 trường thông tin then chốt từ ảnh biên lai tiếng
+Việt, đồng thời so sánh có hệ thống ba hướng tiếp cận:
+\begin{itemize}
+  \item \model{Donut}~\cite{kim2022donut} — kiến trúc OCR-free, sinh trực tiếp
+        văn bản từ ảnh mà không cần bước \gls{ocr} riêng biệt.
+  \item \model{VietOCR} + \model{LayoutXLM}~\cite{xu2021layoutxlm} — pipeline
+        OCR-based: nhận dạng văn bản trước, sau đó gán nhãn chuỗi (\gls{ner}).
+  \item \textbf{Baseline rule-based} — phương pháp đối sánh từ khoá và biểu thức
+        chính quy (regex), dùng làm cơ sở so sánh.
+\end{itemize}
+
+\cref{tab:target-fields} mô tả chi tiết 4 trường thông tin cần trích xuất.
+
+\begin{table}[htbp]
+  \centering
+  \caption{Các trường thông tin cần trích xuất từ biên lai.}
+  \label{tab:target-fields}
+  \begin{tabular}{@{} l l l @{}}
+    \toprule
+    \textbf{Trường}              & \textbf{Định dạng}     & \textbf{Ví dụ}              \\
+    \midrule
+    \field{store\_name}          & Chuỗi Unicode \gls{nfc}  & MINIMART ANAN               \\
+    \field{date}                 & YYYY-MM-DD               & 2020-08-09                  \\
+    \field{total}                & Chuỗi số nguyên          & 115000                      \\
+    \field{address}              & Chuỗi Unicode \gls{nfc}  & Chợ Sủi Phú Thị Gia Lâm    \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+% ----------------------------------------------------------------------------
+\subsection{Phạm vi đề tài}
+\label{subsec:scope}
+
+% >>> BẢN NHÁP: Phạm vi đề tài (Sinh viên đọc lại và chỉnh sửa) <<<
+Để giải quyết bài toán một cách khả thi và tập trung sâu vào các công nghệ cốt lõi, phạm vi nghiên cứu của đồ án được giới hạn cụ thể như sau:
+
+\begin{itemize}
+  \item \textbf{Đầu vào:} Ảnh biên lai chụp bằng điện thoại (định dạng JPG/PNG).
+  \item \textbf{Đầu ra:} Tệp JSON chứa 4 trường: \field{store\_name},
+        \field{date}, \field{total}, \field{address}.
+  \item \textbf{Ngoài phạm vi:} danh sách sản phẩm, mã số thuế (VAT),
+        số điện thoại, biên lai dạng PDF.
+\end{itemize}
+
+% ----------------------------------------------------------------------------
+\subsection{Đóng góp chính}
+\label{subsec:contributions}
+
+% >>> BẢN NHÁP: Đóng góp chính (Sinh viên đọc lại và chỉnh sửa) <<<
+Qua quá trình thực hiện nghiên cứu, đồ án đã mang lại một số kết quả thực tiễn đóng góp vào bài toán xử lý tài liệu tiếng Việt, cụ thể bao gồm:
+
+Các đóng góp chính của đồ án bao gồm:
+\begin{enumerate}
+  \item \textbf{Bộ dữ liệu kết hợp:} Ghép nối bộ dữ liệu \gls{mcocr}
+        2021 với dữ liệu tự thu thập, tổng cộng khoảng 1559 mẫu biên lai
+        tiếng Việt đã gán nhãn.
+  \item \textbf{So sánh có hệ thống 3 phương pháp:} \model{Donut} (OCR-free),
+        \model{VietOCR} + \model{LayoutXLM} (OCR-based), và Baseline rule-based;
+        đánh giá trên cùng tập dữ liệu với các chỉ số \metric{EM} và
+        \metric{NES}.
+  \item \textbf{Phân loại lỗi chi tiết:} Đề xuất bảng phân loại 11 loại lỗi
+        (error taxonomy) giúp phân tích nguyên nhân sai sót của từng phương pháp.
+  \item \textbf{Demo ứng dụng web:} Xây dựng giao diện trình diễn bằng
+        Gradio, cho phép tải ảnh biên lai lên và xem kết quả trích xuất
+        trực tiếp.
+\end{enumerate}
+
+% ----------------------------------------------------------------------------
+\subsection{Cấu trúc báo cáo}
+\label{subsec:report-structure}
+
+Phần còn lại của báo cáo được tổ chức như sau:
+
+\begin{itemize}
+  \item \textbf{\cref{sec:theory}} trình bày cơ sở lý thuyết về \gls{ocr},
+        \gls{ie}, và các kiến trúc mô hình được sử dụng.
+  \item \textbf{\cref{sec:dataset}} mô tả bộ dữ liệu, quy trình thu thập
+        và gán nhãn.
+  \item \textbf{\cref{sec:preprocessing}} trình bày các bước tiền xử lý
+        dữ liệu ảnh và văn bản.
+  \item \textbf{\cref{sec:methodology}} chi tiết phương pháp huấn luyện
+        và triển khai từng mô hình.
+  \item \textbf{\cref{sec:experiments}} mô tả thiết lập thí nghiệm,
+        siêu tham số và môi trường chạy.
+  \item \textbf{\cref{sec:results}} trình bày và thảo luận kết quả
+        thí nghiệm.
+  \item \textbf{\cref{sec:conclusion}} tổng kết và đề xuất hướng phát triển.
+\end{itemize}
