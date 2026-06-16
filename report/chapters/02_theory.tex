@@ -323,9 +323,12 @@ LayoutXLM là một mô hình học sâu đa phương thức được thiết k�
   \centering
   % Ảnh kiến trúc LayoutXLM
   \includegraphics[width=0.9\textwidth]{layoutxlm_architecture.png}
-  \caption{Kiến trúc mô hình \model{LayoutXLM}~\cite{xu2021layoutxlm}.
-    Mô hình kết hợp ba loại thông tin: văn bản, bố cục không gian 2D
-    và đặc trưng thị giác thông qua cơ chế nhúng đa phương thức.}
+  \caption{Pipeline trích xuất thông tin sử dụng \model{LayoutXLM}~\cite{xu2021layoutxlm}.
+    Quy trình gồm 7 bước: (1) Ảnh tài liệu đầu vào, (2) OCR tạo token văn bản,
+    (3) Trích xuất bố cục/vị trí 2D qua bounding box, (4) Trích xuất đặc trưng thị giác
+    qua Visual Backbone, (5) Nhúng đa phương thức kết hợp Text + Layout + Visual,
+    (6) Mã hóa qua LayoutXLM Encoder với spatial-aware self-attention,
+    (7) Gán nhãn BIO và trích xuất thông tin.}
   \label{fig:layoutxlm_arch}
 \end{figure}
 

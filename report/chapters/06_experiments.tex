@@ -61,31 +61,15 @@ Toàn bộ thực nghiệm được thực hiện trên nền tảng Kaggle vớ
 
 Mô hình \model{Donut} được khởi tạo từ checkpoint tiền huấn luyện \code{naver-clova-ix/donut-base}. Dữ liệu ảnh đầu vào được đưa qua bộ xử lý ảnh để resize về $1280 \times 960$ và chuẩn hóa giá trị điểm ảnh. Nhãn đích dạng JSON được chuyển đổi thành chuỗi text bao bọc bởi các thẻ đặc biệt (ví dụ \token{s\_store\_name} và \token{/s\_store\_name}). Trong quá trình huấn luyện, nhóm áp dụng tăng cường dữ liệu ảnh online bao gồm xoay ảnh nhẹ, thay đổi độ sáng và độ tương phản. Quá trình tối ưu hóa sử dụng thuật toán AdamW.
 
-\cref{fig:donut_loss} minh họa đường cong loss trong quá trình huấn luyện \model{Donut}.
-
-\begin{figure}[htbp]
-  \centering
-  \includegraphics[width=0.9\textwidth]{donut_loss.png}
-  \caption{Đường cong loss huấn luyện và validation của \model{Donut} theo epoch.}
-  \label{fig:donut_loss}
-\end{figure}
-
 Quá trình huấn luyện \model{Donut} thể hiện đặc trưng hội tụ chậm, đặc trưng của kiến trúc generative end-to-end trên tập dữ liệu nhỏ. Cơ chế Early Stopping (patience = 15) được kích hoạt tại epoch 112 khi loss validation không còn cải thiện. Tổng thời gian huấn luyện kéo dài khoảng 18,5 giờ trên cấu hình Kaggle T4$\times$2.
 
-Đường cong loss huấn luyện (\cref{fig:donut_loss}) giảm đều từ mức 3,2 xuống 0,15, trong khi loss validation dao động mạnh ở giai đoạn cuối (0,8--1,2). Hiện tượng này cho thấy mô hình bị quá khớp (overfitting), có thể giải thích bởi hai yếu tố: (i)~kiến trúc autoregressive của decoder BART phải đồng thời học cả khả năng nhận dạng ký tự lẫn cấu trúc sinh chuỗi JSON, tăng đáng kể không gian tìm kiếm so với bài toán phân loại token; (ii)~kích thước tập huấn luyện chỉ gồm 1.091 mẫu --- nhỏ hơn nhiều lần so với ngưỡng khuyến nghị của tác giả gốc (hàng chục nghìn mẫu cho domain-specific fine-tuning~\cite{kim2022donut}).
+Đường cong loss huấn luyện giảm đều từ mức 3,2 xuống 0,15, trong khi loss validation dao động mạnh ở giai đoạn cuối (0,8--1,2). Hiện tượng này cho thấy mô hình bị quá khớp (overfitting), có thể giải thích bởi hai yếu tố: (i)~kiến trúc autoregressive của decoder BART phải đồng thời học cả khả năng nhận dạng ký tự lẫn cấu trúc sinh chuỗi JSON, tăng đáng kể không gian tìm kiếm so với bài toán phân loại token; (ii)~kích thước tập huấn luyện chỉ gồm 1.091 mẫu --- nhỏ hơn nhiều lần so với ngưỡng khuyến nghị của tác giả gốc (hàng chục nghìn mẫu cho domain-specific fine-tuning~\cite{kim2022donut}).
 
 % ============================================================================
 \subsection{Quá trình huấn luyện \model{LayoutXLM}}
 \label{subsec:train_layoutxlm}
 
 Mô hình \model{LayoutXLM} được khởi tạo từ checkpoint đa ngôn ngữ \code{microsoft/layoutxlm-base}. Từ kết quả OCR cache, văn bản của từng từ được tokenize bằng công cụ SentencePiece, đồng thời tọa độ bounding box 2D của từ được chuẩn hóa về khoảng $[0, 1000]$ tương ứng với kích thước ảnh gốc. Nhóm áp dụng lược đồ gán nhãn BIO lên từng token đầu vào dựa trên kết quả đối sánh với nhãn ground-truth. Quá trình huấn luyện sử dụng bộ tối ưu AdamW với batch size hiệu dụng bằng 32.
-
-\begin{figure}[htbp]
-  \centering
-  \includegraphics[width=0.9\textwidth]{layoutxlm_loss.png}
-  \caption{Đường cong loss huấn luyện và validation của \model{LayoutXLM} theo epoch.}
-  \label{fig:layoutxlm_loss}
-\end{figure}
 
 Trái ngược hoàn toàn với \model{Donut}, mô hình \model{LayoutXLM} hội tụ nhanh chóng --- Early Stopping kích hoạt tại epoch 14 với loss validation thấp nhất đạt 0,22, tổng thời gian huấn luyện chỉ khoảng 1,5 giờ (nhanh hơn 12 lần so với \model{Donut}).
 
