@@ -111,3 +111,6 @@ report/*.out
 report/*.run.xml
 report/*.synctex.gz
 report/*.toc
+report/*.acr
+report/*.alg
+report/*.acn

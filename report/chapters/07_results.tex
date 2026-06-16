@@ -243,29 +243,31 @@ Lỗi E11 (Missing GT) chiếm tỷ lệ nhỏ nhưng cũng cho thấy sự cầ
 \end{table}
 
 % ============================================================================
-\subsection{Thí nghiệm phụ}
-\label{subsec:ablation}
+\subsection{Phân tích bổ sung và định hướng kiểm chứng}
+\label{subsec:future_verification}
 
 % ----------------------------------------------------------------------------
-\subsubsection{Ablation tiền xử lý OCR}
+\subsubsection{Định hướng thực nghiệm Ablation cho tiền xử lý OCR}
 \label{subsubsec:ablation_ocr}
 
-Để đánh giá đóng góp của từng bước tiền xử lý, nhóm tiến hành thí nghiệm ablation sơ bộ trên pipeline \model{LayoutXLM}. Kết quả ước lượng cho thấy:\footnote{Các con số ablation được ước lượng dựa trên quan sát thực nghiệm sơ bộ trong quá trình phát triển. Một nghiên cứu ablation chính thức với báo cáo chi tiết sẽ là hướng phát triển tiếp theo.}
+Để xác định chính xác đóng góp của từng thành phần trong quy trình tiền xử lý ảnh và văn bản lên hiệu năng của pipeline \model{LayoutXLM}, nhóm nghiên cứu đề xuất thiết lập một hệ thống thử nghiệm ablation trong tương lai. Các khía cạnh lý thuyết cần được đo lường thực nghiệm bao gồm:
 
 \begin{itemize}
-  \item \textbf{Bỏ reading order:} Macro \metric{EM} giảm đáng kể (ước tính $\sim$8 điểm phần trăm), cho thấy thứ tự sắp xếp dòng OCR ảnh hưởng trực tiếp đến khả năng gán nhãn BIO liên tục của mô hình.
-  \item \textbf{Bỏ chuẩn hóa NFC:} Macro \metric{NES} giảm khoảng 5--7 điểm phần trăm, chủ yếu do sự sai lệch khi so sánh ký tự tổ hợp tiếng Việt (combining characters vs. precomposed characters).
+  \item \textbf{Đánh giá vai trò của thuật toán sắp xếp thứ tự đọc (reading order):} Việc loại bỏ sắp xếp dòng OCR theo thứ tự tự nhiên (từ trên xuống dưới, từ trái qua phải) dự kiến sẽ làm đứt gãy sự liên tục của nhãn \gls{bio}, dẫn đến việc nhận diện các thực thể đa dòng (đặc biệt là địa chỉ và tên cửa hàng) bị phân mảnh nghiêm trọng.
+  \item \textbf{Đánh giá vai trò của chuẩn hóa Unicode NFC:} Việc so sánh trực tiếp văn bản chưa được chuẩn hóa về dạng NFC sẽ tạo ra sự không khớp ký tự tổ hợp (ví dụ: chữ "hóa" viết bằng phím gõ Telex khác với chữ "hóa" dựng sẵn), làm giảm độ chính xác của các độ đo khoảng cách biên tập như \metric{NES}.
 \end{itemize}
 
-Kết quả ablation sơ bộ này khẳng định rằng các bước xử lý văn bản nền tảng (reading order, NFC normalization) đóng vai trò thiết yếu cho sự ổn định của toàn bộ pipeline.
+Việc triển khai thực nghiệm đo lường định lượng cụ thể cho các thành phần trên sẽ giúp tối ưu hóa tài nguyên tính toán và xác định bước tiền xử lý nào mang lại giá trị gia tăng lớn nhất cho pipeline.
 
 % ----------------------------------------------------------------------------
-\subsubsection{Phân tích cận trên: Oracle OCR}
+\subsubsection{Phân tích cận trên lý thuyết thông qua Oracle OCR}
 \label{subsubsec:oracle_ocr}
 
-Để ước lượng cận trên (upper bound) hiệu năng của pipeline OCR-based, nhóm thiết kế thí nghiệm Oracle OCR: thay thế kết quả PaddleOCR + VietOCR bằng văn bản ground-truth hoàn hảo làm đầu vào cho \model{LayoutXLM}. Theo ước lượng sơ bộ,\footnote{Thí nghiệm Oracle OCR được thực hiện trên một tập con nhỏ trong quá trình phát triển. Con số chính xác cần được kiểm chứng lại trên toàn bộ tập test với log thực nghiệm đầy đủ.} Macro \metric{EM} tăng lên mức $\sim$75--80\% và Macro \metric{NES} đạt $\sim$85--90\% --- cải thiện đáng kể so với kết quả khi dùng OCR thực tế (43,48\% EM / 61,86\% NES).
+Nhằm phân tách lỗi giữa phần nhận dạng văn bản (OCR) và phần trích xuất thông tin (KIE), chúng em đề xuất phương pháp phân tích cận trên lý thuyết thông qua kịch bản Oracle OCR. Trong kịch bản này, toàn bộ văn bản và tọa độ hộp bao (bounding box) hoàn hảo từ nhãn ground-truth sẽ được cung cấp trực tiếp làm đầu vào cho mô hình \model{LayoutXLM}, loại bỏ hoàn toàn các sai sót do PaddleOCR và VietOCR gây ra.
 
-Khoảng cách lớn giữa kết quả OCR thực tế và cận trên Oracle chỉ ra rằng \emph{chất lượng OCR chính là nút thắt cổ chai (bottleneck) quan trọng nhất} của hệ thống. Cải tiến bộ nhận dạng ký tự tiếng Việt (ví dụ: nâng cấp VietOCR lên TrOCR, hoặc fine-tune thêm trên dữ liệu biên lai) sẽ mang lại lợi ích trực tiếp và lớn nhất cho hiệu năng trích xuất.
+Về mặt lý thuyết, kịch bản này giúp xác định cận trên hiệu năng trích xuất của mô hình \model{LayoutXLM}. Khi chất lượng OCR đạt mức hoàn hảo, hiệu năng trích xuất \metric{EM} và \metric{NES} dự kiến sẽ tăng trưởng đáng kể nhờ loại bỏ được các lỗi nhận dạng sai ký tự tiếng Việt có dấu (lỗi \textbf{E2}) và lỗi sắp xếp thứ tự dòng (lỗi \textbf{E9}).
+
+Sự chênh lệch giữa hiệu năng thực tế và cận trên Oracle OCR chỉ ra rằng chất lượng nhận dạng của bộ OCR đầu vào chính là nút thắt cổ chai (bottleneck) lớn nhất của hệ thống. Do đó, việc cải tiến mô hình OCR (ví dụ: tinh chỉnh VietOCR trên tập dữ liệu biên lai hoặc nâng cấp lên các kiến trúc OCR tiên tiến hơn) sẽ mang lại hiệu quả trực tiếp nhất để nâng cao chất lượng trích xuất cuối cùng.
 
 % ============================================================================
 \subsection{Demo ứng dụng (Gradio)}
