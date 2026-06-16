@@ -111,13 +111,13 @@ bash scripts/06_error_analysis.sh
 
 ## Đánh giá
 
-| Phương pháp | Store EM | Date EM | Total EM | Address EM | Macro NES |
-|---|---|---|---|---|---|
-| Baseline (Rule-based) | — | — | — | — | — |
-| Donut | — | — | — | — | — |
-| VietOCR + LayoutXLM | — | — | — | — | — |
+| Phương pháp | Store EM | Date EM | Total EM | Address EM | Macro EM | Macro NES | Macro CER |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| Baseline (Rule-based) | 25.21 | 74.79 | 54.27 | 4.70 | 39.74 | 54.00 | 57.71 |
+| Donut | 3.85 | 7.69 | 7.26 | 4.70 | 5.88 | 6.94 | 105.23 |
+| VietOCR + LayoutXLM | 29.06 | 60.68 | 69.66 | 14.53 | 43.48 | 61.86 | 39.64 |
 
-*Kết quả sẽ được cập nhật sau khi huấn luyện xong.*
+Kết quả được đánh giá trên tập test 234 mẫu, split 70/15/15, seed = 42. Môi trường huấn luyện: Kaggle T4×2.
 
 ## Tests
 
