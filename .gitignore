@@ -92,3 +92,22 @@ tmp/
 # Kaggle Training Guide (local only)
 KAGGLE_T4x2_TRAINING_GUIDE.md
 KAGGLE_RESUME_TRAINING_GUIDE.md
+
+# LaTeX build artifacts (keep .tex, .bib, figures/, main.pdf)
+report/*.aux
+report/*.bbl
+report/*.bcf
+report/*.blg
+report/*.fdb_latexmk
+report/*.fls
+report/*.glo
+report/*.gls
+report/*.glg
+report/*.ist
+report/*.lof
+report/*.log
+report/*.lot
+report/*.out
+report/*.run.xml
+report/*.synctex.gz
+report/*.toc
