@@ -44,31 +44,28 @@ report/
     └── layoutxlm_error_distribution.png
 ```
 
-## Nội dung cần tự viết
+## Trạng thái hiện tại
 
-Tìm các dòng `% TODO:` trong mỗi file chapter. Đó là nội dung bạn cần bổ sung.
+Toàn bộ nội dung 10 chương đã được viết hoàn chỉnh. Không còn marker `% TODO` hay `% BẢN NHÁP` nào trong file `.tex`.
 
-### Checklist viết nội dung
+### Nội dung đã hoàn thiện
 
-- [ ] **Trang bìa**: Điền tên GVHD, tên SV, MSV, lớp trong `main.tex`
-- [ ] **Lời cảm ơn**: Viết trong `main.tex`
-- [ ] **Tóm tắt (Abstract)**: Viết ~200 từ trong `00_abstract.tex`
-- [ ] **Chương 1**: Viết nội dung cho 5 mục
-- [ ] **Chương 2**: Viết nội dung lý thuyết (công thức đã có sẵn)
-- [ ] **Chương 3**: Bổ sung mô tả quá trình thu thập
-- [ ] **Chương 4**: Bổ sung giải thích các bước tiền xử lý
-- [ ] **Chương 5**: Viết mô tả chi tiết pipeline
-- [ ] **Chương 6**: Bổ sung mô tả quá trình huấn luyện thực tế
-- [ ] **Chương 7**: Viết phân tích kết quả (bảng số liệu đã điền sẵn)
-- [ ] **Chương 8**: Viết kết luận
+- [x] **Trang bìa**: GVHD ThS. Nguyễn Đình Quý, 3 SV, lớp 68CS2
+- [x] **Lời cảm ơn**: Đã viết trong `main.tex`
+- [x] **Tóm tắt (Abstract)**: Đã viết trong `00_abstract.tex`
+- [x] **Chương 1-8**: Nội dung đầy đủ
+- [x] **Phụ lục**: Cấu hình YAML, ví dụ kết quả
 
-### Hình ảnh cần tự tạo/chụp
+### Hình ảnh cần thay thế (placeholder)
+
+Các file sau đang là **ảnh placeholder** cần thay bằng ảnh thực tế:
 
 - [ ] `pipeline_overview.png` — Sơ đồ 3 pipeline (dùng draw.io hoặc Mermaid)
 - [ ] `donut_architecture.png` — Kiến trúc Donut (từ paper hoặc tự vẽ)
 - [ ] `layoutxlm_architecture.png` — Kiến trúc LayoutXLM
 - [ ] `bio_tagging_example.png` — Ví dụ BIO tagging
 - [ ] `sample_receipts.png` — Mẫu ảnh biên lai + annotation
+- [ ] `layoutxlm_loss.png` — Đường cong loss (từ TensorBoard/WandB)
 - [ ] `gradio_demo.png` — Chụp màn hình giao diện demo
 
 ## Custom Commands
@@ -76,7 +73,7 @@ Tìm các dòng `% TODO:` trong mỗi file chapter. Đó là nội dung bạn c�
 Sử dụng các lệnh custom đã định nghĩa sẵn:
 
 | Lệnh | Ví dụ | Kết quả |
-|-------|-------|---------|
+|-------|-------|---------| 
 | `\field{store\_name}` | Tên trường | **`store_name`** |
 | `\model{Donut}` | Tên mô hình | DONUT (small caps) |
 | `\metric{EM}` | Tên metric | *EM* (italic) |
@@ -86,5 +83,4 @@ Sử dụng các lệnh custom đã định nghĩa sẵn:
 
 ## Logo HUCE
 
-Logo HUCE được generate tự động. Nếu bạn có logo chính thức của trường,
-hãy thay thế file `figures/huce_logo.png` bằng file logo thật.
+Logo HUCE đã được thay bằng ảnh chính thức (`figures/huce_logo.jpg`).

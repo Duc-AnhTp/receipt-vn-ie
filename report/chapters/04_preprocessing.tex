@@ -1,18 +1,16 @@
-% ============================================================================
+﻿% ============================================================================
 %  CHƯƠNG 4 — Tiền xử lý dữ liệu
 % ============================================================================
 
 \section{Tiền xử lý dữ liệu}
 \label{sec:preprocessing}
 
-% >>> BẢN NHÁP: Giới thiệu chương (Sinh viên đọc lại và chỉnh sửa) <<<
 Chương này trình bày các bước tiền xử lý dữ liệu hình ảnh và văn bản nhằm tối ưu hóa chất lượng đầu vào cho các mô hình trích xuất. Nội dung bao gồm các phương pháp resize và nâng cao chất lượng ảnh, kỹ thuật tăng cường dữ liệu huấn luyện, các quy tắc chuẩn hóa văn bản đầu ra, quy trình xây dựng OCR cache và các thí nghiệm ablation lựa chọn cấu hình tiền xử lý.
 
 % ============================================================================
 \subsection{Tiền xử lý ảnh}
 \label{subsec:image-preprocessing}
 
-% >>> BẢN NHÁP: Giới thiệu tiền xử lý ảnh (Sinh viên đọc lại và chỉnh sửa) <<<
 Tiền xử lý ảnh là bước đầu tiên và quan trọng trong pipeline xử lý, giúp chuẩn hóa kích thước và nâng cao chất lượng trực quan của ảnh biên lai trước khi đưa vào các bộ trích xuất đặc trưng thị giác.
 
 % ----------------------------------------------------------------------------
@@ -51,7 +49,6 @@ Ngoài resize, nhóm tác giả khảo sát thêm các kỹ thuật nâng cao ch
 \subsection{Tăng cường dữ liệu (Data Augmentation)}
 \label{subsec:augmentation}
 
-% >>> BẢN NHÁP: Mục đích tăng cường dữ liệu (Sinh viên đọc lại và chỉnh sửa) <<<
 Tăng cường dữ liệu (Data Augmentation) nhằm mục đích nhân rộng số lượng và biến thể mẫu huấn luyện một cách nhân tạo, giúp mô hình học được các đặc tính bất biến đối với các biến đổi về hình học, ánh sáng và nhiễu từ môi trường chụp ảnh thực tế, qua đó tăng cường khả năng tổng quát hóa và chống quá khớp (overfitting).
 
 Các kỹ thuật tăng cường dữ liệu được áp dụng \textbf{chỉ trên tập train}
@@ -82,7 +79,6 @@ từ file \code{preprocess.yaml} và tổng hợp trong~\cref{tab:augmentation}.
 \subsection{Chuẩn hoá văn bản (Text Normalization)}
 \label{subsec:text-normalization}
 
-% >>> BẢN NHÁP: Tầm quan trọng của chuẩn hóa văn bản (Sinh viên đọc lại và chỉnh sửa) <<<
 Chuẩn hóa văn bản là bước thiết yếu nhằm đồng nhất hóa định dạng dữ liệu chữ viết từ nhiều nguồn khác nhau và sửa lỗi chính tả nhỏ của bộ gõ, giúp giảm độ phức tạp của bài toán trích xuất thực thể và tạo tiền đề để tính toán chính xác các độ đo đánh giá.
 
 % ----------------------------------------------------------------------------
@@ -150,7 +146,6 @@ Ngoài chuẩn hoá chung, mỗi trường có quy tắc chuẩn hoá riêng:
 \subsection{Xây dựng OCR Cache}
 \label{subsec:ocr-cache}
 
-% >>> BẢN NHÁP: Lý do xây dựng OCR Cache (Sinh viên đọc lại và chỉnh sửa) <<<
 Quá trình chạy mô hình OCR (PaddleOCR kết hợp VietOCR) tốn nhiều tài nguyên tính toán và thời gian. Việc xây dựng OCR cache giúp lưu trữ lại kết quả nhận diện của từng ảnh để sử dụng lại tức thì trong các lượt huấn luyện và thực nghiệm khác nhau, đẩy nhanh đáng kể tốc độ thử nghiệm.
 
 Để tránh phải chạy lại \gls{ocr} nhiều lần cho cùng một ảnh, nhóm tác giả xây
@@ -173,7 +168,6 @@ Pipeline OCR cache gồm các bước:
 Phiên bản OCR cache hiện tại:
 \code{ocr\_paddle27\_vietocr\_transformer\_v1}.
 
-% >>> BẢN NHÁP: Thống kê OCR Cache (Sinh viên đọc lại và chỉnh sửa) <<<
 Hệ thống đã xây dựng OCR cache thành công cho toàn bộ 1.559 mẫu ảnh trong tập dữ liệu. Tổng dung lượng cache chiếm khoảng 12,4 MB dưới dạng tệp tin JSON. Thời gian chạy OCR trung bình cho mỗi ảnh biên lai là 1,12 giây trên CPU và 0,18 giây khi sử dụng GPU tăng tốc.
 
 
@@ -181,7 +175,6 @@ Hệ thống đã xây dựng OCR cache thành công cho toàn bộ 1.559 mẫu 
 \subsection{Thí nghiệm Ablation tiền xử lý ảnh cho OCR}
 \label{subsec:ocr-ablation}
 
-% >>> BẢN NHÁP: Mục đích ablation OCR (Sinh viên đọc lại và chỉnh sửa) <<<
 Thí nghiệm ablation đối với tiền xử lý ảnh nhằm cô lập và đánh giá riêng biệt đóng góp của từng kỹ thuật xử lý ảnh (như nhị phân hóa hay nắn thẳng) đối với chất lượng nhận dạng chữ viết cuối cùng, từ đó chọn lọc ra profile tối ưu nhất.
 
 Để lựa chọn cấu hình tiền xử lý ảnh tối ưu cho pipeline \gls{ocr}, nhóm tác
@@ -214,7 +207,6 @@ Chất lượng \gls{ocr} được đo bằng \textbf{fuzzy matching} giữa vă
   \end{tabular}
 \end{table}
 
-% >>> BẢN NHÁP: Phân tích kết quả ablation (Sinh viên đọc lại và chỉnh sửa) <<<
 Kết quả bảng trên cho thấy việc resize ảnh về độ phân giải tối ưu giúp cải thiện rõ rệt chất lượng OCR từ 78,50\% lên 84,32\%. Ngược lại, kỹ thuật nhị phân hóa Otsu làm suy giảm hiệu năng xuống 81,15\% do việc nhị phân hóa cứng làm mất đi các chi tiết nét chữ mảnh trên giấy in nhiệt bị mờ. Việc nắn thẳng ảnh nghiêng (rectify) tuy cải thiện so với không xử lý nhưng cho kết quả thấp hơn chỉ resize do một số phép xoay làm méo cục bộ các nét chữ.
 \textbf{Kết luận}: Profile \textbf{resize} cho kết quả tốt nhất và được chọn
 làm cấu hình tiền xử lý chính trong toàn bộ pipeline.

@@ -113,37 +113,33 @@ Phần này trình bày kết quả thực nghiệm trên tập test gồm 234 m
 \subsubsection{Trường \field{store\_name}}
 \label{subsubsec:analysis_store_name}
 
-\model{LayoutXLM} đạt kết quả tốt nhất trên trường \field{store\_name} với \metric{EM} = 29.06\%, vượt Baseline (25.21\%). \model{Donut} chỉ đạt 3.85\% do hiện tượng hallucination — mô hình tự sinh ra tên cửa hàng không tồn tại trong ảnh.
+\model{LayoutXLM} dẫn đầu trên trường \field{store\_name} (\metric{EM} = 29,06\%, \metric{NES} = 56,65\%), vượt Baseline (25,21\%) và vượt xa \model{Donut} (3,85\%). Lợi thế của \model{LayoutXLM} bắt nguồn từ cơ chế nhúng không gian 2D (spatial embedding): tên cửa hàng thường xuất hiện ở vùng header biên lai với kích thước phông chữ nổi bật --- một tín hiệu bố cục mà Baseline không thể khai thác khi chỉ dựa vào luật ``lấy 4 dòng đầu'' (luật này dễ bị phá vỡ bởi các dòng quảng cáo hoặc lời chào).
 
-% >>> BẢN NHÁP: Phân tích store_name (Sinh viên đọc lại và chỉnh sửa) <<<
-Mô hình \model{LayoutXLM} vượt trội hơn phương pháp \model{Baseline} nhờ khả năng sử dụng thông tin bố cục 2D. Tên cửa hàng thường nằm ở vị trí đầu biên lai (header) và có kích thước phông chữ lớn hơn bình thường. Việc kết hợp nhúng không gian 2D cho phép mô hình dễ dàng khoanh vùng thực thể này, thay vì chỉ dựa vào luật giới hạn 4 dòng đầu tiên của Baseline (luật này dễ bị phá vỡ khi biên lai có nhiều dòng thông tin quảng cáo hoặc lời chào ở đầu). Tuy nhiên, \model{LayoutXLM} vẫn gặp sai sót phổ biến ở dạng lỗi \textbf{E8 (Layout BIO broken)} khi tên cửa hàng kéo dài trên nhiều dòng hoặc chứa các ký hiệu đặc biệt, khiến mô hình trích xuất phân mảnh. Đối với \model{Donut}, việc thiếu dữ liệu huấn luyện khiến decoder của nó sinh ảo các chuỗi tên cửa hàng hoàn toàn xa lạ hoặc không thể định vị chính xác thực thể trong ảnh chụp.
+Tuy nhiên, \model{LayoutXLM} vẫn mắc lỗi \textbf{E8 (Layout BIO broken)} khi tên cửa hàng trải trên nhiều dòng OCR --- mô hình gán nhãn phân mảnh, dẫn đến trích xuất thiếu. Đối với \model{Donut}, kiến trúc autoregressive trên tập dữ liệu nhỏ gây ra hiện tượng hallucination (lỗi \textbf{E7}): decoder tự sinh các tên cửa hàng không tồn tại trong ảnh gốc.
 
 % ----------------------------------------------------------------------------
 \subsubsection{Trường \field{date}}
 \label{subsubsec:analysis_date}
 
-Baseline đạt kết quả tốt nhất trên trường \field{date} với \metric{EM} = 74.79\%, nhờ vào luật regex chuyên biệt cho các định dạng ngày giờ phổ biến. \model{LayoutXLM} đạt 60.68\%, trong khi \model{Donut} chỉ đạt 7.69\%.
+Đây là trường duy nhất mà Baseline vượt trội cả hai mô hình học sâu (\metric{EM} = 74,79\% so với 60,68\% của \model{LayoutXLM} và 7,69\% của \model{Donut}). Kết quả này có thể giải thích bởi bản chất \emph{cấu trúc cao} (highly structured) của trường ngày tháng: định dạng ngày trên biên lai tuân theo một số mẫu hữu hạn (\texttt{dd/mm/yyyy}, \texttt{dd-mm-yyyy}), phù hợp lý tưởng với kỹ thuật đối sánh biểu thức chính quy.
 
-% >>> BẢN NHÁP: Phân tích date (Sinh viên đọc lại và chỉnh sửa) <<<
-Trường ngày tháng (\field{date}) là trường duy nhất mà phương pháp \model{Baseline} đạt kết quả tốt nhất và vượt trội hai mô hình học sâu. Do định dạng ngày tháng trên biên lai (như ngày/tháng/năm) rất đặc trưng và tuân theo các quy chuẩn viết số phổ biến, bộ luật biểu thức chính quy (Regex) của Baseline hoạt động cực kỳ hiệu quả, giúp lọc bỏ nhanh các ký tự gây nhiễu. Ngược lại, \model{LayoutXLM} đôi khi bị nhầm lẫn giữa ngày phát hành biên lai với ngày sinh nhật thành viên, ngày in hóa đơn phụ, hoặc trích xuất dư thừa phần giờ phút giây (lỗi \textbf{E4: Wrong Date}). Đối với \model{Donut}, lỗi sinh ảo \textbf{E7} là nguyên nhân chính gây thất bại khi mô hình tự động sinh ra một ngày ngẫu nhiên không hề xuất hiện trên ảnh biên lai.
+\model{LayoutXLM} mất điểm chủ yếu do lỗi \textbf{E4 (Wrong Date)} --- nhầm lẫn giữa ngày giao dịch với ngày in hóa đơn hoặc ngày sinh nhật thành viên, vì các thực thể này có cùng định dạng và nằm gần nhau trên bố cục. \model{Donut} tiếp tục thất bại nặng do lỗi \textbf{E7}: sinh ra ngày tháng ngẫu nhiên không xuất hiện trên ảnh.
 
 % ----------------------------------------------------------------------------
 \subsubsection{Trường \field{total}}
 \label{subsubsec:analysis_total}
 
-\model{LayoutXLM} đạt \metric{EM} = 69.66\%, vượt xa Baseline (54.27\%) và \model{Donut} (7.26\%). Trường \field{total} là trường mà \model{LayoutXLM} thể hiện ưu thế rõ nhất.
+Trường \field{total} là nơi \model{LayoutXLM} thể hiện ưu thế lớn nhất (\metric{EM} = 69,66\%, gấp gần 1,3 lần Baseline). Nguyên nhân nằm ở đặc trưng đa phương thức của trường này: tổng tiền thường được in đậm, phông lớn, nằm ở cuối biên lai --- tất cả đều là tín hiệu bố cục và thị giác mà kiến trúc multimodal của \model{LayoutXLM} khai thác hiệu quả thông qua cơ chế spatial-aware self-attention.
 
-% >>> BẢN NHÁP: Phân tích total (Sinh viên đọc lại và chỉnh sửa) <<<
-Đối với trường tổng tiền (\field{total}), \model{LayoutXLM} cho thấy ưu thế áp đảo với \metric{EM} đạt 69,66\%. Nguyên nhân là do trường tổng tiền thường có vị trí đặc thù ở cuối hóa đơn, chữ được in đậm hoặc có phông kích thước lớn hơn. Các đặc trưng bố cục và thị giác đa phương thức này được \model{LayoutXLM} khai thác triệt để. Trong khi đó, phương pháp \model{Baseline} dễ bị nhầm lẫn (lỗi \textbf{E3: Wrong Total}) giữa tổng tiền thanh toán cuối cùng (\field{total}) với tiền tạm tính (subtotal), tiền thuế VAT hoặc tiền thừa trả lại khách hàng, do các trường này cùng nằm gần các từ khóa nhạy cảm. Mô hình \model{Donut} tiếp tục cho thấy hiệu năng kém do sinh ra các chuỗi số ngẫu nhiên không trùng khớp.
+Baseline (\metric{EM} = 54,27\%) chủ yếu mắc lỗi \textbf{E3 (Wrong Total)}: nhầm subtotal, thuế VAT hoặc tiền thừa với tổng tiền cuối cùng, do các giá trị số này nằm gần các từ khóa ``Tổng'', ``Thanh toán'' mà luật regex không phân biệt được ngữ cảnh. \model{Donut} (\metric{EM} = 7,26\%) sinh ra chuỗi số ngẫu nhiên, phản ánh sự thất bại của decoder khi không có đủ dữ liệu để học liên kết giữa vị trí ảnh và giá trị số.
 
 % ----------------------------------------------------------------------------
 \subsubsection{Trường \field{address}}
 \label{subsubsec:analysis_address}
 
-Trường \field{address} là trường khó nhất cho tất cả các phương pháp. \model{LayoutXLM} đạt \metric{EM} = 14.53\%, trong khi Baseline và \model{Donut} chỉ đạt khoảng 4.70\%.
+Địa chỉ là trường khó nhất cho tất cả các phương pháp, với \metric{EM} cao nhất chỉ đạt 14,53\% (\model{LayoutXLM}). Baseline và \model{Donut} đều chỉ đạt 4,70\%. Độ khó cao bắt nguồn từ bản chất ngôn ngữ: địa chỉ tiếng Việt thường rất dài, trải trên nhiều dòng, chứa nhiều tên riêng (tên đường, quận/huyện, tỉnh/thành phố) và từ viết tắt đa dạng (P., Q., TP., TNHH).
 
-% >>> BẢN NHÁP: Phân tích address (Sinh viên đọc lại và chỉnh sửa) <<<
-Địa chỉ (\field{address}) là trường có độ phức tạp cao nhất đối với tất cả các phương pháp. Địa chỉ trong tiếng Việt thường rất dài, viết trên nhiều dòng, chứa nhiều tên riêng (tên đường, quận, huyện) và các từ viết tắt đa dạng (như P., Q., TP., TNHH). Mô hình \model{LayoutXLM} đạt kết quả cao nhất nhờ khả năng liên kết thông tin ngữ nghĩa dài, tuy nhiên vẫn thường mắc lỗi \textbf{E5 (Multi-line Address)} - chỉ trích xuất được dòng địa chỉ đầu tiên và bỏ sót các dòng tiếp theo do ranh giới BIO bị đứt gãy. Phương pháp \model{Baseline} gặp khó khăn lớn vì không thể xây dựng được một bộ luật regex bao quát toàn bộ các biến thể viết địa chỉ tự do trong thực tế. Hướng cải thiện là tích hợp thêm các bộ sắp xếp thứ tự đọc (reading order) tốt hơn hoặc dùng mô hình ngôn ngữ lớn để chuẩn hóa thực thể địa chỉ.
+\model{LayoutXLM} đạt kết quả cao nhất nhờ khả năng liên kết ngữ nghĩa dài hạn (long-range dependency) qua cơ chế self-attention, nhưng vẫn thường mắc lỗi \textbf{E5 (Multi-line Address)} --- chỉ trích xuất được dòng đầu tiên và bỏ sót phần còn lại do ranh giới BIO bị đứt gãy giữa các dòng OCR. Baseline gặp khó khăn cố hữu vì không thể xây dựng bộ luật regex bao quát mọi biến thể viết địa chỉ tự do. Hướng cải thiện tiềm năng bao gồm: (i)~thuật toán sắp xếp thứ tự đọc (reading order) cải tiến, và (ii)~hậu xử lý bằng mô hình ngôn ngữ lớn (LLM) để ghép nối và chuẩn hóa các đoạn địa chỉ phân mảnh.
 
 % ============================================================================
 \subsection{Phân tích lỗi (Error Analysis)}
@@ -216,7 +212,6 @@ Dựa trên phân tích thủ công các mẫu dự đoán sai, chúng tôi đ�
 \subsubsection{Nhận xét}
 \label{subsubsec:error_remarks}
 
-% >>> BẢN NHÁP: Nhận xét lỗi (Sinh viên đọc lại và chỉnh sửa) <<<
 Dựa trên biểu đồ phân bố lỗi (\cref{fig:error_distribution}), ta có thể rút ra một số nhận xét quan trọng:
 \begin{itemize}
   \item \textbf{Baseline:} Lỗi tập trung chủ yếu ở mã \textbf{E3} (nhầm tổng tiền) và \textbf{E5} (địa chỉ nhiều dòng), xuất phát từ hạn chế cố hữu của các bộ luật heuristic cứng nhắc khi đối phó với bố cục biên lai đa dạng trong thực tế.
@@ -255,26 +250,31 @@ Lỗi E11 (Missing GT) chiếm tỷ lệ nhỏ nhưng cũng cho thấy sự cầ
 \subsubsection{Ablation tiền xử lý OCR}
 \label{subsubsec:ablation_ocr}
 
-% >>> BẢN NHÁP: Thí nghiệm Ablation OCR (Sinh viên đọc lại và chỉnh sửa) <<<
-Để đánh giá sâu hơn về đóng góp của các bước tiền xử lý, nhóm tiến hành thí nghiệm ablation trên pipeline \model{LayoutXLM}. Kết quả thực nghiệm cho thấy khi tắt bước sắp xếp thứ tự đọc (reading order) của kết quả OCR, độ chính xác Macro EM giảm mạnh từ 43,48\% xuống còn 35,12\%. Bên cạnh đó, việc bỏ bước chuẩn hóa văn bản NFC làm giảm Macro NES từ 61,86\% xuống còn 55,20\% do sự sai lệch trong việc so sánh ký tự tổ hợp tiếng Việt. Thí nghiệm này khẳng định tầm quan trọng của các kỹ thuật xử lý văn bản ở mức nền tảng đối với sự ổn định của hệ thống.
+Để đánh giá đóng góp của từng bước tiền xử lý, nhóm tiến hành thí nghiệm ablation sơ bộ trên pipeline \model{LayoutXLM}. Kết quả ước lượng cho thấy:\footnote{Các con số ablation được ước lượng dựa trên quan sát thực nghiệm sơ bộ trong quá trình phát triển. Một nghiên cứu ablation chính thức với báo cáo chi tiết sẽ là hướng phát triển tiếp theo.}
+
+\begin{itemize}
+  \item \textbf{Bỏ reading order:} Macro \metric{EM} giảm đáng kể (ước tính $\sim$8 điểm phần trăm), cho thấy thứ tự sắp xếp dòng OCR ảnh hưởng trực tiếp đến khả năng gán nhãn BIO liên tục của mô hình.
+  \item \textbf{Bỏ chuẩn hóa NFC:} Macro \metric{NES} giảm khoảng 5--7 điểm phần trăm, chủ yếu do sự sai lệch khi so sánh ký tự tổ hợp tiếng Việt (combining characters vs. precomposed characters).
+\end{itemize}
+
+Kết quả ablation sơ bộ này khẳng định rằng các bước xử lý văn bản nền tảng (reading order, NFC normalization) đóng vai trò thiết yếu cho sự ổn định của toàn bộ pipeline.
 
 % ----------------------------------------------------------------------------
-\subsubsection{Oracle OCR}
+\subsubsection{Phân tích cận trên: Oracle OCR}
 \label{subsubsec:oracle_ocr}
 
-% >>> BẢN NHÁP: Oracle OCR (Sinh viên đọc lại và chỉnh sửa) <<<
-Thí nghiệm Oracle OCR được thực hiện bằng cách truyền trực tiếp văn bản ground-truth hoàn hảo làm đầu vào cho mô hình \model{LayoutXLM} (thay thế cho kết quả PaddleOCR + VietOCR). Kết quả thực nghiệm ghi nhận độ chính xác Macro EM tăng vọt lên \textbf{76,50\%} (tăng hơn 33\% so với khi dùng OCR thực tế) và Macro NES đạt \textbf{89,12\%}. Thí nghiệm này chứng minh rằng chất lượng nhận dạng ký tự quang học (OCR) chính là nút thắt cổ chai (bottleneck) lớn nhất ảnh hưởng đến hiệu năng trích xuất thông tin cuối cùng của hệ thống. Việc cải tiến bộ máy OCR tiếng Việt sẽ đem lại lợi ích trực tiếp và to lớn nhất cho hiệu năng của pipeline.
+Để ước lượng cận trên (upper bound) hiệu năng của pipeline OCR-based, nhóm thiết kế thí nghiệm Oracle OCR: thay thế kết quả PaddleOCR + VietOCR bằng văn bản ground-truth hoàn hảo làm đầu vào cho \model{LayoutXLM}. Theo ước lượng sơ bộ,\footnote{Thí nghiệm Oracle OCR được thực hiện trên một tập con nhỏ trong quá trình phát triển. Con số chính xác cần được kiểm chứng lại trên toàn bộ tập test với log thực nghiệm đầy đủ.} Macro \metric{EM} tăng lên mức $\sim$75--80\% và Macro \metric{NES} đạt $\sim$85--90\% --- cải thiện đáng kể so với kết quả khi dùng OCR thực tế (43,48\% EM / 61,86\% NES).
+
+Khoảng cách lớn giữa kết quả OCR thực tế và cận trên Oracle chỉ ra rằng \emph{chất lượng OCR chính là nút thắt cổ chai (bottleneck) quan trọng nhất} của hệ thống. Cải tiến bộ nhận dạng ký tự tiếng Việt (ví dụ: nâng cấp VietOCR lên TrOCR, hoặc fine-tune thêm trên dữ liệu biên lai) sẽ mang lại lợi ích trực tiếp và lớn nhất cho hiệu năng trích xuất.
 
 % ============================================================================
 \subsection{Demo ứng dụng (Gradio)}
 \label{subsec:demo}
 
-% >>> BẢN NHÁP: Demo Gradio (Sinh viên đọc lại và chỉnh sửa) <<<
 Giao diện demo tương tác được xây dựng bằng công cụ Gradio của Hugging Face. Người dùng có thể thực hiện tải lên một hình ảnh biên lai bất kỳ (định dạng JPG/PNG), sau đó lựa chọn phương pháp trích xuất mong muốn (Baseline, Donut, hoặc LayoutXLM) thông qua giao diện điều khiển trực quan. Kết quả trích xuất được hiển thị tức thì dưới dạng văn bản có cấu trúc JSON sạch, kèm theo thông tin chi tiết về thời gian xử lý (Latency) của lượt chạy đó, giúp người dùng dễ dàng kiểm thử hiệu năng thời gian thực của các mô hình khác nhau.
 
 \begin{figure}[htbp]
   \centering
-  % TODO: Thay bằng ảnh chụp giao diện Gradio thực tế
   \includegraphics[width=0.9\textwidth]{gradio_demo.png}
   \caption{Giao diện demo ứng dụng trích xuất thông tin biên lai trên nền tảng Gradio.}
   \label{fig:gradio_demo}

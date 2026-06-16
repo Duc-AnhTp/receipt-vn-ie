@@ -1,10 +1,9 @@
-% ============================================================================
+﻿% ============================================================================
 %  CHAPTER 2 — Cơ sở lý thuyết
 % ============================================================================
 \section{Cơ sở lý thuyết}
 \label{sec:theory}
 
-% >>> BẢN NHÁP: Giới thiệu chương (Sinh viên đọc lại và chỉnh sửa) <<<
 Chương này trình bày các cơ sở lý thuyết nền tảng phục vụ cho đồ án, bao gồm bài toán trích xuất thông tin tài liệu (Document Information Extraction - DIE), kỹ thuật nhận dạng ký tự quang học (\gls{ocr}), các kiến trúc mô hình học sâu hiện đại như \model{Donut} và \model{LayoutXLM}, cùng các độ đo đánh giá và công trình liên quan được sử dụng để đối sánh thực nghiệm.
 
 % ============================================================================
@@ -20,7 +19,6 @@ phi cấu trúc hoặc bán cấu trúc. Trong ngữ cảnh biên lai, bài toá
 \field{store\_name}, \field{date}, \field{address}, \field{total}
 từ ảnh chụp biên lai.
 
-% >>> BẢN NHÁP: Đầu vào/đầu ra bài toán KIE (Sinh viên đọc lại và chỉnh sửa) <<<
 Về mặt toán học, đầu vào của bài toán trích xuất thông tin thực thể liên kết (\gls{kie}) là một tài liệu ảnh biên lai dạng bán cấu trúc $I \in \mathbb{R}^{H \times W \times C}$. Đầu ra mong muốn là một tập hợp các thực thể thông tin có cấu trúc dưới dạng cặp khóa-giá trị: $Y = \{(K_1, V_1), (K_2, V_2), \dots, (K_M, V_M)\}$, trong đó mỗi $K_j$ tương ứng với một trong các trường cần trích xuất (ví dụ: \field{store\_name}, \field{date}, \field{total}, \field{address}) và $V_j$ là giá trị văn bản đã chuẩn hóa được trích xuất từ tài liệu. Quá trình này đòi hỏi mô hình không chỉ nhận diện đúng ký tự mà còn phải hiểu được quan hệ không gian và ngữ cảnh ngữ nghĩa giữa các khối văn bản để liên kết chúng thành các cặp khóa-giá trị chính xác.
 
 Các hướng tiếp cận chính cho bài toán \gls{kie} có thể phân loại thành
@@ -77,7 +75,6 @@ Hệ thống \gls{ocr} hiện đại thường gồm hai giai đoạn nối ti�
     Chuyển đổi vùng ảnh đã phát hiện thành chuỗi ký tự tương ứng.
 \end{enumerate}
 
-% >>> BẢN NHÁP: Pipeline OCR (Sinh viên đọc lại và chỉnh sửa) <<<
 Quy trình OCR hai giai đoạn diễn ra như sau: Đầu tiên, mô hình phát hiện văn bản (Text Detection) quét qua toàn bộ ảnh biên lai để xác định vị trí của từng dòng hoặc từng từ văn bản và trả về tọa độ các hộp bao (bounding boxes). Sau đó, ảnh nằm trong các vùng hộp bao này được cắt ra (crop) và truyền qua mô hình nhận dạng văn bản (Text Recognition) để chuyển đổi các đặc trưng thị giác của chữ viết thành chuỗi ký tự Unicode có dấu. Kết quả cuối cùng là danh sách các đoạn văn bản kèm theo tọa độ địa lý của chúng trên ảnh.
 
 % ----------------------------------------------------------------------------
@@ -90,7 +87,6 @@ phát hiện văn bản. DB cho phép tối ưu hóa ngưỡng nhị phân hóa 
 thông qua lan truyền ngược (backpropagation), giúp cải thiện đáng kể
 khả năng phát hiện văn bản so với các phương pháp sử dụng ngưỡng cố định.
 
-% >>> BẢN NHÁP: Kiến trúc DB (Sinh viên đọc lại và chỉnh sửa) <<<
 Thuật toán phát hiện văn bản DB (Differentiable Binarization) cải tiến thuật toán binarization truyền thống bằng cách tích hợp trực tiếp bước nhị phân hóa khả vi vào mạng nơ-ron tích chập. Cấu trúc mạng DB bao gồm: (1) Backbone (ví dụ: ResNet hoặc MobileNetV3) đóng vai trò trích xuất đặc trưng hình ảnh đa tỷ lệ; (2) Mạng kim tự tháp đặc trưng (FPN) kết hợp đặc trưng từ các lớp khác nhau để tạo ra bản đồ đặc trưng giàu thông tin ngữ cảnh; (3) Đầu dự báo song song để sinh ra Probability Map (bản đồ xác suất chứa ký tự) và Threshold Map (bản đồ ngưỡng thích ứng). Quá trình nhị phân hóa khả vi thực hiện phép toán:
 \begin{equation}
   \hat{B}_{i,j} = \frac{1}{1 + \exp(-k(P_{i,j} - T_{i,j}))}
@@ -115,7 +111,6 @@ VietOCR~\cite{vietocr2020} là mô hình nhận dạng văn bản được thi�
 đặc trưng (feature extractor) và Transformer làm bộ giải mã chuỗi
 (sequence decoder).
 
-% >>> BẢN NHÁP: VGG Encoder trong VietOCR (Sinh viên đọc lại và chỉnh sửa) <<<
 Mô hình nhận dạng văn bản tiếng Việt \model{VietOCR} sử dụng một bộ trích xuất đặc trưng dựa trên kiến trúc VGG-19 được sửa đổi. Vùng ảnh chứa dòng chữ sau khi cắt ra được đưa qua các lớp tích chập (convolutional layers) và lớp gộp tối đa (max-pooling layers) của VGG để giảm kích thước không gian và trích xuất vector đặc trưng visual. Cụ thể, ảnh đầu vào kích thước $H \times W \times C$ được biến đổi thành bản đồ đặc trưng có kích thước $H' \times W' \times D$ (với $H' \ll H$ và $W' \ll W$). Sau đó, đặc trưng visual này được làm phẳng theo chiều rộng để tạo thành chuỗi các vector đặc trưng đại diện cho các lát cắt thẳng đứng dọc theo dòng chữ, trước khi đưa vào bộ giải mã Transformer Encoder-Decoder tuần tự để ánh xạ thành văn bản.
 
 Mô hình được huấn luyện với hàm mất mát \gls{ctc}~\cite{graves2006ctc},
@@ -237,7 +232,6 @@ các cửa sổ được dịch chuyển $\lfloor M/2 \rfloor$ pixel theo cả h
 ngang và dọc. Cơ chế W-MSA và SW-MSA được xen kẽ nhau qua các lớp
 Transformer, cho phép thông tin lan truyền giữa các cửa sổ.
 
-% >>> BẢN NHÁP: Cơ chế SW-MSA (Sinh viên đọc lại và chỉnh sửa) <<<
 Sự kết hợp giữa hai cơ chế W-MSA (Window Multi-head Self-Attention) và SW-MSA (Shifted Window Multi-head Self-Attention) giải quyết triệt để vấn đề mất liên kết giữa các cửa sổ không chồng lấn. Trong khi W-MSA thực hiện tính toán self-attention độc lập bên trong mỗi cửa sổ kích thước $M \times M$ để tối ưu hóa tốc độ, lớp SW-MSA kế tiếp sẽ dịch chuyển tọa độ phân chia cửa sổ đi một đoạn $\lfloor M/2 \rfloor$ pixel. Nhờ sự dịch chuyển này, các cửa sổ mới sẽ đè lên ranh giới của các cửa sổ cũ, cho phép các token ở ranh giới giao tiếp và truyền thông tin qua lại, duy trì sự nhất quán ngữ cảnh toàn cục của hình ảnh.
 
 % ----------------------------------------------------------------------------
@@ -323,7 +317,6 @@ và đặc trưng thị giác.
 \subsubsection{Kiến trúc tổng quan}
 \label{subsubsec:layoutxlm_arch}
 
-% >>> BẢN NHÁP: Tổng quan LayoutXLM (Sinh viên đọc lại và chỉnh sửa) <<<
 LayoutXLM là một mô hình học sâu đa phương thức được thiết kế để mở rộng khả năng hiểu tài liệu đa ngôn ngữ. Kiến trúc cốt lõi của LayoutXLM là Transformer Encoder, kế thừa trực tiếp từ XLM-RoBERTa nhưng tích hợp thêm các kênh thông tin về không gian 2D (bounding boxes) và đặc trưng thị giác (visual features) của từng vùng văn bản. Điều này giúp mô hình đồng thời biểu diễn được cả ngữ nghĩa của từ ngữ, vị trí vật lý của từ trên trang giấy và đặc điểm hình ảnh (font chữ, màu sắc, khung viền), giải quyết hiệu quả bài toán trích xuất thực thể từ tài liệu có cấu trúc bố cục phức tạp như hóa đơn.
 
 \begin{figure}[htbp]
@@ -517,7 +510,6 @@ trong đó $N$ là số token trong tài liệu, $y_i$ là nhãn \gls{bio}
 \subsection{Các độ đo đánh giá}
 \label{subsec:metrics}
 
-% >>> BẢN NHÁP: Giới thiệu các độ đo (Sinh viên đọc lại và chỉnh sửa) <<<
 Để đánh giá một cách toàn diện và chính xác hiệu năng của các mô hình trích xuất thông tin, đồ án sử dụng một bộ chỉ số đa chiều bao gồm các độ đo về độ chính xác ký tự, độ tương đồng ngữ nghĩa cũng như hiệu năng vận hành thực tế. Các chỉ số này giúp phân tích chi tiết điểm mạnh, điểm yếu của từng mô hình trên các khía cạnh khác nhau.
 
 Để đánh giá và so sánh hiệu suất hai hướng tiếp cận, đồ án sử dụng
@@ -584,7 +576,6 @@ End-to-End Latency đo tổng thời gian xử lý từ khi nhận ảnh đầu 
 trong pipeline (tiền xử lý, \gls{ocr}, suy luận mô hình, hậu xử lý).
 Đơn vị tính là giây/ảnh (s/image).
 
-% >>> BẢN NHÁP: Đo Latency (Sinh viên đọc lại và chỉnh sửa) <<<
 Để đảm bảo tính khách quan và nhất quán trong so sánh, thời gian xử lý (Latency) của tất cả các phương pháp được đo trên cùng một cấu hình phần cứng (sử dụng GPU NVIDIA Tesla T4 16GB). Quy trình đo latency bao gồm bước chạy khởi động (warm-up) với 50 ảnh đầu tiên để nạp mô hình vào bộ nhớ GPU và ổn định tài nguyên hệ thống. Sau đó, tổng thời gian xử lý toàn bộ pipeline được tính trung bình trên toàn bộ tập kiểm thử gồm 234 ảnh. Latency đo được đại diện cho tốc độ phản hồi thực tế của hệ thống đối với mỗi yêu cầu trích xuất.
 
 \begin{table}[htbp]
@@ -609,7 +600,6 @@ trong pipeline (tiền xử lý, \gls{ocr}, suy luận mô hình, hậu xử lý
 \subsection{Các công trình liên quan}
 \label{subsec:related_work}
 
-% >>> BẢN NHÁP: Dẫn dắt Related Work (Sinh viên đọc lại và chỉnh sửa) <<<
 Bài toán hiểu tài liệu (Document Understanding) và trích xuất thông tin đã thu hút nhiều sự quan tâm của cộng đồng nghiên cứu AI trong những năm gần đây với hàng loạt tập dữ liệu chuẩn và kiến trúc mô hình đột phá được đề xuất. Dưới đây là các công trình tiêu biểu đóng vai trò nền tảng hoặc có liên quan trực tiếp đến định hướng thực hiện đồ án.
 
 Phần này trình bày các công trình nghiên cứu liên quan trực tiếp
@@ -622,7 +612,6 @@ tổ chức năm 2021, tập trung vào bài toán trích xuất thông tin
 từ ảnh biên lai chụp bằng điện thoại di động.
 Cuộc thi cung cấp tập dữ liệu biên lai tiếng Việt được sử dụng
 làm nền tảng cho dữ liệu huấn luyện và đánh giá trong đồ án này.
-% >>> BẢN NHÁP: Đội dẫn đầu MC-OCR (Sinh viên đọc lại và chỉnh sửa) <<<
 Trong cuộc thi MC-OCR 2021, các đội thi dẫn đầu chủ yếu sử dụng các giải pháp kết hợp hai giai đoạn (two-stage pipeline). Giai đoạn đầu tiên tập trung tối ưu hóa mô hình phát hiện hộp bao bằng cách sử dụng các kiến trúc mạnh mẽ như DBNet hoặc YOLOv5. Giai đoạn thứ hai sử dụng các mô hình ngôn ngữ lớn kết hợp thông tin đa phương thức như LayoutLM, LayoutLMv2 hoặc các mô hình sequence-to-sequence như T5 để trích xuất thông tin thực thể. Các đội thi cũng áp dụng các kỹ thuật tăng cường dữ liệu ảnh (data augmentation) mạnh mẽ và các quy tắc hậu xử lý văn bản chuyên sâu để xử lý tiếng Việt dấu câu.
 
 \paragraph{CORD.}
@@ -651,5 +640,4 @@ và XLM-RoBERTa (backbone của \model{LayoutXLM}).
 Cơ chế \gls{msa} của Transformer cho phép mô hình
 nắm bắt các quan hệ phụ thuộc xa trong chuỗi đầu vào.
 
-% >>> BẢN NHÁP: Các công trình khác (Sinh viên đọc lại và chỉnh sửa) <<<
 Bên cạnh các mô hình được sử dụng chính trong đồ án, một số nghiên cứu gần đây cũng đề xuất các tiếp cận đáng chú ý như \model{Pix2Struct}~\cite{lee2023pix2struct} - mô hình tiền huấn luyện từ ảnh sang HTML cho các tác vụ hiểu giao diện và tài liệu, hoặc \model{TrOCR}~\cite{li2023trocr} - mô hình OCR dựa hoàn toàn trên kiến trúc Transformer cho cả hai giai đoạn detection và recognition. Các công trình này mở ra nhiều hướng đi mới cho việc tối ưu hóa hiệu năng trích xuất thông tin từ tài liệu bán cấu trúc trong tương lai.

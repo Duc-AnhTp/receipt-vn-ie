@@ -1,18 +1,16 @@
-% ============================================================================
+﻿% ============================================================================
 %  CHƯƠNG 3 — Thu thập và xây dựng tập dữ liệu
 % ============================================================================
 
 \section{Thu thập và xây dựng tập dữ liệu}
 \label{sec:dataset}
 
-% >>> BẢN NHÁP: Giới thiệu chương (Sinh viên đọc lại và chỉnh sửa) <<<
 Chương này mô tả chi tiết quá trình thu thập, xây dựng và chuẩn bị tập dữ liệu huấn luyện cho các mô hình. Nội dung bao gồm việc phân tích các nguồn dữ liệu thành phần, xây dựng bộ quy tắc gán nhãn chuẩn hóa, thiết kế schema dữ liệu thống nhất, chiến lược phân chia dữ liệu và các quy trình kiểm thử chất lượng trước khi đưa dữ liệu vào huấn luyện.
 
 % ----------------------------------------------------------------------------
 \subsection{Nguồn dữ liệu}
 \label{subsec:data-source}
 
-% >>> BẢN NHÁP: Giới thiệu nguồn dữ liệu (Sinh viên đọc lại và chỉnh sửa) <<<
 Để huấn luyện và đánh giá mô hình một cách khách quan, đồ án kết hợp hai nguồn dữ liệu biên lai tiếng Việt: bộ dữ liệu công khai từ cuộc thi MC-OCR 2021 và bộ dữ liệu tự chụp thực tế từ các nguồn cửa hàng bán lẻ khác nhau.
 
 \subsubsection{MC-OCR 2021}
@@ -70,7 +68,6 @@ bounding box và gán giá trị cho từng trường thông tin trên biên lai
 \subsection{Hướng dẫn gán nhãn (Annotation Guideline)}
 \label{subsec:annotation-guideline}
 
-% >>> BẢN NHÁP: Tầm quan trọng của gán nhãn nhất quán (Sinh viên đọc lại và chỉnh sửa) <<<
 Việc gán nhãn dữ liệu một cách nhất quán và chuẩn hóa đóng vai trò quyết định đến hiệu suất học tập của các mô hình học sâu. Do dữ liệu biên lai được thu thập từ nhiều nguồn với các định dạng hiển thị hoàn toàn khác nhau, nhóm đã xây dựng một bộ quy tắc gán nhãn nghiêm ngặt để áp dụng chung cho toàn bộ tập dữ liệu.
 
 Để đảm bảo tính nhất quán giữa hai nguồn dữ liệu, nhóm tác giả xây dựng bộ
@@ -92,7 +89,6 @@ quy tắc gán nhãn cho từng trường như sau:
 \paragraph{QA/QC (Kiểm soát chất lượng).}
 Sau mỗi đợt gán nhãn, nhóm thực hiện kiểm tra ngẫu nhiên tối thiểu
 \textbf{50 mẫu} để rà soát lỗi gán nhãn và đảm bảo tuân thủ quy tắc trên.
-% >>> BẢN NHÁP: Kết quả QA/QC (Sinh viên đọc lại và chỉnh sửa) <<<
 Kết quả kiểm định chất lượng (QA/QC) ngẫu nhiên trên 50 mẫu cho thấy tỷ lệ sai lệch ban đầu khoảng 8,0\% (tương đương 4 mẫu). Các lỗi phổ biến chủ yếu liên quan đến: (1) Trường \field{store\_name} bị gán nhãn bao gồm cả ký hiệu loại hình kinh doanh như "Công ty TNHH", (2) Trường \field{address} gán nhãn thiếu các dòng bổ sung ở cuối hóa đơn, và (3) Trường \field{total} lấy nhầm số tiền phụ thu dịch vụ. Toàn bộ các lỗi phát hiện đều được nhóm tiến hành sửa đổi thủ công và cập nhật lại tập dữ liệu nhãn sạch trước khi chuyển qua bước tiếp theo.
 
 
@@ -100,7 +96,6 @@ Kết quả kiểm định chất lượng (QA/QC) ngẫu nhiên trên 50 mẫu 
 \subsection{Schema dữ liệu thống nhất (Unified JSONL)}
 \label{subsec:unified-schema}
 
-% >>> BẢN NHÁP: Ý nghĩa của schema thống nhất (Sinh viên đọc lại và chỉnh sửa) <<<
 Mỗi nguồn dữ liệu ban đầu sở hữu cấu trúc lưu trữ và định dạng trường thông tin khác nhau. Việc xây dựng một schema JSONL thống nhất là cần thiết để chuẩn hóa đầu vào cho các pipeline huấn luyện tự động, đồng thời cho phép tích hợp dễ dàng các nguồn dữ liệu mới mà không cần sửa đổi mã nguồn xử lý mô hình.
 
 Toàn bộ dữ liệu từ cả hai nguồn được chuyển đổi về một schema JSONL thống
@@ -168,7 +163,6 @@ Dưới đây là ví dụ một dòng trong file JSONL:
 \subsection{Chiến lược chia dữ liệu (Data Split)}
 \label{subsec:data-split}
 
-% >>> BẢN NHÁP: Ý nghĩa chiến lược chia dữ liệu (Sinh viên đọc lại và chỉnh sửa) <<<
 Chiến lược chia dữ liệu (Data Split) phù hợp đóng vai trò quan trọng trong việc đánh giá chính xác khả năng tổng quát hóa của mô hình và ngăn ngừa hiện tượng rò rỉ thông tin (data leakage) giữa các tập dữ liệu huấn luyện, kiểm thử.
 
 % ----------------------------------------------------------------------------
@@ -236,7 +230,6 @@ Tỷ lệ thiếu nhãn (missing rate) của từng trường trên toàn bộ t
 \subsection{Kiểm tra dữ liệu (Validation)}
 \label{subsec:data-validation}
 
-% >>> BẢN NHÁP: Tầm quan trọng của data validation (Sinh viên đọc lại và chỉnh sửa) <<<
 Kiểm tra dữ liệu trước khi huấn luyện là một bước tiền đề quan trọng giúp loại bỏ sớm các lỗi cú pháp, tệp tin bị hỏng hoặc dữ liệu nhãn không nhất quán, từ đó ngăn ngừa các lỗi runtime trong quá trình huấn luyện mô hình.
 
 Nhóm tác giả xây dựng script \code{validate\_dataset} để kiểm tra toàn bộ tập
@@ -253,5 +246,4 @@ dữ liệu trước khi sử dụng. Script thực hiện các bước kiểm t
         số nguyên (không chứa dấu phân cách, đơn vị tiền tệ) sau khi chuẩn hoá.
 \end{itemize}
 
-% >>> BẢN NHÁP: Kết quả chạy validate_dataset (Sinh viên đọc lại và chỉnh sửa) <<<
 Kết quả chạy thử nghiệm script \code{validate\_dataset} trên toàn bộ 1.559 mẫu ghi nhận 15 mẫu có lỗi định dạng ngày tháng (chứa ký tự giờ phút giây ở nhãn chuẩn hóa) và 8 mẫu có trường \field{total} chứa dấu phân cách hàng nghìn. Nhóm nghiên cứu đã khắc phục triệt để các lỗi này bằng cách tinh chỉnh các bộ lọc chuẩn hóa văn bản tự động, đưa tỷ lệ lỗi hợp lệ về 0\% trước khi chính thức huấn luyện.
