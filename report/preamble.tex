@@ -9,8 +9,17 @@
 \setmainfont{Times New Roman}        % Font chính — hỗ trợ tốt tiếng Việt
 \setsansfont{Arial}                  % Font sans-serif
 \setmonofont{Courier New}            % Font code
-\usepackage[vietnamese,english]{babel}
+\usepackage[english,vietnamese]{babel}
 \selectlanguage{vietnamese}
+
+% Định nghĩa lại các tiêu đề tự động bằng tiếng Việt
+\renewcommand{\contentsname}{Mục lục}
+\renewcommand{\listfigurename}{Danh mục hình ảnh}
+\renewcommand{\listtablename}{Danh mục bảng biểu}
+\renewcommand{\figurename}{Hình}
+\renewcommand{\tablename}{Bảng}
+\renewcommand{\lstlistingname}{Đoạn mã}
+\renewcommand{\lstlistlistingname}{Danh mục đoạn mã}
 
 % --- Trang & Layout ---
 \usepackage[
@@ -61,6 +70,7 @@
 \usepackage{float}
 \usepackage{subcaption}
 \usepackage{wrapfig}
+\usepackage{tikz}
 
 % --- Bảng biểu ---
 \usepackage{booktabs}                % \toprule, \midrule, \bottomrule
@@ -193,7 +203,7 @@
 \addbibresource{references.bib}
 
 % --- Glossary / Danh mục từ viết tắt ---
-\usepackage[acronym,toc]{glossaries}
+\usepackage[acronym]{glossaries}
 \makeglossaries
 
 % Định nghĩa từ viết tắt

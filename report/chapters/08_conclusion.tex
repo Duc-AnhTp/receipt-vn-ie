@@ -1,62 +1,53 @@
-﻿% ============================================================================
+% ============================================================================
 %  Section 8: Kết luận và hướng phát triển
 % ============================================================================
 \section{Kết luận và hướng phát triển}
 \label{sec:conclusion}
 
 % ============================================================================
-\subsection{Kết luận}
+\subsection{Kết luận và trả lời câu hỏi nghiên cứu}
 \label{subsec:conclusion}
 
-Đồ án đã nghiên cứu và giải quyết thành công bài toán tự động hóa trích xuất thông tin bốn trường thực thể then chốt (\field{store\_name}, \field{date}, \field{total}, \field{address}) từ ảnh chụp biên lai tiếng Việt. Để đạt được mục tiêu này, nhóm nghiên cứu đã: (1) Xây dựng thành công bộ dữ liệu biên lai tiếng Việt thống nhất gồm 1.559 mẫu ảnh chất lượng cao được gán nhãn chuẩn hóa; (2) Thiết kế và triển khai có hệ thống ba pipeline trích xuất đại diện cho ba trường phái tiếp cận kỹ thuật khác nhau gồm Baseline rule-based, Donut sinh End-to-End, và LayoutXLM học đa phương thức; (3) Xây dựng bộ đánh giá hiệu năng tự động và khách quan dựa trên các chỉ số chuẩn hóa EM, NES và CER; (4) Hiện thực hóa ứng dụng demo tương tác trực quan bằng Gradio phục vụ chạy thử nghiệm.
+Đồ án đã hoàn thành thiết kế, huấn luyện và đánh giá đối sánh hệ thống ba phương pháp trích xuất bốn trường thông tin quan trọng từ ảnh chụp biên lai tiếng Việt. Dựa trên các số liệu đo đạc thực nghiệm thu được, nhóm nghiên cứu đưa ra câu trả lời trực tiếp cho ba câu hỏi nghiên cứu (RQ) đặt ra ban đầu:
 
-Đồ án đã thực hiện so sánh hệ thống ba phương pháp trích xuất thông tin từ biên lai tiếng Việt trên bộ dữ liệu gồm 1.559 mẫu (234 mẫu test). Các kết quả chính như sau:
-
+\paragraph{1. Trả lời RQ1: So sánh hiệu năng chính xác giữa LayoutXLM và Donut}
 \begin{itemize}
-  \item \model{LayoutXLM} đạt kết quả tổng thể tốt nhất với Macro \metric{EM} = 43.48\% và Macro \metric{NES} = 61.86\%, cho thấy hiệu quả của việc kết hợp thông tin văn bản, vị trí không gian (layout), và ảnh trong kiến trúc multi-modal.
+  \item \textbf{Kết quả:} Mô hình đa phương thức \model{LayoutXLM} đạt hiệu năng tốt nhất với chỉ số Macro EM là 43,48\% và Macro NES là 61,86\%. Tuy nhiên, khoảng cách chênh lệch tuyệt đối so với phương pháp heuristics Baseline (Macro EM = 39,74\%) chỉ là \textbf{3,74 điểm phần trăm} (3,74\%). Điều này chứng tỏ sự cải tiến của LayoutXLM là có thực tế nhưng chưa mang tính vượt trội hoàn toàn.
+  \item \textbf{Hiệu năng của Donut:} Mô hình \model{Donut} đạt kết quả rất hạn chế (Macro EM = 5,88\%, Macro CER = 105,23\%) do hiện tượng ảo giác (hallucination) và lỗi sinh sai định dạng thẻ XML. Điều này bác bỏ giả thuyết rằng Donut có thể dễ dàng hoạt động tốt trên các tập dữ liệu nhỏ.
+\end{itemize}
 
-  \item Baseline (regex trên kết quả \gls{ocr}) bất ngờ đạt kết quả tốt nhất trên trường \field{date} (\metric{EM} = 74.79\%) nhờ các luật regex chuyên biệt cho định dạng ngày giờ có cấu trúc rõ ràng.
+\paragraph{2. Trả lời RQ2: So sánh tốc độ xử lý (latency) và tài nguyên huấn luyện}
+\begin{itemize}
+  \item \textbf{Thời gian xử lý E2E thực tế (suy luận):} Baseline là nhanh nhất với latency E2E trung bình là \textbf{181,1 ms/ảnh}. LayoutXLM xếp thứ hai với \textbf{1.031,2 ms/ảnh} (1,03 giây). Donut là chậm nhất với \textbf{2.449,8 ms/ảnh} (2,45 giây) do cơ chế giải mã tự hồi quy beam search của BART Decoder rất tốn tài nguyên.
+  \item \textbf{Tài nguyên huấn luyện:} LayoutXLM hội tụ cực kỳ nhanh chóng chỉ sau \textbf{1,5 giờ} huấn luyện (Early Stopping kích hoạt tại epoch 14) nhờ bài toán phân loại token đơn giản. Trong khi đó, Donut cần tới \textbf{18,5 giờ} huấn luyện (Early Stopping tại epoch 112) và gặp hiện tượng quá khớp (overfitting) do phải đồng thời học nhận dạng ký tự tiếng Việt và sinh cấu trúc thẻ XML.
+\end{itemize}
 
-  \item \model{Donut} (OCR-free) cho kết quả kém nhất (Macro \metric{EM} = 5.88\%, Macro \metric{CER} = 105.23\%) khi huấn luyện trên tập dữ liệu nhỏ khoảng 1.559 mẫu biên lai tiếng Việt, chủ yếu do hiện tượng hallucination và lỗi sinh chuỗi format.
+\paragraph{3. Trả lời RQ3: Đánh giá ảnh hưởng của lỗi OCR lên pipeline OCR-based}
+\begin{itemize}
+  \item \textbf{Phân tích thực chứng:} Phân tích phân bố lỗi chỉ ra lỗi nhận dạng của bộ OCR đầu vào (\textbf{E2: OCR Wrong}) đóng góp tới \textbf{32\%} tổng lỗi của mô hình LayoutXLM trên tập test. Lỗi này làm sai lệch ký tự tiếng Việt có dấu ngay từ đầu vào, khiến mô hình gán nhãn LayoutXLM bị sai lệch theo. Để khẳng định chính xác cận trên lý thuyết và độ hao hụt hiệu năng do OCR, nhóm nghiên cứu đề xuất chạy kịch bản thực nghiệm \textbf{Oracle OCR} trong các nghiên cứu tiếp theo.
 \end{itemize}
 
 % ============================================================================
-\subsection{Hạn chế}
+\subsection{Hạn chế của Đồ án}
 \label{subsec:limitations}
 
-Đồ án còn một số hạn chế cần được nhận diện:
-
+Nhóm nghiên cứu nhận diện các hạn chế cốt lõi của đồ án hiện tại bao gồm:
 \begin{enumerate}
-  \item \textbf{Bộ dữ liệu nhỏ:} Chỉ có khoảng 1.559 mẫu — chưa đủ lớn để các mô hình deep learning, đặc biệt \model{Donut}, phát huy hết tiềm năng.
-
-  \item \textbf{Chưa thử nghiệm mô hình mới hơn:} Các mô hình như LayoutLMv3 \cite{huang2022layoutlmv3}, Pix2Struct \cite{lee2023pix2struct}, DocTR chưa được so sánh trong đồ án.
-
-  \item \textbf{Chưa kiểm tra tính tổng quát:} Chưa thực hiện stress-test trên các nhóm cửa hàng hoàn toàn mới (held-out store groups) để đánh giá khả năng tổng quát hóa.
-
-  \item \textbf{\model{Donut} chưa được warm-up:} Mô hình \model{Donut} được fine-tune trực tiếp từ \code{donut-base} mà chưa qua bước warm-up trên tập CORD v2 \cite{park2019cord} — một bước quan trọng trong pipeline gốc.
+  \item \textbf{Kích thước dữ liệu huấn luyện còn nhỏ:} Tập dữ liệu 1.559 mẫu chưa đủ để các mô hình học sâu (đặc biệt là Donut) phát huy tối đa khả năng.
+  \item \textbf{Giới hạn mô hình so sánh:} Đồ án chưa đối sánh với các mô hình đa phương thức tiên tiến hơn như LayoutLMv3~\cite{huang2022layoutlmv3}, Pix2Struct~\cite{lee2023pix2struct}, hoặc bộ công cụ OCR mã nguồn mở DocTR.
+  \item \textbf{Chưa thực hiện stress-test trên nhóm held-out:} Thực nghiệm chia stress-test split theo nhóm cửa hàng mới (\code{split\_stress}) đã được viết mã nguồn nhưng chưa được chạy và đo đạc kết quả trên thực tế.
+  \item \textbf{Donut chưa được tiền huấn luyện warm-up:} Donut được fine-tune trực tiếp từ \code{donut-base} mà chưa có bước pre-finetuning trên tập biên lai quốc tế CORD v2.
 \end{enumerate}
 
 % ============================================================================
-\subsection{Hướng phát triển}
+\subsection{Định hướng phát triển tương lai}
 \label{subsec:future_work}
 
-Dựa trên kết quả và hạn chế, chúng tôi đề xuất các hướng phát triển sau:
-
+Dựa trên các hạn chế và kết quả, nhóm đề xuất các hướng phát triển tiếp theo:
 \begin{enumerate}
-  \item \textbf{Mở rộng bộ dữ liệu:} Thu thập thêm biên lai từ nhiều loại cửa hàng, vùng miền khác nhau. Áp dụng data augmentation (xoay, nhiễu, thay đổi độ sáng) để tăng tính đa dạng.
-
-  \item \textbf{Warm-up \model{Donut} trên CORD v2:} Fine-tune \model{Donut} trên tập CORD v2 \cite{park2019cord} trước khi chuyển sang biên lai tiếng Việt, giúp mô hình học cấu trúc biên lai tổng quát trước.
-
-  \item \textbf{Thử nghiệm mô hình mới:} So sánh với LayoutLMv3 \cite{huang2022layoutlmv3}, Pix2Struct \cite{lee2023pix2struct} — các mô hình đã cho kết quả vượt trội trên benchmark quốc tế.
-
-  \item \textbf{Cải thiện chất lượng \gls{ocr}:} Thay thế hoặc bổ sung VietOCR bằng TrOCR \cite{li2023trocr}, nâng cấp PaddleOCR lên v2.8+ để cải thiện độ chính xác nhận dạng dấu tiếng Việt.
-
-  \item \textbf{Xử lý \field{address} nhiều dòng:} Thiết kế module chuyên biệt cho trường \field{address} — sử dụng reading order cải tiến và mô hình phân đoạn dòng (line segmentation) để ghép nối chính xác hơn.
-
-  \item \textbf{Triển khai ứng dụng thực tế:}
-  \begin{itemize}
-    \item Xây dựng REST API phục vụ tích hợp hệ thống.
-    \item Phát triển ứng dụng di động (mobile app) cho người dùng cuối.
-    \item Tối ưu latency: quantization (INT8), model distillation, batch inference.
-  \end{itemize}
+  \item \textbf{Tiền huấn luyện mô hình Donut trên CORD v2:} Huấn luyện Donut trên tập CORD v2 trước để mô hình học cách sinh thẻ XML ổn định, sau đó mới fine-tune trên biên lai tiếng Việt.
+  \item \textbf{Triển khai thực nghiệm Oracle OCR:} Sử dụng nhãn ground-truth hoàn hảo để đo đạc cận trên lý thuyết của LayoutXLM, từ đó cô lập chính xác sai số do bộ OCR gây ra.
+  \item \textbf{Nâng cấp và cải tiến bộ OCR:} Tinh chỉnh VietOCR trên dữ liệu biên lai Việt Nam hoặc tích hợp các kiến trúc nhận dạng chữ viết mới.
+  \item \textbf{Xử lý địa chỉ đa dòng:} Thiết kế thuật toán sắp xếp thứ tự đọc cải tiến và tích hợp hậu xử lý bằng mô hình ngôn ngữ lớn (LLM) để ghép nối và chuẩn hóa địa chỉ phân mảnh.
+  \item \textbf{Tối ưu hóa latency triển khai:} Áp dụng lượng hóa mô hình (INT8 quantization), chưng cất tri thức (knowledge distillation) để giảm latency suy luận của Donut và LayoutXLM xuống mức đáp ứng thời gian thực tốt hơn.
 \end{enumerate}

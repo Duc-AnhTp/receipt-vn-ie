@@ -1,221 +1,170 @@
-﻿% ============================================================================
+% ============================================================================
 %  CHƯƠNG 3 — Thu thập và xây dựng tập dữ liệu
 % ============================================================================
 
 \section{Thu thập và xây dựng tập dữ liệu}
 \label{sec:dataset}
 
-Chương này mô tả chi tiết quá trình thu thập, xây dựng và chuẩn bị tập dữ liệu huấn luyện cho các mô hình. Nội dung bao gồm việc phân tích các nguồn dữ liệu thành phần, xây dựng bộ quy tắc gán nhãn chuẩn hóa, thiết kế schema dữ liệu thống nhất, chiến lược phân chia dữ liệu và các quy trình kiểm thử chất lượng trước khi đưa dữ liệu vào huấn luyện.
+Chương này mô tả chi tiết quy trình thu thập dữ liệu từ các nguồn khác nhau, xây dựng hướng dẫn gán nhãn chuẩn hóa và schema lưu trữ JSONL thống nhất. Đồng thời, chương trình bày chi tiết quy trình lọc dữ liệu từ ảnh thô sang tập dữ liệu sạch, các biện pháp kỹ thuật chống rò rỉ thông tin (data leakage) và thống kê tỷ lệ thiếu nhãn.
 
 % ----------------------------------------------------------------------------
-\subsection{Nguồn dữ liệu}
+\subsection{Nguồn dữ liệu và quy trình lọc mẫu}
 \label{subsec:data-source}
 
-Để huấn luyện và đánh giá mô hình một cách khách quan, đồ án kết hợp hai nguồn dữ liệu biên lai tiếng Việt: bộ dữ liệu công khai từ cuộc thi MC-OCR 2021 và bộ dữ liệu tự chụp thực tế từ các nguồn cửa hàng bán lẻ khác nhau.
+Đồ án kết hợp hai nguồn dữ liệu biên lai tiếng Việt: bộ dữ liệu công khai từ cuộc thi MC-OCR 2021 và bộ dữ liệu tự chụp thực tế từ các cửa hàng bán lẻ khác nhau. Quy trình hình thành tập dữ liệu sạch trải qua các bước lọc nghiêm ngặt được tổng hợp trong \cref{tab:data-filtering-stats}.
 
 \subsubsection{MC-OCR 2021}
-\label{subsubsec:mcocr}
+Tập dữ liệu gốc từ cuộc thi \gls{mcocr} 2021~\cite{mcocr2021} bao gồm \textbf{2.436 ảnh} biên lai. Tuy nhiên, tập dữ liệu này chứa cả phần public test không đi kèm nhãn ground-truth. Nhóm nghiên cứu chỉ lọc và sử dụng phần dữ liệu huấn luyện có nhãn đầy đủ gồm \textbf{1.094 mẫu}. 
 
-Tập dữ liệu \gls{mcocr} 2021~\cite{mcocr2021} là bộ dữ liệu công khai gồm
-\textbf{2.436 ảnh} biên lai tiếng Việt được chụp bằng điện thoại di động
-(mobile-captured). Đây là nguồn dữ liệu chính được sử dụng trong đồ án.
+Nhãn gốc của MC-OCR được ánh xạ sang schema thống nhất của đồ án như sau:
+\begin{itemize}
+  \item \code{SELLER} $\to$ \field{store\_name} (Tên cửa hàng)
+  \item \code{SELLER\_ADDRESS} $\to$ \field{address} (Địa chỉ)
+  \item \code{TIMESTAMP} $\to$ \field{date} (Ngày giao dịch)
+  \item \code{TOTAL\_COST} $\to$ \field{total} (Tổng số tiền thanh toán)
+\end{itemize}
 
-Nhãn gốc của tập dữ liệu được ánh xạ sang schema thống nhất của đồ án như sau:
+\subsubsection{Dữ liệu tự thu thập}
+Để tăng tính đa dạng và kiểm định tính thực tiễn, nhóm nghiên cứu tự chụp thêm \textbf{500 ảnh} biên lai thực tế từ siêu thị, nhà hàng, cửa hàng tiện lợi tại Hà Nội. Các hình ảnh được chụp bằng thiết bị di động trong điều kiện ánh sáng, góc chụp biến động mạnh và ảnh có thể bị nghiêng, mờ nhẹ. Việc gán nhãn được thực hiện thủ công bằng công cụ Label Studio\footnote{\url{https://labelstud.io}} để đánh dấu bounding box và nhập giá trị văn bản cho 4 trường thông tin.
+
+\subsubsection{Quy trình lọc trùng lặp ảnh (MD5 Deduplication)}
+Nhằm loại bỏ các ảnh trùng lặp hoặc các ảnh chụp cùng một hóa đơn nhiều lần nhưng ở các góc máy gần tương tự nhau, nhóm nghiên cứu chạy thuật toán băm MD5 kiểm tra nội dung ảnh trước khi phân chia dữ liệu:
+1. Tính giá trị băm MD5 cho từng tệp ảnh.
+2. Nếu phát hiện tệp ảnh có cùng mã MD5 với tệp đã xử lý trước đó, tệp ảnh này sẽ bị loại khỏi tập dữ liệu.
+Quy trình này đã phát hiện và loại bỏ \textbf{98 mẫu ảnh trùng lặp} (gồm 63 mẫu từ MC-OCR và 35 mẫu tự chụp).
 
 \begin{table}[htbp]
   \centering
-  \caption{Ánh xạ nhãn từ MC-OCR 2021 sang schema đồ án}
-  \label{tab:mcocr-label-mapping}
-  \begin{tabular}{ll}
+  \caption{Thống kê số lượng mẫu bị loại theo từng nguồn dữ liệu.}
+  \label{tab:data-filtering-stats}
+  \begin{tabular}{lcccc}
     \toprule
-    \textbf{Nhãn gốc (MC-OCR)} & \textbf{Trường đồ án} \\
+    \textbf{Nguồn dữ liệu} & \textbf{Ảnh thô ban đầu} & \textbf{Loại do thiếu nhãn} & \textbf{Loại do trùng MD5} & \textbf{Mẫu sạch cuối cùng} \\
     \midrule
-    \code{SELLER}              & \field{store\_name}   \\
-    \code{SELLER\_ADDRESS}     & \field{address}       \\
-    \code{TIMESTAMP}           & \field{date}          \\
-    \code{TOTAL\_COST}         & \field{total}         \\
+    MC-OCR 2021 & 2.436 & 1.279 & 63 & 1.094 \\
+    Tự thu thập  & 500   & 0     & 35 & 465   \\
+    \midrule
+    \textbf{Tổng} & \textbf{2.936} & \textbf{1.279} & \textbf{98} & \textbf{1.559} \\
     \bottomrule
   \end{tabular}
 \end{table}
 
-Mức độ chú thích (\code{annotation\_level}) của nguồn này là
-\code{json\_and\_boxes}, tức bao gồm cả giá trị văn bản lẫn toạ độ bounding
-box cho từng trường.
-
 % ----------------------------------------------------------------------------
-\subsubsection{Dữ liệu tự thu thập}
-\label{subsubsec:self-collected}
-
-Ngoài tập MC-OCR, nhóm tác giả tự thu thập thêm khoảng \textbf{500 ảnh} biên
-lai từ nhiều cửa hàng và siêu thị khác nhau nhằm tăng tính đa dạng cho tập dữ
-liệu. Các ảnh được chụp bằng điện thoại di động trong điều kiện ánh sáng và
-góc chụp thực tế.
-
-Việc gán nhãn (annotation) được thực hiện bằng công cụ
-\textbf{Label Studio}\footnote{\url{https://labelstud.io}}, cho phép đánh dấu
-bounding box và gán giá trị cho từng trường thông tin trên biên lai.
-
-\begin{figure}[htbp]
-  \centering
-  % Ảnh sample_receipts.png đã chuẩn bị trong thư mục figures/
-  \includegraphics[width=0.85\textwidth]{sample_receipts.png}
-  \caption{Ví dụ một số ảnh biên lai trong tập dữ liệu tự thu thập}
-  \label{fig:sample-receipts}
-\end{figure}
-
-
-% ============================================================================
-\subsection{Hướng dẫn gán nhãn (Annotation Guideline)}
+\subsection{Hướng dẫn gán nhãn (Annotation Guideline) và QA/QC}
 \label{subsec:annotation-guideline}
 
-Việc gán nhãn dữ liệu một cách nhất quán và chuẩn hóa đóng vai trò quyết định đến hiệu suất học tập của các mô hình học sâu. Do dữ liệu biên lai được thu thập từ nhiều nguồn với các định dạng hiển thị hoàn toàn khác nhau, nhóm đã xây dựng một bộ quy tắc gán nhãn nghiêm ngặt để áp dụng chung cho toàn bộ tập dữ liệu.
-
-Để đảm bảo tính nhất quán giữa hai nguồn dữ liệu, nhóm tác giả xây dựng bộ
-quy tắc gán nhãn cho từng trường như sau:
-
+Việc gán nhãn dữ liệu tuân thủ nghiêm ngặt bộ quy tắc chuẩn hóa nhằm bảo đảm tính nhất quán cao nhất giữa các nguồn dữ liệu khác nhau:
 \begin{itemize}
-  \item \field{store\_name}: Chỉ lấy \textbf{tên thương hiệu/cửa hàng},
-        không bao gồm mã số thuế (MST), dòng chữ ``HÓA ĐƠN'', hay các thông
-        tin pháp lý khác.
-  \item \field{date}: Chỉ lấy \textbf{phần ngày tháng năm}, không bao gồm
-        giờ phút giây hay tiền tố ``Ngày:''.
-  \item \field{total}: Lấy \textbf{số tiền thanh toán cuối cùng}
-        (final payment), không lấy tạm tính (subtotal), tiền thừa (change),
-        hay các khoản phụ thu.
-  \item \field{address}: Lấy \textbf{toàn bộ các dòng địa chỉ}, không bao
-        gồm số điện thoại, website, hay email.
+  \item \field{store\_name}: Chỉ lấy tên thương hiệu/cửa hàng chính thức, loại bỏ các loại hình kinh doanh như "Công ty TNHH", "Cửa hàng bán lẻ" hoặc MST đi kèm.
+  \item \field{date}: Chỉ lấy thông tin ngày tháng năm và chuẩn hóa về định dạng YYYY-MM-DD. Loại bỏ các tiền tố như "Ngày:", "Giờ:", hoặc thông tin giờ phút giây.
+  \item \field{total}: Chỉ lấy số tiền thanh toán cuối cùng (final payment), loại bỏ đơn vị tiền tệ, dấu phân cách hàng nghìn và các số 0 ở đầu. Không lấy giá trị tạm tính (subtotal) hoặc tiền thừa (change).
+  \item \field{address}: Lấy toàn bộ địa chỉ ghi trên biên lai, loại bỏ số điện thoại, website, email đi kèm.
 \end{itemize}
 
-\paragraph{QA/QC (Kiểm soát chất lượng).}
-Sau mỗi đợt gán nhãn, nhóm thực hiện kiểm tra ngẫu nhiên tối thiểu
-\textbf{50 mẫu} để rà soát lỗi gán nhãn và đảm bảo tuân thủ quy tắc trên.
-Kết quả kiểm định chất lượng (QA/QC) ngẫu nhiên trên 50 mẫu cho thấy tỷ lệ sai lệch ban đầu khoảng 8,0\% (tương đương 4 mẫu). Các lỗi phổ biến chủ yếu liên quan đến: (1) Trường \field{store\_name} bị gán nhãn bao gồm cả ký hiệu loại hình kinh doanh như "Công ty TNHH", (2) Trường \field{address} gán nhãn thiếu các dòng bổ sung ở cuối hóa đơn, và (3) Trường \field{total} lấy nhầm số tiền phụ thu dịch vụ. Toàn bộ các lỗi phát hiện đều được nhóm tiến hành sửa đổi thủ công và cập nhật lại tập dữ liệu nhãn sạch trước khi chuyển qua bước tiếp theo.
-
+\textbf{Quy trình QA/QC (Kiểm soát chất lượng):} 
+Sau khi hoàn tất gán nhãn tự chụp, nhóm tiến hành kiểm soát chất lượng ngẫu nhiên trên \textbf{50 mẫu}. Kết quả QA/QC ghi nhận tỷ lệ sai lệch ban đầu là 8.0\% (4 mẫu), chủ yếu liên quan đến việc nhầm lẫn giữa trường \field{total} và subtotal, hoặc gán nhãn địa chỉ bị thiếu dòng. Toàn bộ sai lệch phát hiện đều được nhóm nghiên cứu tiến hành sửa đổi thủ công để đạt độ chính xác nhãn sạch 100\% trước khi chuyển qua bước huấn luyện.
 
 % ============================================================================
 \subsection{Schema dữ liệu thống nhất (Unified JSONL)}
 \label{subsec:unified-schema}
 
-Mỗi nguồn dữ liệu ban đầu sở hữu cấu trúc lưu trữ và định dạng trường thông tin khác nhau. Việc xây dựng một schema JSONL thống nhất là cần thiết để chuẩn hóa đầu vào cho các pipeline huấn luyện tự động, đồng thời cho phép tích hợp dễ dàng các nguồn dữ liệu mới mà không cần sửa đổi mã nguồn xử lý mô hình.
-
-Toàn bộ dữ liệu từ cả hai nguồn được chuyển đổi về một schema JSONL thống
-nhất với 12 trường chính được mô tả trong~\cref{tab:jsonl-schema}.
+Toàn bộ dữ liệu sạch từ cả hai nguồn được chuyển đổi về một schema JSONL thống nhất với \textbf{13 trường chính} được mô tả chi tiết trong \cref{tab:jsonl-schema}.
 
 \begin{table}[htbp]
   \centering
-  \caption{Các trường trong schema JSONL thống nhất}
+  \caption{Mô tả 13 trường dữ liệu trong schema JSONL thống nhất.}
   \label{tab:jsonl-schema}
-  \begin{tabularx}{\textwidth}{lL{9cm}}
+  \begin{tabularx}{\textwidth}{lL{9.5cm}}
     \toprule
     \textbf{Trường} & \textbf{Mô tả} \\
     \midrule
-    \code{id}                & Mã định danh duy nhất của mỗi mẫu \\
-    \code{group\_id}         & Mã nhóm ảnh (cùng biên lai chụp nhiều lần) \\
-    \code{store\_group}      & Tên nhóm cửa hàng (dùng cho stratified split) \\
-    \code{source}            & Nguồn dữ liệu (\code{mcocr} hoặc \code{self}) \\
-    \code{image\_path}       & Đường dẫn tương đối tới file ảnh \\
+    \code{id}                & Mã định danh duy nhất của mỗi mẫu ảnh \\
+    \code{group\_id}         & Mã nhóm ảnh (dùng để nhận diện các ảnh chụp cùng biên lai) \\
+    \code{store\_group}      & Tên nhóm cửa hàng (phục vụ phân tầng và stress-test) \\
+    \code{source}            & Nguồn dữ liệu (\code{mc\_ocr\_2021} hoặc \code{self\_collected}) \\
+    \code{image\_path}       & Đường dẫn tương đối đến tệp ảnh \\
     \code{width}             & Chiều rộng ảnh gốc (pixel) \\
     \code{height}            & Chiều cao ảnh gốc (pixel) \\
-    \code{annotation\_level} & Mức độ chú thích (\code{json\_and\_boxes},
-                               \code{json\_only}) \\
-    \code{raw\_target}       & Nhãn gốc trước chuẩn hoá (JSON object) \\
-    \code{target}            & Nhãn đã chuẩn hoá (JSON object) \\
-    \code{field\_boxes}      & Bounding box cho từng trường (\code{[x,y,w,h]}) \\
-    \code{field\_polygons}   & Polygon cho từng trường (danh sách điểm) \\
-    \code{ocr\_cache\_path}  & Đường dẫn tới file OCR cache (nếu có) \\
+    \code{annotation\_level} & Mức độ chú thích (\code{json\_and\_boxes} hoặc \code{json\_only}) \\
+    \code{raw\_target}       & Nhãn thô ban đầu trước chuẩn hóa (JSON object) \\
+    \code{target}            & Nhãn sạch đã qua chuẩn hóa (JSON object) \\
+    \code{field\_boxes}      & Tọa độ bounding box $[x_1, y_1, x_2, y_2]$ của từng trường \\
+    \code{field\_polygons}   & Tọa độ đa giác của từng trường thông tin \\
+    \code{ocr\_cache\_path}  & Đường dẫn đến tệp lưu kết quả OCR cache \\
     \bottomrule
   \end{tabularx}
 \end{table}
 
-Dưới đây là ví dụ một dòng trong file JSONL:
-
-\begin{lstlisting}[style=json, caption={Ví dụ một dòng dữ liệu JSONL},
-  label={lst:jsonl-example}]
+Ví dụ một dòng dữ liệu trong tệp JSONL thống nhất:
+\begin{lstlisting}[style=json, caption={Ví dụ một dòng dữ liệu JSONL}, label={lst:jsonl-example}]
 {
   "id": "mcocr_0001",
   "group_id": "g_0001",
   "store_group": "circlek",
   "source": "mcocr",
   "image_path": "images/mcocr_0001.jpg",
-  "width": 1080,
-  "height": 1920,
+  "width": 1080, "height": 1920,
   "annotation_level": "json_and_boxes",
   "raw_target": {
     "store_name": "CIRCLE K",
-    "address": "123 Nguyen Trai, Thanh Xuan, Ha Noi",
+    "address": "123 Nguyen Trai, HN",
     "date": "15/03/2021",
     "total": "115.000"
   },
   "target": {
-    "store_name": "CIRCLE K",
-    "address": "123 Nguyen Trai, Thanh Xuan, Ha Noi",
+    "store_name": "circle k",
+    "address": "123 nguyen trai, hn",
     "date": "2021-03-15",
     "total": "115000"
   },
-  "field_boxes": {"store_name": [100, 50, 300, 40]},
+  "field_boxes": {"store_name": [100, 50, 400, 90]},
   "field_polygons": {},
   "ocr_cache_path": "ocr_cache/mcocr_0001.json"
 }
 \end{lstlisting}
 
-
 % ============================================================================
-\subsection{Chiến lược chia dữ liệu (Data Split)}
+\subsection{Chiến lược chia dữ liệu (Data Split) và ngăn ngừa Leakage}
 \label{subsec:data-split}
 
-Chiến lược chia dữ liệu (Data Split) phù hợp đóng vai trò quan trọng trong việc đánh giá chính xác khả năng tổng quát hóa của mô hình và ngăn ngừa hiện tượng rò rỉ thông tin (data leakage) giữa các tập dữ liệu huấn luyện, kiểm thử.
+\paragraph{Rủi ro rò rỉ dữ liệu (Data Leakage)}
+Trong bài toán trích xuất thông tin biên lai, hiện tượng rò rỉ dữ liệu xảy ra khi các hình ảnh chụp cùng một biên lai vật lý (nhưng ở các góc máy khác nhau) bị phân chia nằm ở cả hai tập huấn luyện (Train) và tập kiểm thử (Test). Điều này làm cho mô hình dễ dàng "ghi nhớ" bố cục và nội dung cụ thể, dẫn đến kết quả đánh giá bị sai lệch và không phản ánh đúng khả năng tổng quát hóa thực tế của mô hình.
 
-% ----------------------------------------------------------------------------
-\subsubsection{Main Split}
-\label{subsubsec:main-split}
+\paragraph{Biện pháp giải quyết trong Đồ án}
+Để loại bỏ triệt để nguy cơ rò rỉ dữ liệu, nhóm nghiên cứu thiết lập chiến lược phân chia Main Split tỷ lệ \textbf{70/15/15} (Train/Val/Test) với hai ràng buộc kỹ thuật nghiêm ngặt:
+1. \textbf{Group-based Split:} Việc phân chia được thực hiện ở cấp độ `group_id` (chứ không phải cấp tệp ảnh đơn lẻ). Toàn bộ ảnh có chung `group_id` bắt buộc phải nằm trong cùng một tập (hoặc Train, hoặc Val, hoặc Test).
+2. \textbf{MD5 Hash Check:} Việc kiểm tra mã băm MD5 đảm bảo không có bất kỳ ảnh nào giống hệt nhau tồn tại song song giữa các tập split.
+3. \textbf{Phân tầng theo nguồn (Stratified by source):} Đảm bảo tỷ lệ phân bố giữa dữ liệu MC-OCR và dữ liệu tự chụp là tương đương giữa các tập huấn luyện, phát triển và kiểm thử.
 
-Tập dữ liệu được chia theo tỷ lệ \textbf{70/15/15} (train/validation/test)
-với các ràng buộc sau:
-
-\begin{itemize}
-  \item \textbf{Group split}: Các ảnh cùng \code{group\_id} (cùng một biên
-        lai chụp nhiều lần) luôn nằm trong cùng một tập để tránh rò rỉ dữ liệu
-        (data leakage).
-  \item \textbf{Stratified by source}: Phân tầng theo trường \code{source}
-        để đảm bảo tỷ lệ dữ liệu MC-OCR và tự thu thập tương đương giữa
-        các tập.
-  \item \textbf{Anti-leak MD5 hash}: Kiểm tra trùng lặp ảnh bằng MD5 hash
-        để loại bỏ các ảnh giống hệt nhau giữa các tập.
-  \item \textbf{Seed cố định}: \code{seed=42} để đảm bảo tính tái lập
-        (reproducibility).
-\end{itemize}
-
-% ----------------------------------------------------------------------------
-\subsubsection{Thống kê tập dữ liệu}
-\label{subsubsec:dataset-stats}
+Thống kê số lượng mẫu sau phân chia được trình bày trong \cref{tab:split-stats}.
 
 \begin{table}[htbp]
   \centering
-  \caption{Phân bố số lượng mẫu theo tập dữ liệu}
+  \caption{Phân bố số lượng mẫu sạch theo các tập dữ liệu.}
   \label{tab:split-stats}
-  \begin{tabular}{lc}
+  \begin{tabular}{lccc}
     \toprule
-    \textbf{Tập} & \textbf{Số lượng} \\
+    \textbf{Tập dữ liệu} & \textbf{MC-OCR 2021} & \textbf{Tự thu thập} & \textbf{Tổng số mẫu} \\
     \midrule
-    Train         & 1.091 \\
-    Validation    & 234   \\
-    Test          & 234   \\
+    Train (Huấn luyện) & 766 & 325 & 1.091 \\
+    Val (Phát triển)   & 164 & 70  & 234   \\
+    Test (Kiểm thử)    & 164 & 70  & 234   \\
     \midrule
-    \textbf{Tổng} & \textbf{1.559} \\
+    \textbf{Tổng} & \textbf{1.094} & \textbf{465} & \textbf{1.559} \\
     \bottomrule
   \end{tabular}
 \end{table}
 
-Tỷ lệ thiếu nhãn (missing rate) của từng trường trên toàn bộ tập dữ liệu
-được thống kê trong~\cref{tab:missing-rate}.
+\paragraph{Thống kê tỷ lệ thiếu nhãn trên tập kiểm thử (Test Set)}
+Trong thực tế, một số biên lai bị thiếu thông tin hoặc thông tin bị mờ không thể đọc được. \cref{tab:missing-rate} thống kê số mẫu thiếu nhãn (missing rate) của từng trường cụ thể trên tập kiểm thử (Test set) gồm \textbf{234 mẫu}, phản ánh độ thử thách của tập kiểm định thực tế.
 
 \begin{table}[htbp]
   \centering
-  \caption{Tỷ lệ thiếu nhãn theo từng trường}
+  \caption{Tỷ lệ thiếu nhãn theo từng trường trên tập kiểm thử (234 mẫu).}
   \label{tab:missing-rate}
   \begin{tabular}{lcc}
     \toprule
-    \textbf{Trường} & \textbf{Số mẫu thiếu} & \textbf{Tỷ lệ thiếu} \\
+    \textbf{Trường thông tin} & \textbf{Số mẫu thiếu nhãn} & \textbf{Tỷ lệ thiếu (\%)} \\
     \midrule
     \field{store\_name} & 10 & 4,27\% \\
     \field{date}        & 18 & 7,69\% \\
@@ -225,25 +174,15 @@ Tỷ lệ thiếu nhãn (missing rate) của từng trường trên toàn bộ t
   \end{tabular}
 \end{table}
 
-
 % ============================================================================
-\subsection{Kiểm tra dữ liệu (Validation)}
+\subsection{Kiểm tra tính hợp lệ dữ liệu (Validation)}
 \label{subsec:data-validation}
 
-Kiểm tra dữ liệu trước khi huấn luyện là một bước tiền đề quan trọng giúp loại bỏ sớm các lỗi cú pháp, tệp tin bị hỏng hoặc dữ liệu nhãn không nhất quán, từ đó ngăn ngừa các lỗi runtime trong quá trình huấn luyện mô hình.
-
-Nhóm tác giả xây dựng script \code{validate\_dataset} để kiểm tra toàn bộ tập
-dữ liệu trước khi sử dụng. Script thực hiện các bước kiểm tra sau:
-
+Trước khi đưa vào huấn luyện, toàn bộ 1.559 mẫu dữ liệu sạch được chạy qua script tự động \code{validate\_dataset} để xác minh cú pháp và định dạng nhãn. Script thực hiện kiểm tra:
 \begin{itemize}
-  \item \textbf{Kiểm tra ảnh}: Xác nhận file ảnh tồn tại và có thể đọc được
-        (không bị hỏng).
-  \item \textbf{Kiểm tra schema}: Đảm bảo mỗi dòng JSONL chứa đầy đủ các
-        trường bắt buộc theo schema đã định nghĩa (\cref{tab:jsonl-schema}).
-  \item \textbf{Kiểm tra định dạng ngày}: Trường \field{date} phải tuân theo
-        định dạng \code{YYYY-MM-DD} sau khi chuẩn hoá.
-  \item \textbf{Kiểm tra định dạng tiền}: Trường \field{total} phải là chuỗi
-        số nguyên (không chứa dấu phân cách, đơn vị tiền tệ) sau khi chuẩn hoá.
+  \item Định dạng ngày \field{date} phải tuân thủ chuẩn ISO \code{YYYY-MM-DD}.
+  \item Giá trị trường \field{total} phải là chuỗi số nguyên thuần túy (không chứa ký tự chữ cái, đơn vị tiền tệ hoặc dấu phân cách hàng nghìn).
+  \item Đường dẫn \code{image\_path} phải hợp lệ và tệp ảnh không bị lỗi đọc ghi (corrupted image).
 \end{itemize}
 
-Kết quả chạy thử nghiệm script \code{validate\_dataset} trên toàn bộ 1.559 mẫu ghi nhận 15 mẫu có lỗi định dạng ngày tháng (chứa ký tự giờ phút giây ở nhãn chuẩn hóa) và 8 mẫu có trường \field{total} chứa dấu phân cách hàng nghìn. Nhóm nghiên cứu đã khắc phục triệt để các lỗi này bằng cách tinh chỉnh các bộ lọc chuẩn hóa văn bản tự động, đưa tỷ lệ lỗi hợp lệ về 0\% trước khi chính thức huấn luyện.
+Kết quả chạy thử nghiệm ghi nhận 15 mẫu có lỗi định dạng ngày tháng (chứa ký tự giờ phút giây ở nhãn chuẩn hóa) và 8 mẫu có trường \field{total} chứa dấu phân cách hàng nghìn. Nhóm nghiên cứu đã khắc phục triệt để các lỗi này bằng cách tinh chỉnh các bộ lọc chuẩn hóa văn bản tự động, đưa tỷ lệ lỗi hợp lệ về 0\% trước khi chính thức huấn luyện.

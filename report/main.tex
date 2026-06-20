@@ -12,6 +12,17 @@
 %  TRANG BÌA
 % ============================================================================
 \begin{titlepage}
+  % --- Khung viền trang trí ---
+  \begin{tikzpicture}[remember picture, overlay]
+    \draw[huce-blue, line width=2pt]
+      ([shift={(12mm,-12mm)}]current page.north west)
+      rectangle
+      ([shift={(-12mm,12mm)}]current page.south east);
+    \draw[huce-blue, line width=0.5pt]
+      ([shift={(15mm,-15mm)}]current page.north west)
+      rectangle
+      ([shift={(-15mm,15mm)}]current page.south east);
+  \end{tikzpicture}
   \begin{center}
     % --- Logo và tên trường ---
     \includegraphics[width=3cm]{huce_logo.jpg}\\[0.3cm]

@@ -1,4 +1,4 @@
-﻿% ============================================================================
+% ============================================================================
 %  PHỤ LỤC
 % ============================================================================
 \appendix
@@ -11,10 +11,7 @@
 
 Phụ lục này trình bày cấu trúc dữ liệu tệp tin JSONL thống nhất được thiết kế để chuẩn hóa đầu vào cho toàn bộ các pipeline xử lý và huấn luyện trong đồ án. Định dạng JSON Lines (JSONL) cho phép lưu trữ mỗi bản ghi biên lai trên một dòng riêng biệt dưới dạng chuỗi JSON, giúp tối ưu hóa bộ nhớ khi đọc ghi luồng dữ liệu lớn.
 
-Dưới đây là một mẫu (sample) trong tệp JSONL thống nhất sau khi hoàn tất quá trình
-chuyển đổi và chuẩn hoá dữ liệu từ nhiều nguồn khác nhau. Mỗi dòng trong tệp JSONL
-tương ứng với một biên lai, bao gồm đường dẫn ảnh, kích thước, nhãn gốc
-(\code{raw\_target}) và nhãn đã chuẩn hoá (\code{target}).
+Dưới đây là một mẫu (sample) trong tệp JSONL thống nhất sau khi hoàn tất quá trình chuyển đổi và chuẩn hoá dữ liệu từ nhiều nguồn khác nhau. Mỗi dòng trong tệp JSONL tương ứng với một biên lai, bao gồm đường dẫn ảnh, kích thước, nhãn gốc (\code{raw\_target}) và nhãn đã chuẩn hoá (\code{target}).
 
 \begin{lstlisting}[style=json, caption={Một mẫu JSONL thống nhất}, label={lst:jsonl-sample}]
 {
@@ -32,10 +29,10 @@ tương ứng với một biên lai, bao gồm đường dẫn ảnh, kích thư
     "address": "Cho Sui Phu Thi Gia Lam"
   },
   "target": {
-    "store_name": "MINIMART ANAN",
+    "store_name": "minimart anan",
     "date": "2020-08-09",
     "total": "115000",
-    "address": "Cho Sui Phu Thi Gia Lam"
+    "address": "cho sui phu thi gia lam"
   }
 }
 \end{lstlisting}
@@ -57,29 +54,26 @@ Các trường chính trong mỗi bản ghi:
 \section{Cấu trúc mã nguồn}
 \label{appendix:source-code}
 
-% Cây thư mục dự án mô tả cấu trúc mã nguồn.
-
-Cây thư mục dưới đây mô tả tổng quan cấu trúc mã nguồn của dự án. Mã nguồn chính
-nằm trong thư mục \code{src/receipt\_ie/}, được tổ chức theo chức năng.
+Cây thư mục dưới đây mô tả tổng quan cấu trúc mã nguồn của dự án. Mã nguồn chính nằm trong thư mục \code{src/receipt\_ie/}, được tổ chức theo chức năng.
 
 \begin{lstlisting}[caption={Cấu trúc thư mục dự án}, label={lst:project-tree}]
 receipt-vn-ie/
-|-- configs/          # YAML configs
-|-- data/             # Raw -> Interim -> Processed
-|-- docs/             # Documentation
-|-- src/receipt_ie/   # Source code
-|   |-- data/         # Convert, normalize, validate, split
-|   |-- ocr/          # PaddleOCR + VietOCR
-|   |-- baseline/     # Rule-based extractor
-|   |-- models/       # Donut & LayoutXLM wrappers
-|   |-- training/     # Training scripts
-|   |-- inference/    # Inference pipelines
-|   |-- metrics/      # EM, NES, CER, latency
-|   |-- visualization/# Bounding box drawing
-|   `-- app/          # Gradio web demo
-|-- tests/            # Unit tests
-|-- notebooks/        # EDA, error analysis
-`-- scripts/          # Shell automation
+|-- configs/          # YAML configs cho data, model, app
+|-- data/             # Raw -> Interim -> Processed data pipeline
+|-- docs/             # Tai lieu huong dan gan nhan va quy tac
+|-- src/receipt_ie/   # Source code python
+|   |-- data/         # Convert, normalize, validate, split data
+|   |-- ocr/          # PaddleOCR (detect) + VietOCR (recognize)
+|   |-- baseline/     # Heuristics rule-based extractor
+|   |-- models/       # Wrappers cho Donut va LayoutXLM
+|   |-- training/     # Scripts huan luyen model
+|   |-- inference/    # Pipelines suy luan thoi gian thuc
+|   |-- metrics/      # Tinh toan EM, NES, CER, latency
+|   |-- visualization/# Ve bounding box va bieu do
+|   `-- app/          # Giao dien demo Gradio web
+|-- tests/            # Unit tests (viet bang pytest)
+|-- notebooks/        # So tay EDA, phan tich ocr, phan tich loi
+`-- scripts/          # Shell scripts tu dong hoa pipeline
 \end{lstlisting}
 
 
@@ -90,11 +84,8 @@ receipt-vn-ie/
 \section{Cấu hình huấn luyện đầy đủ}
 \label{appendix:configs}
 
-Phần này trình bày đầy đủ các tệp cấu hình YAML được sử dụng trong quá trình
-huấn luyện và đánh giá ba phương pháp. Tất cả cấu hình được lưu trong thư mục
-\code{configs/}.
+Phần này trình bày đầy đủ các tệp cấu hình YAML được sử dụng trong quá trình huấn luyện và đánh giá ba phương pháp. Tất cả cấu hình được lưu trong thư mục \code{configs/}.
 
-% --- Donut ---
 \subsection{Cấu hình \model{Donut} (\code{donut.yaml})}
 \label{appendix:config-donut}
 
@@ -132,7 +123,6 @@ generation:
   early_stopping: true
 \end{lstlisting}
 
-% --- LayoutXLM ---
 \subsection{Cấu hình \model{LayoutXLM} (\code{layoutxlm.yaml})}
 \label{appendix:config-layoutxlm}
 
@@ -175,7 +165,6 @@ labeling:
   overlap_threshold: 0.5
 \end{lstlisting}
 
-% --- Baseline ---
 \subsection{Cấu hình luật heuristic (\code{baseline.yaml})}
 \label{appendix:config-baseline}
 
@@ -227,55 +216,40 @@ heuristics:
 
 
 % ============================================================================
-%  PHỤ LỤC D — Mẫu kết quả trích xuất
+%  PHỤ LỤC D — Mẫu kết quả trích xuất thực tế
 % ============================================================================
 \newpage
-\section{Mẫu kết quả trích xuất}
+\section{Mẫu kết quả trích xuất thực tế}
 \label{appendix:extraction-examples}
 
-
-Bảng dưới đây trình bày một số mẫu kết quả trích xuất đại diện, so sánh giá trị
-dự đoán (Prediction) với nhãn thật (Ground Truth) trên tập kiểm tra.
+\cref{tab:extraction-examples} trình bày các mẫu kết quả trích xuất thực tế từ tập kiểm thử, đối chiếu kết quả dự đoán sau chuẩn hóa của cả ba phương pháp với nhãn ground-truth tương ứng.
 
 \begin{table}[htbp]
   \centering
-  \caption{Mẫu kết quả trích xuất so với nhãn thật}
+  \caption{Ví dụ kết quả trích xuất thực tế so với nhãn ground-truth trên tập test.}
   \label{tab:extraction-examples}
   \small
-  \begin{tabularx}{\textwidth}{l l l L{3.2cm} L{3.2cm} c}
+  \begin{tabularx}{\textwidth}{l p{2.1cm} l L{3.5cm} L{3.5cm} c}
     \toprule
-    \textbf{ID} & \textbf{Phương pháp} & \textbf{Trường} & \textbf{Ground Truth} & \textbf{Prediction} & \textbf{Đúng?} \\
+    \textbf{ID Mẫu (Test)} & \textbf{Phương pháp} & \textbf{Trường} & \textbf{Nhãn thật (Ground Truth)} & \textbf{Kết quả dự đoán} & \textbf{Đúng?} \\
     \midrule
-    % --- Ví dụ 1 ---
-    \code{mcocr\_001} & \model{Donut} & \field{store\_name}
-      & MINIMART ANAN & MINIMART ANAN & \checkmark \\
-    \code{mcocr\_001} & \model{Donut} & \field{date}
-      & 2020-08-09 & 2020-08-09 & \checkmark \\
-    \code{mcocr\_001} & \model{Donut} & \field{total}
-      & 115000 & 115000 & \checkmark \\
+    % --- Vi du 1 ---
+    \multirow{4}{*}{\makecell[l]{\code{mcocr\_mcocr\_}\\\code{public\_145014}\\\code{mbvkd}}}
+      & \model{LayoutXLM} & \field{store\_name} & nhan sach gd-tc cam pha & nhan sach gd-tc cam pha & \checkmark \\
+      & \model{LayoutXLM} & \field{address}    & dc: 212 duong tran phu-cam pha & dc: 212 duong tran phu-cam pha & \checkmark \\
+      & Baseline  & \field{address}    & dc: 212 duong tran phu-cam pha & dc: 212 duong tran phu-cam pha - nhan vien thu ngan & $\times$ \\
+      & \model{Donut}      & \field{store\_name} & nhan sach gd-tc cam pha & o cafe o cafe nha cafe cafe & $\times$ \\
     \midrule
-    % --- Ví dụ 2 ---
-    \code{mcocr\_002} & \model{LayoutXLM} & \field{store\_name}
-      & VINMART+ & VINMART+ & \checkmark \\
-    \code{mcocr\_002} & \model{LayoutXLM} & \field{address}
-      & 123 Nguyễn Trãi, HN & 123 Nguyễn Trãi & $\times$ \\
+    % --- Vi du 2 ---
+    \multirow{3}{*}{\makecell[l]{\code{mcocr\_mcocr\_}\\\code{public\_145014}\\\code{vauus}}}
+      & \model{LayoutXLM} & \field{total}      & 19000 & 19000 & \checkmark \\
+      & Baseline  & \field{total}      & 19000 & 50000 (lấy nhầm subtotal) & $\times$ \\
+      & Baseline  & \field{store\_name} & vincommerce & vm\% qnh to 7, khu minh tien a & $\times$ \\
     \midrule
-    % --- Ví dụ 3 ---
-    \code{mcocr\_003} & Baseline & \field{total}
-      & 250000 & 25000 & $\times$ \\
-    \midrule
-    \code{mcocr\_004} & \model{LayoutXLM} & \field{date}
-      & 2020-12-25 & 2020-12-25 10:30 & $\times$ \\
-    \code{mcocr\_005} & Baseline & \field{total}
-      & 54000 & 5400 & $\times$ \\
-    \code{mcocr\_006} & \model{LayoutXLM} & \field{address}
-      & Lô 12, Lĩnh Nam, Hoàng Mai, HN & Lô 12, Lĩnh Nam & $\times$ \\
-    \code{mcocr\_007} & \model{Donut} & \field{total}
-      & 82000 & 120000 & $\times$ \\
-    \code{mcocr\_008} & \model{LayoutXLM} & \field{store\_name}
-      & BÁCH HÓA XANH & BÁCH HÓA XAMH & $\times$ \\
-    \code{mcocr\_009} & Baseline & \field{date}
-      & 2021-01-10 &  & $\times$ \\
+    % --- Vi du 3 ---
+    \multirow{2}{*}{\makecell[l]{\code{mcocr\_mcocr\_}\\\code{public\_145014}\\\code{aixgf}}}
+      & \model{LayoutXLM} & \field{address}    & dc: 212 duong tran phu - cam pha & dc: 212 duong tran phu-cam pha & \checkmark \\
+      & Baseline  & \field{address}    & dc: 212 duong tran phu - cam pha & dc: 212 duong tran phu-cam pha - nhan vien thu ngan te & $\times$ \\
     \bottomrule
   \end{tabularx}
 \end{table}
@@ -290,16 +264,12 @@ dự đoán (Prediction) với nhãn thật (Ground Truth) trên tập kiểm tr
 
 Giao diện ứng dụng Demo Gradio cung cấp một công cụ trực quan hóa giúp nhanh chóng thử nghiệm khả năng nhận dạng và trích xuất của ba mô hình đối với các ảnh biên lai ngẫu nhiên tải lên từ thiết bị cá nhân.
 
-Ứng dụng demo được xây dựng bằng Gradio, cho phép người dùng tải ảnh biên lai lên
-và nhận kết quả trích xuất thông tin theo thời gian thực. Giao diện hỗ trợ chọn
-phương pháp (Baseline, \model{Donut}, \model{LayoutXLM}) và hiển thị kết quả dưới
-dạng bảng cùng với hình ảnh bounding box.
+Giao diện demo được xây dựng bằng Gradio, hỗ trợ tải ảnh biên lai lên, tự động chạy qua pipeline xử lý đã chọn (Baseline, \model{Donut}, hoặc \model{LayoutXLM}) và trả về kết quả định dạng JSON sạch kèm thông tin latency chi tiết của lượt chạy đó.
 
 \begin{figure}[htbp]
   \centering
-  % Giao diện Gradio demo
-  \includegraphics[width=0.9\textwidth]{gradio_demo.png}
-  \caption{Giao diện ứng dụng demo Gradio cho trích xuất thông tin biên lai}
+  \includegraphics[width=0.85\textwidth]{gradio_demo.png}
+  \caption{Giao diện ứng dụng demo Gradio cho trích xuất thông tin biên lai.}
   \label{fig:gradio-demo}
 \end{figure}
 
@@ -315,10 +285,8 @@ pip install -e .
 # Cai dat cac thu vien cho ung dung demo
 pip install -r requirements/app.txt
 
-# Khoi chay ung dung demo
-python -m receipt_ie.app
+# Khoi chay ung dung demo (su dung dung module entry point)
+python -m receipt_ie.app.gradio_app
 \end{lstlisting}
 
-Sau khi chạy lệnh trên, ứng dụng sẽ khởi động tại địa chỉ
-\code{http://localhost:7860}. Người dùng có thể truy cập qua trình duyệt web
-để sử dụng giao diện demo.
+Sau khi chạy lệnh trên, ứng dụng sẽ khởi động tại địa chỉ \code{http://localhost:7860}. Người dùng có thể truy cập qua trình duyệt web để sử dụng giao diện demo trực quan.

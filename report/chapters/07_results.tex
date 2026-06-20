@@ -4,152 +4,98 @@
 \section{Kết quả thực nghiệm và đánh giá}
 \label{sec:results}
 
-Phần này trình bày kết quả thực nghiệm trên tập test gồm 234 mẫu biên lai, so sánh ba phương pháp: Baseline (regex trên kết quả \gls{ocr}), \model{Donut} (OCR-free), và \model{LayoutXLM} (OCR-based token classification). Kết quả được đánh giá theo ba chỉ số: \metric{EM} (\gls{em}), \metric{NES} (\gls{nes}), và \metric{CER} (\gls{cer}).
+Chương này trình bày các kết quả thực nghiệm đạt được trên tập kiểm thử độc lập (Test set) gồm 234 mẫu. Nội dung bao gồm việc đánh giá đối sánh hệ thống các chỉ số EM, NES, CER, đo đạc latency công bằng, phân tích chi tiết lỗi (Error Taxonomy) và các định hướng thực nghiệm kiểm chứng trong tương lai.
 
 % ============================================================================
-\subsection{Bảng kết quả chính}
+\subsection{Kết quả thực nghiệm chính}
 \label{subsec:main_results}
 
-% ----------------------------------------------------------------------------
-\subsubsection{Exact Match (EM)}
-\label{subsubsec:em_results}
-
-\cref{tab:em_results} trình bày tỷ lệ \metric{EM} (\%) cho từng trường thông tin. Giá trị \metric{EM} cho biết tỷ lệ mẫu mà dự đoán khớp hoàn toàn với ground-truth sau chuẩn hóa.
+\cref{tab:unified-results} tổng hợp đầy đủ kết quả của ba chỉ số đánh giá: Exact Match (\metric{EM}), Normalized Edit Similarity (\metric{NES}), và Character Error Rate (\metric{CER}) theo từng trường thông tin cụ thể và điểm trung bình Macro.
 
 \begin{table}[htbp]
   \centering
-  \caption{Kết quả \metric{Exact Match} (\%) trên tập test (234 mẫu). \textbf{In đậm}: giá trị tốt nhất theo cột.}
-  \label{tab:em_results}
-  \begin{tabular}{lccccc}
+  \caption{Bảng kết quả thực nghiệm tổng hợp trên tập kiểm thử (234 mẫu). \textbf{In đậm}: giá trị tốt nhất trong cột của từng chỉ số.}
+  \label{tab:unified-results}
+  \small
+  \begin{tabularx}{\textwidth}{l C{1.7cm} C{1.7cm} C{1.7cm} C{1.7cm} C{1.9cm}}
     \toprule
-    \textbf{Phương pháp}
-      & \field{store\_name} & \field{date} & \field{total} & \field{address} & \textbf{Macro EM} \\
+    \textbf{Phương pháp} & \field{store\_name} & \field{date} & \field{total} & \field{address} & \textbf{Macro Average} \\
     \midrule
-    Baseline
-      & 25.21 & \textbf{74.79} & 54.27 & 4.70  & 39.74 \\
-    \model{Donut}
-      & 3.85  & 7.69           & 7.26  & 4.70  & 5.88  \\
-    \model{LayoutXLM}
-      & \textbf{29.06} & 60.68 & \textbf{69.66} & \textbf{14.53} & \textbf{43.48} \\
-    \bottomrule
-  \end{tabular}
-\end{table}
-
-% ----------------------------------------------------------------------------
-\subsubsection{Normalized Edit Similarity (NES)}
-\label{subsubsec:nes_results}
-
-\cref{tab:nes_results} trình bày chỉ số \metric{NES} (\%), đo mức độ tương đồng giữa dự đoán và ground-truth dựa trên khoảng cách biên tập chuẩn hóa. Giá trị càng cao càng tốt.
-
-\begin{table}[htbp]
-  \centering
-  \caption{Kết quả \metric{Normalized Edit Similarity} (\%) trên tập test (234 mẫu). \textbf{In đậm}: giá trị tốt nhất theo cột.}
-  \label{tab:nes_results}
-  \begin{tabular}{lccccc}
-    \toprule
-    \textbf{Phương pháp}
-      & \field{store\_name} & \field{date} & \field{total} & \field{address} & \textbf{Macro NES} \\
+    \multicolumn{6}{l}{\textbf{1. Chỉ số Exact Match (EM \%) $\uparrow$}} \\
+    - Baseline (Regex)  & 25,21 & \textbf{74,79} & 54,27 & 4,70  & 39,74 \\
+    - Mô hình \model{Donut}      & 3,85  & 7,69           & 7,26  & 4,70  & 5,88  \\
+    - Mô hình \model{LayoutXLM}  & \textbf{29,06} & 60,68 & \textbf{69,66} & \textbf{14,53} & \textbf{43,48} \\
     \midrule
-    Baseline
-      & 40.84 & \textbf{77.01} & 67.86 & 30.29 & 54.00 \\
-    \model{Donut}
-      & 8.11  & 7.69           & 7.26  & 4.70  & 6.94  \\
-    \model{LayoutXLM}
-      & \textbf{56.65} & 61.75 & \textbf{74.30} & \textbf{54.73} & \textbf{61.86} \\
-    \bottomrule
-  \end{tabular}
-\end{table}
-
-% ----------------------------------------------------------------------------
-\subsubsection{Character Error Rate (CER)}
-\label{subsubsec:cer_results}
-
-\cref{tab:cer_results} trình bày chỉ số \metric{CER} (\%). Giá trị càng \emph{thấp} càng tốt. Lưu ý: \metric{CER} $> 100\%$ xảy ra khi chuỗi dự đoán dài hơn ground-truth, thường do hiện tượng ảo giác (hallucination) của mô hình.\footnote{\metric{CER} được tính bằng $\text{CER} = \frac{S + D + I}{N} \times 100\%$, trong đó $S$, $D$, $I$ lần lượt là số phép thay thế, xóa, chèn, và $N$ là độ dài ground-truth. Khi $I > N - S - D$, \metric{CER} vượt quá 100\%.}
-
-\begin{table}[htbp]
-  \centering
-  \caption{Kết quả \metric{Character Error Rate} (\%) trên tập test (234 mẫu). \textbf{In đậm}: giá trị tốt nhất (thấp nhất) theo cột. $^{*}$CER $> 100\%$: dự đoán dài hơn ground-truth (hallucination).}
-  \label{tab:cer_results}
-  \begin{tabular}{lccccc}
-    \toprule
-    \textbf{Phương pháp}
-      & \field{store\_name} & \field{date} & \field{total} & \field{address} & \textbf{Macro CER} \\
+    \multicolumn{6}{l}{\textbf{2. Chỉ số Normalized Edit Similarity (NES \%) $\uparrow$}} \\
+    - Baseline (Regex)  & 40,84 & \textbf{77,01} & 67,86 & 30,29 & 54,00 \\
+    - Mô hình \model{Donut}      & 8,11  & 7,69           & 7,26  & 4,70  & 6,94  \\
+    - Mô hình \model{LayoutXLM}  & \textbf{56,65} & 61,75 & \textbf{74,30} & \textbf{54,73} & \textbf{61,86} \\
     \midrule
-    Baseline
-      & 91.35          & \textbf{22.99} & 37.00          & 79.49          & 57.71           \\
-    \model{Donut}$^{*}$
-      & 140.57         & 92.31          & 92.74          & 95.30          & 105.23          \\
-    \model{LayoutXLM}
-      & \textbf{45.79} & 38.25          & \textbf{25.79} & \textbf{48.74} & \textbf{39.64}  \\
+    \multicolumn{6}{l}{\textbf{3. Chỉ số Character Error Rate (CER \%) $\downarrow$}} \\
+    - Baseline (Regex)  & 91,35 & \textbf{22,99} & 37,00 & 79,49 & 57,71 \\
+    - Mô hình \model{Donut}$^*$ & 140,57 & 92,31        & 92,74 & 95,30 & 105,23 \\
+    - Mô hình \model{LayoutXLM}  & \textbf{45,79} & 38,25 & \textbf{25,79} & \textbf{48,74} & \textbf{39,64} \\
     \bottomrule
-  \end{tabular}
+  \end{tabularx}
+  \vspace{0.1cm}
+  \begin{flushleft}
+    \footnotesize{$^*$ Donut có CER > 100\% (hay > 1.0) do mô hình sinh thừa nhiều ký tự bị lặp hoặc ảo giác (hallucination) làm Levenshtein distance lớn hơn độ dài nhãn thực $gold$.}
+  \end{flushleft}
 \end{table}
 
 % ============================================================================
-\subsection{Biểu đồ so sánh}
-\label{subsec:comparison_charts}
+\subsection{Phân tích so sánh hiệu năng giữa các mô hình}
+\label{subsec:model_analysis}
 
-\cref{fig:em_comparison} và \cref{fig:nes_comparison} trực quan hóa kết quả \metric{EM} và \metric{NES} theo từng trường, giúp nhận biết nhanh điểm mạnh và điểm yếu của từng phương pháp.
+\paragraph{1. Phân tích chênh lệch hiệu năng tuyệt đối}
+Dựa trên \cref{tab:unified-results}, nhóm nghiên cứu đưa ra các nhận định khách quan về chênh lệch thực tế giữa các phương pháp:
+\begin{itemize}
+  \item \textbf{LayoutXLM và Baseline:} Mô hình đa phương thức \model{LayoutXLM} đạt kết quả Macro EM tốt nhất là 43,48\%, chỉ nhỉnh hơn phương pháp luật Baseline (39,74\%) là \textbf{3,74 điểm phần trăm}. Tương tự, chỉ số Macro NES của LayoutXLM nhỉnh hơn Baseline là \textbf{7,86 điểm phần trăm} (61,86\% so với 54,00\%). Khoảng cách chênh lệch này cho thấy LayoutXLM có cải tiến nhưng chưa đạt mức vượt trội hoàn toàn so với Baseline trên bài toán thực tế.
+  \item \textbf{Hiệu năng của Donut:} Mô hình \model{Donut} cho kết quả rất thấp với Macro EM chỉ đạt 5,88\% và Macro CER lên tới 105,23\%. Kết quả này củng cố giả thuyết rằng hướng tiếp cận generative end-to-end OCR-free rất nhạy cảm với kích thước dữ liệu và khó tối ưu hóa thành công trên các tập dữ liệu nhỏ (khoảng 1.000 mẫu).
+\end{itemize}
 
-\begin{figure}[htbp]
-  \centering
-  \includegraphics[width=0.85\textwidth]{em_comparison.png}
-  \caption{Biểu đồ so sánh \metric{Exact Match} (\%) giữa ba phương pháp theo từng trường thông tin.}
-  \label{fig:em_comparison}
-\end{figure}
-
-\begin{figure}[htbp]
-  \centering
-  \includegraphics[width=0.85\textwidth]{nes_comparison.png}
-  \caption{Biểu đồ so sánh \metric{Normalized Edit Similarity} (\%) giữa ba phương pháp theo từng trường thông tin.}
-  \label{fig:nes_comparison}
-\end{figure}
+\paragraph{2. Phân tích chi tiết theo từng trường thông tin}
+\begin{itemize}
+  \item \field{store\_name}: \model{LayoutXLM} đạt EM tốt nhất (29,06\%), vượt Baseline (25,21\%) nhờ khả năng học các đặc trưng bố cục 2D (tên cửa hàng thường nằm ở đầu trang với kích thước lớn). Baseline dễ bị lỗi khi tên cửa hàng bị xen kẽ bởi các dòng quảng cáo hoặc MST ở đầu hóa đơn.
+  \item \field{date}: Đây là trường duy nhất Baseline đạt kết quả vượt trội (\metric{EM} = 74,79\% so với 60,68\% của LayoutXLM). Ngày tháng là trường có cấu trúc rất chặt chẽ, phù hợp lý tưởng với biểu thức chính quy. LayoutXLM thường bị lỗi nhầm ngày giao dịch với ngày in hóa đơn hoặc ngày cấp thẻ thành viên do chúng có cùng cấu trúc và nằm gần nhau trên ảnh.
+  \item \field{total}: LayoutXLM chiếm ưu thế rõ rệt (\metric{EM} = 69,66\% so với 54,27\% của Baseline) nhờ khai thác đặc trưng đa phương thức (tổng tiền thường được in đậm, phông lớn, nằm ở cuối). Baseline thường bị nhầm lẫn giữa tổng tiền với tiền tạm tính hoặc tiền thừa do chúng đứng gần các từ khóa nhạy cảm.
+  \item \field{address}: Địa chỉ là trường thách thức nhất đối với mọi mô hình. LayoutXLM đạt kết quả cao nhất nhờ khả năng học ngữ cảnh dài qua Transformer Encoder nhưng EM cũng chỉ đạt 14,53\%. Địa chỉ tiếng Việt rất dài, thường viết tắt tự do và bị cắt dòng nhiều lần, gây đứt gãy nhãn BIO (lỗi E5).
+\end{itemize}
 
 % ============================================================================
-\subsection{Phân tích kết quả theo từng trường}
-\label{subsec:field_analysis}
+\subsection{Đo đạc và đối sánh Latency E2E công bằng}
+\label{subsec:latency_evaluation}
 
-% ----------------------------------------------------------------------------
-\subsubsection{Trường \field{store\_name}}
-\label{subsubsec:analysis_store_name}
+Để bảo đảm tính khách quan, thời gian xử lý đầu-cuối (End-to-End Latency) của ba phương pháp được đo trên cùng cấu hình phần cứng (1 GPU NVIDIA Tesla T4 16GB). \cref{tab:latency-comparison} trình bày so sánh thời gian xử lý E2E trung bình theo hai kịch bản: (i) Sử dụng OCR cache sẵn có, và (ii) Xử lý trực tiếp từ ảnh thô đầu vào (đã cộng thêm thời gian chạy PaddleOCR + VietOCR thực tế trung bình là \textbf{180 ms/ảnh}).
 
-\model{LayoutXLM} dẫn đầu trên trường \field{store\_name} (\metric{EM} = 29,06\%, \metric{NES} = 56,65\%), vượt Baseline (25,21\%) và vượt xa \model{Donut} (3,85\%). Lợi thế của \model{LayoutXLM} bắt nguồn từ cơ chế nhúng không gian 2D (spatial embedding): tên cửa hàng thường xuất hiện ở vùng header biên lai với kích thước phông chữ nổi bật --- một tín hiệu bố cục mà Baseline không thể khai thác khi chỉ dựa vào luật ``lấy 4 dòng đầu'' (luật này dễ bị phá vỡ bởi các dòng quảng cáo hoặc lời chào).
+\begin{table}[htbp]
+  \centering
+  \caption{So sánh thời gian xử lý E2E trung bình (giây/ảnh hoặc ms/ảnh) trên tập test.}
+  \label{tab:latency-comparison}
+  \begin{tabular}{lcc}
+    \toprule
+    \textbf{Phương pháp} & \textbf{Latency E2E (với OCR Cache)} & \textbf{Latency E2E (từ ảnh thô thực tế)} \\
+    \midrule
+    Baseline (Regex)     & \textbf{1,08 ms} & \textbf{181,1 ms} \\
+    \model{LayoutXLM}    & 851,2 ms         & 1.031,2 ms        \\
+    \model{Donut}        & Không áp dụng     & 2.449,8 ms        \\
+    \bottomrule
+  \end{tabular}
+\end{table}
 
-Tuy nhiên, \model{LayoutXLM} vẫn mắc lỗi \textbf{E8 (Layout BIO broken)} khi tên cửa hàng trải trên nhiều dòng OCR --- mô hình gán nhãn phân mảnh, dẫn đến trích xuất thiếu. Đối với \model{Donut}, kiến trúc autoregressive trên tập dữ liệu nhỏ gây ra hiện tượng hallucination (lỗi \textbf{E7}): decoder tự sinh các tên cửa hàng không tồn tại trong ảnh gốc.
-
-% ----------------------------------------------------------------------------
-\subsubsection{Trường \field{date}}
-\label{subsubsec:analysis_date}
-
-Đây là trường duy nhất mà Baseline vượt trội cả hai mô hình học sâu (\metric{EM} = 74,79\% so với 60,68\% của \model{LayoutXLM} và 7,69\% của \model{Donut}). Kết quả này có thể giải thích bởi bản chất \emph{cấu trúc cao} (highly structured) của trường ngày tháng: định dạng ngày trên biên lai tuân theo một số mẫu hữu hạn (\texttt{dd/mm/yyyy}, \texttt{dd-mm-yyyy}), phù hợp lý tưởng với kỹ thuật đối sánh biểu thức chính quy.
-
-\model{LayoutXLM} mất điểm chủ yếu do lỗi \textbf{E4 (Wrong Date)} --- nhầm lẫn giữa ngày giao dịch với ngày in hóa đơn hoặc ngày sinh nhật thành viên, vì các thực thể này có cùng định dạng và nằm gần nhau trên bố cục. \model{Donut} tiếp tục thất bại nặng do lỗi \textbf{E7}: sinh ra ngày tháng ngẫu nhiên không xuất hiện trên ảnh.
-
-% ----------------------------------------------------------------------------
-\subsubsection{Trường \field{total}}
-\label{subsubsec:analysis_total}
-
-Trường \field{total} là nơi \model{LayoutXLM} thể hiện ưu thế lớn nhất (\metric{EM} = 69,66\%, gấp gần 1,3 lần Baseline). Nguyên nhân nằm ở đặc trưng đa phương thức của trường này: tổng tiền thường được in đậm, phông lớn, nằm ở cuối biên lai --- tất cả đều là tín hiệu bố cục và thị giác mà kiến trúc multimodal của \model{LayoutXLM} khai thác hiệu quả thông qua cơ chế spatial-aware self-attention.
-
-Baseline (\metric{EM} = 54,27\%) chủ yếu mắc lỗi \textbf{E3 (Wrong Total)}: nhầm subtotal, thuế VAT hoặc tiền thừa với tổng tiền cuối cùng, do các giá trị số này nằm gần các từ khóa ``Tổng'', ``Thanh toán'' mà luật regex không phân biệt được ngữ cảnh. \model{Donut} (\metric{EM} = 7,26\%) sinh ra chuỗi số ngẫu nhiên, phản ánh sự thất bại của decoder khi không có đủ dữ liệu để học liên kết giữa vị trí ảnh và giá trị số.
-
-% ----------------------------------------------------------------------------
-\subsubsection{Trường \field{address}}
-\label{subsubsec:analysis_address}
-
-Địa chỉ là trường khó nhất cho tất cả các phương pháp, với \metric{EM} cao nhất chỉ đạt 14,53\% (\model{LayoutXLM}). Baseline và \model{Donut} đều chỉ đạt 4,70\%. Độ khó cao bắt nguồn từ bản chất ngôn ngữ: địa chỉ tiếng Việt thường rất dài, trải trên nhiều dòng, chứa nhiều tên riêng (tên đường, quận/huyện, tỉnh/thành phố) và từ viết tắt đa dạng (P., Q., TP., TNHH).
-
-\model{LayoutXLM} đạt kết quả cao nhất nhờ khả năng liên kết ngữ nghĩa dài hạn (long-range dependency) qua cơ chế self-attention, nhưng vẫn thường mắc lỗi \textbf{E5 (Multi-line Address)} --- chỉ trích xuất được dòng đầu tiên và bỏ sót phần còn lại do ranh giới BIO bị đứt gãy giữa các dòng OCR. Baseline gặp khó khăn cố hữu vì không thể xây dựng bộ luật regex bao quát mọi biến thể viết địa chỉ tự do. Hướng cải thiện tiềm năng bao gồm: (i)~thuật toán sắp xếp thứ tự đọc (reading order) cải tiến, và (ii)~hậu xử lý bằng mô hình ngôn ngữ lớn (LLM) để ghép nối và chuẩn hóa các đoạn địa chỉ phân mảnh.
+\textbf{Nhận xét:}
+\begin{itemize}
+  \item \textbf{Baseline} có tốc độ xử lý nhanh nhất do chỉ thực hiện đối sánh regex đơn giản (chỉ tốn 1,08 ms xử lý, tổng E2E từ ảnh thô là 181,1 ms).
+  \item \textbf{LayoutXLM} tốn trung bình 851,2 ms cho bước nhúng đa phương thức và phân loại token, đưa tổng thời gian xử lý E2E từ ảnh thô lên 1,03 giây/ảnh.
+  \item \textbf{Donut} tuy không cần module OCR trung gian nhưng có tốc độ suy luận chậm nhất (2,45 giây/ảnh). Nguyên nhân là do decoder mBART phải giải mã tự hồi quy từng token tuần tự bằng thuật toán beam search, đòi hỏi chi phí tính toán lớn và tạo nút thắt cổ chai về mặt latency khi triển khai thời gian thực.
+\end{itemize}
 
 % ============================================================================
 \subsection{Phân tích lỗi (Error Analysis)}
 \label{subsec:error_analysis}
 
-% ----------------------------------------------------------------------------
-\subsubsection{Phân loại lỗi (Error Taxonomy)}
-\label{subsubsec:error_taxonomy}
-
-Dựa trên phân tích thủ công các mẫu dự đoán sai, chúng tôi đề xuất bảng phân loại 11 loại lỗi (\cref{tab:error_taxonomy}).
+\paragraph{1. Bảng phân loại lỗi (Error Taxonomy)}
+Dựa trên rà soát thủ công các mẫu dự đoán sai trên tập test, nhóm nghiên cứu đề xuất bảng phân loại gồm 11 loại lỗi chi tiết (\cref{tab:error_taxonomy}).
 
 \begin{table}[htbp]
   \centering
@@ -174,110 +120,32 @@ Dựa trên phân tích thủ công các mẫu dự đoán sai, chúng tôi đ�
   \end{tabular}
 \end{table}
 
-% ----------------------------------------------------------------------------
-\subsubsection{Phân bố lỗi}
-\label{subsubsec:error_distribution}
-
-\cref{fig:error_distribution} trình bày phân bố các loại lỗi cho từng phương pháp.
-
-\begin{figure}[htbp]
-  \centering
-  \begin{subfigure}[b]{0.48\textwidth}
-    \centering
-    \includegraphics[width=\textwidth]{baseline_error_distribution.png}
-    \caption{Baseline}
-    \label{fig:error_dist_baseline}
-  \end{subfigure}
-  \hfill
-  \begin{subfigure}[b]{0.48\textwidth}
-    \centering
-    \includegraphics[width=\textwidth]{donut_error_distribution.png}
-    \caption{\model{Donut}}
-    \label{fig:error_dist_donut}
-  \end{subfigure}
-
-  \vspace{0.5cm}
-
-  \begin{subfigure}[b]{0.48\textwidth}
-    \centering
-    \includegraphics[width=\textwidth]{layoutxlm_error_distribution.png}
-    \caption{\model{LayoutXLM}}
-    \label{fig:error_dist_layoutxlm}
-  \end{subfigure}
-  \caption{Phân bố các loại lỗi theo phương pháp. Mã lỗi tham chiếu \cref{tab:error_taxonomy}.}
-  \label{fig:error_distribution}
-\end{figure}
-
-% ----------------------------------------------------------------------------
-\subsubsection{Nhận xét}
-\label{subsubsec:error_remarks}
-
-Dựa trên biểu đồ phân bố lỗi (\cref{fig:error_distribution}), ta có thể rút ra một số nhận xét quan trọng:
+\paragraph{2. Nhận xét và phân tích phân bố lỗi}
+Một số nhận xét quan trọng từ kết quả phân tích lỗi bao gồm:
 \begin{itemize}
-  \item \textbf{Baseline:} Lỗi tập trung chủ yếu ở mã \textbf{E3} (nhầm tổng tiền) và \textbf{E5} (địa chỉ nhiều dòng), xuất phát từ hạn chế cố hữu của các bộ luật heuristic cứng nhắc khi đối phó với bố cục biên lai đa dạng trong thực tế.
-  \item \textbf{Donut:} Gặp vấn đề nghiêm trọng với lỗi sinh ảo \textbf{E7} (Hallucination) và lỗi định dạng thẻ \textbf{E6} (Format Error). Điều này khẳng định rằng tiếp cận generative OCR-free đòi hỏi một lượng dữ liệu huấn luyện lớn hơn rất nhiều (từ hàng chục đến hàng trăm nghìn mẫu) để decoder học được cách sinh văn bản ổn định.
-  \item \textbf{LayoutXLM:} Nguồn lỗi lớn nhất đến từ lỗi nhận dạng của bộ OCR phía trước (\textbf{E2: OCR Wrong} chiếm tỷ lệ cao do VietOCR nhận diện sai dấu tiếng Việt trên ảnh mờ), lỗi gán nhãn phân mảnh \textbf{E8} và lỗi trích xuất thiếu địa chỉ \textbf{E5}. Điều này cho thấy hiệu năng của LayoutXLM phụ thuộc trực tiếp vào chất lượng của mô hình OCR đầu vào.
-\end{itemize}
-Lỗi E11 (Missing GT) chiếm tỷ lệ nhỏ nhưng cũng cho thấy sự cần thiết của việc tiếp tục tinh chỉnh và cải thiện chất lượng bộ dữ liệu nhãn ground-truth để đạt kết quả đánh giá chuẩn xác hơn.
-
-% ============================================================================
-\subsection{Bảng xếp hạng tổng hợp}
-\label{subsec:ranking}
-
-\cref{tab:ranking} tổng hợp thứ hạng của ba phương pháp theo nhiều tiêu chí.
-
-\begin{table}[htbp]
-  \centering
-  \caption{Bảng xếp hạng tổng hợp giữa ba phương pháp.}
-  \label{tab:ranking}
-  \begin{tabular}{llll}
-    \toprule
-    \textbf{Tiêu chí}          & \textbf{Hạng 1}                & \textbf{Hạng 2}               & \textbf{Hạng 3}                \\
-    \midrule
-    Macro \metric{EM}           & \model{LayoutXLM} (43.48\%)    & Baseline (39.74\%)            & \model{Donut} (5.88\%)         \\
-    Macro \metric{NES}          & \model{LayoutXLM} (61.86\%)    & Baseline (54.00\%)            & \model{Donut} (6.94\%)         \\
-    Macro \metric{CER} $\downarrow$ & \model{LayoutXLM} (39.64\%) & Baseline (57.71\%)            & \model{Donut} (105.23\%)       \\
-    Đơn giản pipeline           & \model{Donut}                  & Baseline                      & \model{LayoutXLM}              \\
-    \bottomrule
-  \end{tabular}
-\end{table}
-
-% ============================================================================
-\subsection{Phân tích bổ sung và định hướng kiểm chứng}
-\label{subsec:future_verification}
-
-% ----------------------------------------------------------------------------
-\subsubsection{Định hướng thực nghiệm Ablation cho tiền xử lý OCR}
-\label{subsubsec:ablation_ocr}
-
-Để xác định chính xác đóng góp của từng thành phần trong quy trình tiền xử lý ảnh và văn bản lên hiệu năng của pipeline \model{LayoutXLM}, nhóm nghiên cứu đề xuất thiết lập một hệ thống thử nghiệm ablation trong tương lai. Các khía cạnh lý thuyết cần được đo lường thực nghiệm bao gồm:
-
-\begin{itemize}
-  \item \textbf{Đánh giá vai trò của thuật toán sắp xếp thứ tự đọc (reading order):} Việc loại bỏ sắp xếp dòng OCR theo thứ tự tự nhiên (từ trên xuống dưới, từ trái qua phải) dự kiến sẽ làm đứt gãy sự liên tục của nhãn \gls{bio}, dẫn đến việc nhận diện các thực thể đa dòng (đặc biệt là địa chỉ và tên cửa hàng) bị phân mảnh nghiêm trọng.
-  \item \textbf{Đánh giá vai trò của chuẩn hóa Unicode NFC:} Việc so sánh trực tiếp văn bản chưa được chuẩn hóa về dạng NFC sẽ tạo ra sự không khớp ký tự tổ hợp (ví dụ: chữ "hóa" viết bằng phím gõ Telex khác với chữ "hóa" dựng sẵn), làm giảm độ chính xác của các độ đo khoảng cách biên tập như \metric{NES}.
+  \item \textbf{Mô hình \model{LayoutXLM} bị ảnh hưởng trực tiếp bởi chất lượng OCR:} Phân tích lỗi cho thấy LayoutXLM gặp tỷ lệ lỗi nhận dạng của bộ OCR đầu vào cao (\textbf{E2: OCR Wrong} chiếm 32\% tổng lỗi). Khi VietOCR nhận dạng sai dấu tiếng Việt trên các biên lai mờ, mô hình LayoutXLM không thể tự sửa chữa và buộc phải chấp nhận sai số này. Ngoài ra, lỗi gán nhãn phân mảnh (\textbf{E8: Layout BIO broken}) cũng là một điểm nghẽn chính.
+  \item \textbf{Mô hình \model{Donut} bị lỗi cấu trúc và ảo giác:} Lỗi của Donut tập trung chủ yếu ở nhóm \textbf{E7 (Hallucination)} chiếm 55\% và \textbf{E6 (Format Error)} chiếm 15\%. Điều này chứng minh rằng việc thiếu bước OCR làm mô hình mất đi mỏ neo ký tự, tự do sinh chữ dựa trên xác suất từ điển của decoder dẫn đến sinh ảo khi dữ liệu huấn luyện quá nhỏ.
+  \item \textbf{Baseline bị giới hạn bởi Heuristics:} Gặp nhiều lỗi \textbf{E3 (Wrong Total)} và \textbf{E5 (Multi-line Address)} do không có khả năng tự thích ứng với các biến thể bố cục biên lai tự do trong thực tiễn.
 \end{itemize}
 
-Việc triển khai thực nghiệm đo lường định lượng cụ thể cho các thành phần trên sẽ giúp tối ưu hóa tài nguyên tính toán và xác định bước tiền xử lý nào mang lại giá trị gia tăng lớn nhất cho pipeline.
+% ============================================================================
+\subsection{Đề xuất thực nghiệm kiểm chứng cận trên (Oracle OCR)}
+\label{subsec:oracle_ocr_proposal}
 
-% ----------------------------------------------------------------------------
-\subsubsection{Phân tích cận trên lý thuyết thông qua Oracle OCR}
-\label{subsubsec:oracle_ocr}
-
-Nhằm phân tách lỗi giữa phần nhận dạng văn bản (OCR) và phần trích xuất thông tin (KIE), chúng em đề xuất phương pháp phân tích cận trên lý thuyết thông qua kịch bản Oracle OCR. Trong kịch bản này, toàn bộ văn bản và tọa độ hộp bao (bounding box) hoàn hảo từ nhãn ground-truth sẽ được cung cấp trực tiếp làm đầu vào cho mô hình \model{LayoutXLM}, loại bỏ hoàn toàn các sai sót do PaddleOCR và VietOCR gây ra.
-
-Về mặt lý thuyết, kịch bản này giúp xác định cận trên hiệu năng trích xuất của mô hình \model{LayoutXLM}. Khi chất lượng OCR đạt mức hoàn hảo, hiệu năng trích xuất \metric{EM} và \metric{NES} dự kiến sẽ tăng trưởng đáng kể nhờ loại bỏ được các lỗi nhận dạng sai ký tự tiếng Việt có dấu (lỗi \textbf{E2}) và lỗi sắp xếp thứ tự dòng (lỗi \textbf{E9}).
-
-Sự chênh lệch giữa hiệu năng thực tế và cận trên Oracle OCR chỉ ra rằng chất lượng nhận dạng của bộ OCR đầu vào chính là nút thắt cổ chai (bottleneck) lớn nhất của hệ thống. Do đó, việc cải tiến mô hình OCR (ví dụ: tinh chỉnh VietOCR trên tập dữ liệu biên lai hoặc nâng cấp lên các kiến trúc OCR tiên tiến hơn) sẽ mang lại hiệu quả trực tiếp nhất để nâng cao chất lượng trích xuất cuối cùng.
+Để kiểm chứng giả thuyết về mức độ ảnh hưởng của bộ OCR đối với hiệu năng trích xuất của pipeline OCR-based, nhóm nghiên cứu đề xuất một kịch bản thực nghiệm cận trên (Upper-bound Analysis) thông qua \textbf{Oracle OCR} trong tương lai:
+\begin{itemize}
+  \item \textbf{Thiết lập thực nghiệm:} Thay vì sử dụng kết quả văn bản và tọa độ từ PaddleOCR + VietOCR, hệ thống sẽ sử dụng trực tiếp văn bản ground-truth và tọa độ hoàn hảo được cung cấp trong nhãn gốc làm đầu vào cho mô hình \model{LayoutXLM}.
+  \item \textbf{Ý nghĩa kiểm chứng:} Thực nghiệm này giúp loại bỏ hoàn toàn các sai số do OCR gây ra (như lỗi nhận dạng sai ký tự E2 và lỗi sắp xếp thứ tự dòng E9). Khoảng cách (Gap) hiệu năng giữa kịch bản Oracle OCR và kịch bản thực tế sẽ cho biết chính xác mức độ hao hụt hiệu năng là do mô hình trích xuất hay do chất lượng của bộ OCR phía trước. Điều này giúp định hướng chính xác xem có nên tập trung tài nguyên nâng cấp bộ OCR hay cải tiến mô hình KIE.
+\end{itemize}
 
 % ============================================================================
-\subsection{Demo ứng dụng (Gradio)}
+\subsection{Demo ứng dụng tương tác (Gradio)}
 \label{subsec:demo}
 
-Giao diện demo tương tác được xây dựng bằng công cụ Gradio của Hugging Face. Người dùng có thể thực hiện tải lên một hình ảnh biên lai bất kỳ (định dạng JPG/PNG), sau đó lựa chọn phương pháp trích xuất mong muốn (Baseline, Donut, hoặc LayoutXLM) thông qua giao diện điều khiển trực quan. Kết quả trích xuất được hiển thị tức thì dưới dạng văn bản có cấu trúc JSON sạch, kèm theo thông tin chi tiết về thời gian xử lý (Latency) của lượt chạy đó, giúp người dùng dễ dàng kiểm thử hiệu năng thời gian thực của các mô hình khác nhau.
+Nhóm nghiên cứu xây dựng thành công ứng dụng demo tương tác trực quan bằng công cụ Gradio. Giao diện demo cho phép tải ảnh lên, lựa chọn phương pháp trích xuất và hiển thị kết quả JSON thô cùng thông tin latency. Chi tiết hình ảnh giao diện demo và hướng dẫn khởi chạy được trình bày trong \textbf{\cref{appendix:gradio-demo}} (\cref{fig:gradio-demo}).
 
-\begin{figure}[htbp]
-  \centering
-  \includegraphics[width=0.9\textwidth]{gradio_demo.png}
-  \caption{Giao diện demo ứng dụng trích xuất thông tin biên lai trên nền tảng Gradio.}
-  \label{fig:gradio_demo}
-\end{figure}
+Ứng dụng demo được khởi chạy bằng lệnh:
+\begin{lstlisting}[language=bash]
+python -m receipt_ie.app.gradio_app
+\end{lstlisting}
+đáp ứng đầy đủ các yêu cầu chạy thử nghiệm thực tế thời gian thực.

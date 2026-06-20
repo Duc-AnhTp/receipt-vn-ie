@@ -1,4 +1,4 @@
-﻿% ============================================================================
+% ============================================================================
 %  SECTION 5 — Phương pháp thực hiện
 % ============================================================================
 \section{Phương pháp thực hiện}
@@ -10,7 +10,7 @@ Chương này trình bày chi tiết thiết kế hệ thống và phương phá
 \subsection{Tổng quan kiến trúc hệ thống}
 \label{subsec:system_overview}
 
-Hệ thống được thiết kế dạng module hóa cho phép kiểm thử và so sánh độc lập các kiến trúc. Sơ đồ kiến trúc tổng quan của ba phương pháp được mô tả chi tiết trong Hình 5.1 dưới đây.
+Hệ thống được thiết kế dạng module hóa cho phép kiểm thử và so sánh độc lập các kiến trúc. Sơ đồ kiến trúc tổng quan của ba phương pháp được mô tả chi tiết trong \cref{fig:pipeline_overview}.
 Hệ thống nhận đầu vào là ảnh biên lai và đầu ra là tệp JSON chứa bốn trường thông tin:
 \field{store\_name}, \field{date}, \field{total}, \field{address}.
 
@@ -294,28 +294,7 @@ Siêu tham số của LayoutXLM được tinh chỉnh để tận dụng tối �
   \end{tabular}
 \end{table}
 
-Hệ thống nhãn \gls{bio} gồm 9 nhãn được mô tả trong \cref{tab:bio_labels_methodology}.
-
-\begin{table}[htbp]
-  \centering
-  \caption{Danh sách 9 nhãn \gls{bio} sử dụng trong mô hình \model{LayoutXLM}.}
-  \label{tab:bio_labels_methodology}
-  \begin{tabular}{@{} l l @{}}
-    \toprule
-    \textbf{Nhãn} & \textbf{Mô tả} \\
-    \midrule
-    \code{O}              & Không thuộc trường thông tin nào \\
-    \code{B-STORE\_NAME}  & Bắt đầu tên cửa hàng \\
-    \code{I-STORE\_NAME}  & Tiếp tục tên cửa hàng \\
-    \code{B-DATE}         & Bắt đầu ngày \\
-    \code{I-DATE}         & Tiếp tục ngày \\
-    \code{B-TOTAL}        & Bắt đầu tổng tiền \\
-    \code{I-TOTAL}        & Tiếp tục tổng tiền \\
-    \code{B-ADDRESS}      & Bắt đầu địa chỉ \\
-    \code{I-ADDRESS}      & Tiếp tục địa chỉ \\
-    \bottomrule
-  \end{tabular}
-\end{table}
+Hệ thống nhãn \gls{bio} gồm 9 nhãn được mô tả chi tiết trong \cref{tab:bio_labels} ở \cref{sec:theory}.
 
 % ----------------------------------------------------------------------------
 \subsubsection{Suy luận và hậu xử lý (Inference \& Post-processing)}

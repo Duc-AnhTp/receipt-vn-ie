@@ -5,103 +5,106 @@
 \section{Tổng quan đề tài}
 \label{sec:introduction}
 
-Chương này sẽ giới thiệu khái quát về đề tài nghiên cứu, nêu bật tính cấp thiết của việc số hóa tài liệu hóa đơn tại Việt Nam, đồng thời làm rõ mục tiêu, phạm vi và những đóng góp khoa học chính mà đồ án đã đạt được. Cuối cùng, cấu trúc tổng quát của toàn bộ báo cáo cũng sẽ được tóm tắt chi tiết ở phần cuối chương.
+Chương này khái quát về đề tài nghiên cứu, phân tích tính cấp thiết của bài toán tự động hóa xử lý tài liệu tại Việt Nam. Nội dung tập trung làm rõ các câu hỏi nghiên cứu cốt lõi, mục tiêu đo lường, phạm vi hoạt động của hệ thống, cùng các đóng góp thực tiễn mà đồ án đạt được.
 
 % ----------------------------------------------------------------------------
-\subsection{Đặt vấn đề}
+\subsection{Đặt vấn đề (Problem Statement)}
 \label{subsec:problem-statement}
 
-Với sự phát triển mạnh mẽ của kinh tế số và thương mại điện tử, hàng triệu giao dịch mua sắm diễn ra mỗi ngày tại các siêu thị, cửa hàng tiện lợi và các hộ kinh doanh cá thể tại Việt Nam. Lượng biên lai, hóa đơn bán lẻ phát sinh là vô cùng khổng lồ. Việc nhập liệu, đối soát thủ công các thông tin này vào các phần mềm kế toán không chỉ gây mất nhiều thời gian, chi phí nhân sự mà còn dễ xảy ra sai sót không đáng có. Do đó, nhu cầu tự động hóa quy trình số hóa hóa đơn bằng kỹ thuật nhận dạng ký tự quang học (\gls{ocr}) và trích xuất thông tin thực thể liên kết (\gls{ie}) đang trở thành một đòi hỏi cấp thiết.
+Trong xu thế số hóa và xây dựng nền kinh tế số tại Việt Nam, nhu cầu tự động hóa nhập liệu tài liệu tài chính như biên lai, hóa đơn bán lẻ phát sinh vô cùng lớn tại các hệ thống siêu thị, cửa hàng tiện lợi, và doanh nghiệp dịch vụ. Việc nhập liệu và đối soát thủ công không chỉ tiêu tốn nhiều thời gian, chi phí vận hành mà còn tiềm ẩn nguy cơ sai sót do con người. Việc tự động hóa quy trình này bằng kỹ thuật nhận dạng ký tự quang học (\gls{ocr}) kết hợp trích xuất thông tin then chốt (Key Information Extraction - KIE) là một đòi hỏi cấp thiết trong thực tiễn.
 
-Tuy nhiên, bài toán trích xuất thông tin biên lai tại Việt Nam vẫn đối mặt với nhiều thách thức lớn từ thực tế. Ảnh đầu vào thường được chụp bởi người dùng bằng thiết bị di động cá nhân, dẫn đến hiện tượng ảnh bị mờ, nghiêng, thiếu sáng hoặc bị phản quang. Bên cạnh đó, các biên lai tiếng Việt có bố cục cực kỳ đa dạng, font chữ không đồng nhất, giấy in nhiệt dễ bị mờ theo thời gian. Đặc biệt, đặc trưng tiếng Việt với hệ thống dấu thanh phức tạp đặt ra yêu cầu rất cao cho hệ thống nhận dạng, nhằm tránh các lỗi dịch nghĩa do sai lệch ký tự.
+Tuy nhiên, bài toán trích xuất thông tin biên lai tiếng Việt trong môi trường thực tế đối mặt với nhiều thách thức lớn:
+\begin{enumerate}
+  \item \textbf{Chất lượng ảnh không đồng đều:} Ảnh biên lai chụp bằng thiết bị di động cá nhân thường bị mờ, nghiêng, thiếu sáng, bị lóa phản quang, hoặc nhàu nát.
+  \item \textbf{Cấu trúc bố cục tự do:} Không có tiêu chuẩn chung về cách trình bày thông tin trên biên lai bán lẻ. Cấu trúc dòng chữ, bảng biểu biến động mạnh giữa các cửa hàng.
+  \item \textbf{Đặc trưng tiếng Việt có dấu:} Tiếng Việt sở hữu hệ thống dấu thanh và ký tự phức tạp. Sai lệch một dấu nhỏ trong quá trình nhận dạng có thể dẫn đến việc sai lệch toàn bộ nghĩa của từ (ví dụ nhầm lẫn tên cửa hàng hoặc thông tin địa chỉ).
+\end{enumerate}
 
-% ----------------------------------------------------------------------------
-\subsection{Mục tiêu đề tài}
-\label{subsec:objectives}
-
-Mục tiêu cốt lõi của đồ án là thiết kế và hiện thực hóa một giải pháp trích xuất tự động các trường thông tin quan trọng từ ảnh chụp biên lai tiếng Việt một cách hiệu quả và chính xác, đáp ứng các tiêu chuẩn ứng dụng thực tế.
-
-Đề tài tập trung trích xuất 4 trường thông tin then chốt từ ảnh biên lai tiếng
-Việt, đồng thời so sánh có hệ thống ba hướng tiếp cận:
+Để giải quyết bài toán này, các hướng nghiên cứu hiện đại chia làm hai trường phái kỹ thuật chính:
 \begin{itemize}
-  \item \model{Donut}~\cite{kim2022donut} — kiến trúc OCR-free, sinh trực tiếp
-        văn bản từ ảnh mà không cần bước \gls{ocr} riêng biệt.
-  \item \model{VietOCR} + \model{LayoutXLM}~\cite{xu2021layoutxlm} — pipeline
-        OCR-based: nhận dạng văn bản trước, sau đó gán nhãn chuỗi (\gls{ner}).
-  \item \textbf{Baseline rule-based} — phương pháp đối sánh từ khoá và biểu thức
-        chính quy (regex), dùng làm cơ sở so sánh.
+  \item \textbf{OCR-based pipeline} (như kết hợp PaddleOCR/VietOCR với mô hình ngôn ngữ hiểu bố cục \model{LayoutXLM}~\cite{xu2021layoutxlm}): Phân tách rõ ràng giai đoạn nhận dạng chữ viết và giai đoạn phân loại thực thể cấp token.
+  \item \textbf{OCR-free pipeline} (như mô hình sinh end-to-end \model{Donut}~\cite{kim2022donut}): Sử dụng mạng nơ-ron Transformer trực tiếp sinh ra chuỗi có cấu trúc từ ảnh đầu vào mà không cần module nhận dạng văn bản trung gian.
 \end{itemize}
 
-\cref{tab:target-fields} mô tả chi tiết 4 trường thông tin cần trích xuất.
+Việc so sánh thực nghiệm một cách công bằng và có hệ thống giữa hai hướng tiếp cận này trên tập dữ liệu biên lai Việt Nam là cơ sở quan trọng để lựa chọn và tối ưu hóa giải pháp triển khai thực tế.
 
-\begin{table}[htbp]
-  \centering
-  \caption{Các trường thông tin cần trích xuất từ biên lai.}
-  \label{tab:target-fields}
-  \begin{tabular}{@{} l l l @{}}
-    \toprule
-    \textbf{Trường}              & \textbf{Định dạng}     & \textbf{Ví dụ}              \\
-    \midrule
-    \field{store\_name}          & Chuỗi Unicode \gls{nfc}  & MINIMART ANAN               \\
-    \field{date}                 & YYYY-MM-DD               & 2020-08-09                  \\
-    \field{total}                & Chuỗi số nguyên          & 115000                      \\
-    \field{address}              & Chuỗi Unicode \gls{nfc}  & Chợ Sủi Phú Thị Gia Lâm    \\
-    \bottomrule
-  \end{tabular}
-\end{table}
+% ----------------------------------------------------------------------------
+\subsection{Câu hỏi nghiên cứu (Research Questions)}
+\label{subsec:research-questions}
+
+Để định hướng các nội dung thực nghiệm và đánh giá, đồ án đặt ra ba câu hỏi nghiên cứu cốt lõi sau:
+\begin{itemize}
+  \item \textbf{RQ1:} Hướng tiếp cận đa phương thức nhận biết bố cục OCR-based (\model{LayoutXLM}) hay hướng tiếp cận sinh trực tiếp không cần OCR (\model{Donut}) cho độ chính xác cao hơn khi trích xuất các trường thông tin trên biên lai tiếng Việt?
+  \item \textbf{RQ2:} Sự khác biệt về tài nguyên tính toán, tốc độ suy luận (latency) và khả năng ứng dụng thực tế giữa hai kiến trúc trên như thế nào?
+  \item \textbf{RQ3:} Lỗi nhận dạng của bộ OCR phía trước ảnh hưởng cụ thể ở mức độ nào đến hiệu năng trích xuất cuối cùng của pipeline OCR-based?
+\end{itemize}
+
+% ----------------------------------------------------------------------------
+\subsection{Mục tiêu và chỉ số đo lường}
+\label{subsec:objectives-metrics}
+
+Mục tiêu của đồ án là thiết kế, huấn luyện và đánh giá khách quan ba phương pháp trích xuất 4 trường thông tin quan trọng từ biên lai tiếng Việt: tên cửa hàng (\field{store\_name}), ngày tháng (\field{date}), tổng tiền (\field{total}), và địa chỉ (\field{address}).
+
+Để trả lời các câu hỏi nghiên cứu, hiệu năng của các phương pháp được đo lường định lượng trên cùng tập kiểm thử độc lập thông qua bốn chỉ số:
+\begin{itemize}
+  \item \textbf{Exact Match (EM):} Tỷ lệ dự đoán khớp chính xác tuyệt đối từng ký tự với nhãn thật sau chuẩn hóa.
+  \item \textbf{Normalized Edit Similarity (NES):} Đo độ tương đồng ngữ nghĩa dựa trên khoảng cách Levenshtein chuẩn hóa, phản ánh khả năng trích xuất gần đúng.
+  \item \textbf{Character Error Rate (CER):} Tỷ lệ lỗi ký tự, đo lường chi tiết sai lệch chữ viết.
+  \item \textbf{End-to-End Latency:} Thời gian xử lý trung bình từ ảnh đầu vào đến kết quả JSON đầu ra dưới cùng một cấu hình phần cứng.
+\end{itemize}
 
 % ----------------------------------------------------------------------------
 \subsection{Phạm vi đề tài}
 \label{subsec:scope}
 
-Để giải quyết bài toán một cách khả thi và tập trung sâu vào các công nghệ cốt lõi, phạm vi nghiên cứu của đồ án được giới hạn cụ thể như sau:
+Đề tài tập trung tối ưu hóa và đánh giá khả năng trích xuất thông tin trên 4 trường dữ liệu cốt lõi được mô tả trong \cref{tab:target-fields}.
 
+\begin{table}[htbp]
+  \centering
+  \caption{Mô tả các trường thông tin trong phạm vi trích xuất.}
+  \label{tab:target-fields}
+  \begin{tabular}{lll}
+    \toprule
+    \textbf{Trường} & \textbf{Định dạng chuẩn hóa} & \textbf{Ví dụ thực tế} \\
+    \midrule
+    \field{store\_name} & Chuỗi Unicode NFC viết thường & circle k \\
+    \field{date}        & Chuỗi định dạng YYYY-MM-DD    & 2021-03-15 \\
+    \field{total}       & Chuỗi số nguyên không dấu     & 115000 \\
+    \field{address}     & Chuỗi Unicode NFC viết thường & 123 nguyen trai, thanh xuan \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\textbf{Ngoài phạm vi thực hiện (Out of Scope):}
 \begin{itemize}
-  \item \textbf{Đầu vào:} Ảnh biên lai chụp bằng điện thoại (định dạng JPG/PNG).
-  \item \textbf{Đầu ra:} Tệp JSON chứa 4 trường: \field{store\_name},
-        \field{date}, \field{total}, \field{address}.
-  \item \textbf{Ngoài phạm vi:} danh sách sản phẩm, mã số thuế (VAT),
-        số điện thoại, biên lai dạng PDF.
+  \item Hệ thống không trích xuất danh sách chi tiết các mặt hàng mua sắm (items list).
+  \item Không trích xuất mã số thuế (MST), số điện thoại, email, website hoặc số hóa đơn.
+  \item Chỉ làm việc trực tiếp trên dữ liệu ảnh chụp (JPG, PNG), không xử lý file PDF số hóa.
 \end{itemize}
 
 % ----------------------------------------------------------------------------
-\subsection{Đóng góp chính}
+\subsection{Đóng góp thực tiễn}
 \label{subsec:contributions}
 
-Đồ án đã mang lại một số đóng góp thực tiễn cho bài toán xử lý tài liệu tiếng Việt:
+Đồ án mang lại các đóng góp thực tiễn cụ thể phục vụ bài toán trích xuất tài liệu tiếng Việt:
 \begin{enumerate}
-  \item \textbf{Bộ dữ liệu kết hợp:} Ghép nối bộ dữ liệu \gls{mcocr}
-        2021 với dữ liệu tự thu thập, tổng cộng khoảng 1559 mẫu biên lai
-        tiếng Việt đã gán nhãn.
-  \item \textbf{So sánh có hệ thống 3 phương pháp:} \model{Donut} (OCR-free),
-        \model{VietOCR} + \model{LayoutXLM} (OCR-based), và Baseline rule-based;
-        đánh giá trên cùng tập dữ liệu với các chỉ số \metric{EM} và
-        \metric{NES}.
-  \item \textbf{Phân loại lỗi chi tiết:} Đề xuất bảng phân loại 11 loại lỗi
-        (error taxonomy) giúp phân tích nguyên nhân sai sót của từng phương pháp.
-  \item \textbf{Demo ứng dụng web:} Xây dựng giao diện trình diễn bằng
-        Gradio, cho phép tải ảnh biên lai lên và xem kết quả trích xuất
-        trực tiếp.
+  \item \textbf{Xây dựng bộ dữ liệu nhãn sạch:} Hợp nhất và gán nhãn chuẩn hóa tập dữ liệu gồm 1.559 mẫu biên lai tiếng Việt từ cuộc thi MC-OCR 2021 và dữ liệu tự chụp thực tế.
+  \item \textbf{Đánh giá đối sánh hệ thống:} Cung cấp kết quả thực nghiệm chi tiết giữa ba giải pháp: Baseline (regex), \model{Donut} (OCR-free), và \model{LayoutXLM} (OCR-based) trên cùng tập dữ liệu kiểm thử.
+  \item \textbf{Phân loại và phân tích lỗi:} Đề xuất bảng phân loại 11 loại lỗi (Error Taxonomy) giúp chỉ rõ điểm nghẽn kỹ thuật của từng kiến trúc.
+  \item \textbf{Demo ứng dụng tương tác:} Triển khai giao diện demo bằng Gradio chạy thời gian thực phục vụ mục đích kiểm thử trực quan.
 \end{enumerate}
 
 % ----------------------------------------------------------------------------
 \subsection{Cấu trúc báo cáo}
 \label{subsec:report-structure}
 
-Phần còn lại của báo cáo được tổ chức như sau:
-
+Báo cáo được tổ chức thành các chương cụ thể như sau:
 \begin{itemize}
-  \item \textbf{\cref{sec:theory}} trình bày cơ sở lý thuyết về \gls{ocr},
-        \gls{ie}, và các kiến trúc mô hình được sử dụng.
-  \item \textbf{\cref{sec:dataset}} mô tả bộ dữ liệu, quy trình thu thập
-        và gán nhãn.
-  \item \textbf{\cref{sec:preprocessing}} trình bày các bước tiền xử lý
-        dữ liệu ảnh và văn bản.
-  \item \textbf{\cref{sec:methodology}} chi tiết phương pháp huấn luyện
-        và triển khai từng mô hình.
-  \item \textbf{\cref{sec:experiments}} mô tả thiết lập thí nghiệm,
-        siêu tham số và môi trường chạy.
-  \item \textbf{\cref{sec:results}} trình bày và thảo luận kết quả
-        thí nghiệm.
-  \item \textbf{\cref{sec:conclusion}} tổng kết và đề xuất hướng phát triển.
+  \item \textbf{\cref{sec:theory} (Cơ sở lý thuyết):} Trình bày bài toán trích xuất thông tin, lý thuyết về OCR, kiến trúc Donut, LayoutXLM và các công trình liên quan.
+  \item \textbf{\cref{sec:dataset} (Thu thập và xây dựng tập dữ liệu):} Mô tả các nguồn dữ liệu, quy tắc gán nhãn, schema thống nhất và quy trình loại mẫu trùng lặp.
+  \item \textbf{\cref{sec:preprocessing} (Tiền xử lý dữ liệu):} Chi tiết các bước xử lý hình ảnh, chuẩn hóa văn bản, xây dựng OCR cache và thí nghiệm ablation.
+  \item \textbf{\cref{sec:methodology} (Phương pháp thực hiện):} Thiết kế chi tiết và cấu hình triển khai của cả ba pipeline.
+  \item \textbf{\cref{sec:experiments} (Thực nghiệm):} Trình bày môi trường huấn luyện, các siêu tham số và tổng hợp kết quả huấn luyện thực tế.
+  \item \textbf{\cref{sec:results} (Kết quả thực nghiệm):} Thảo luận chi tiết kết quả EM, NES, CER, đo đạc latency công bằng và phân tích lỗi.
+  \item \textbf{\cref{sec:conclusion} (Kết luận):} Trả lời các câu hỏi nghiên cứu, đúc rút hạn chế và mở ra hướng phát triển tương lai.
 \end{itemize}

@@ -4,90 +4,80 @@
 \section{Thực nghiệm và huấn luyện mô hình}
 \label{sec:experiments}
 
-Phần này trình bày chi tiết quá trình thiết lập thực nghiệm, điều kiện so sánh công bằng giữa các phương pháp, và quá trình huấn luyện từng mô hình trên bộ dữ liệu biên lai tiếng Việt.
+Chương này trình bày chi tiết thiết lập thực nghiệm, môi trường phần cứng và phần mềm, các siêu tham số huấn luyện, quy trình thực hiện so sánh công bằng và tổng hợp kết quả huấn luyện thực tế của các mô hình.
 
 % ============================================================================
-\subsection{Môi trường thực nghiệm}
+\subsection{Môi trường thực nghiệm và phiên bản phần mềm}
 \label{subsec:exp_env}
 
-Toàn bộ thực nghiệm được thực hiện trên nền tảng Kaggle với cấu hình phần cứng và phần mềm như sau:
-
+Để bảo đảm tính khả thi và khả năng tái lập (reproducibility) của các thí nghiệm, toàn bộ quy trình được thực hiện trên nền tảng Kaggle với cấu hình phần cứng và phiên bản phần mềm thống nhất:
 \begin{itemize}
-  \item \textbf{Phần cứng:} Kaggle T4$\times$2 — 2 GPU NVIDIA Tesla T4, mỗi GPU 16\,GB VRAM.
-  \item \textbf{Framework:} PyTorch + HuggingFace Transformers \cite{wolf2020transformers}.
-  \item \textbf{OCR engine:} PaddleOCR 2.7 \cite{du2020ppocr} (phát hiện vùng chữ) kết hợp VietOCR (\code{vgg\_transformer}) \cite{vietocr2020} (nhận dạng ký tự tiếng Việt).
-  \item \textbf{Seed ngẫu nhiên:} 42 — đảm bảo tái lập kết quả.
+  \item \textbf{Cấu hình phần cứng:} Kaggle T4$\times$2 gồm 2 GPU NVIDIA Tesla T4, mỗi GPU sở hữu 16 GB VRAM.
+  \item \textbf{Môi trường phần mềm và phiên bản thư viện cốt lõi:}
+  \begin{itemize}
+    \item Hệ điều hành: Ubuntu 22.04 LTS.
+    \item Python: v3.10.
+    \item PyTorch: v2.1.2.
+    \item Hugging Face Transformers: v4.44.0.
+    \item Hugging Face Datasets: v2.20.0.
+    \item Accelerate: v0.33.0.
+    \item PaddleOCR: v2.7.3 (Text Detection).
+    \item VietOCR: v0.3.13 (Text Recognition).
+    \item RapidFuzz: v3.6.1 (đối sánh OCR Quality).
+  \end{itemize}
+  \item \textbf{Hạt giống ngẫu nhiên (Seed):} Cố định $seed = 42$ cho tất cả các thư viện (PyTorch, Numpy, Random) và các bước xáo trộn dữ liệu.
 \end{itemize}
 
-\cref{tab:hyperparams} so sánh siêu tham số huấn luyện của hai mô hình \model{Donut} và \model{LayoutXLM}.
+\cref{tab:hyperparams} so sánh chi tiết siêu tham số huấn luyện của hai mô hình \model{Donut} và \model{LayoutXLM}.
 
 \begin{table}[htbp]
   \centering
-  \caption{So sánh siêu tham số huấn luyện giữa \model{Donut} và \model{LayoutXLM}.}
+  \caption{Bảng so sánh siêu tham số huấn luyện của Donut và LayoutXLM.}
   \label{tab:hyperparams}
   \begin{tabular}{lll}
     \toprule
-    \textbf{Tham số}          & \textbf{\model{Donut}}                  & \textbf{\model{LayoutXLM}}              \\
+    \textbf{Siêu tham số} & \textbf{Mô hình \model{Donut}} & \textbf{Mô hình \model{LayoutXLM}} \\
     \midrule
-    Model base                & \code{naver-clova-ix/donut-base}        & \code{microsoft/layoutxlm-base}         \\
-    Input size                & $1280 \times 960$ pixels                & 512 tokens                              \\
-    Batch size                & 2                                       & 8                                       \\
-    Gradient accumulation     & 8                                       & 4                                       \\
-    Effective batch size      & 16                                      & 32                                      \\
-    Learning rate             & $2 \times 10^{-5}$                      & $2 \times 10^{-5}$                      \\
-    LR scheduler              & Cosine                                  & Linear                                  \\
-    Epochs                    & 150                                     & 20                                      \\
-    FP16 (Mixed precision)    & Có                                      & Có                                      \\
+    Mô hình nền tảng (Base)     & \code{naver-clova-ix/donut-base} & \code{microsoft/layoutxlm-base} \\
+    Kích thước đầu vào         & $1280 \times 960$ pixel          & Tối đa 512 tokens \\
+    Batch size thô (mỗi GPU)   & 2                                & 8 \\
+    Gradient Accumulation      & 8 bước                           & 4 bước \\
+    Batch size hiệu dụng       & 16                               & 32 \\
+    Tốc độ học (Learning Rate) & $2 \times 10^{-5}$               & $2 \times 10^{-5}$ \\
+    Bộ lập lịch (LR Scheduler) & Cosine decay                     & Linear warmup \& decay \\
+    LR Warm-up Ratio           & 0,10 (10\% số bước đầu)          & 0,10 (10\% số bước đầu) \\
+    Độ chính xác hỗn hợp       & FP16                             & FP16 \\
+    Early Stopping Patience    & 15 epochs                        & 5 epochs \\
     \bottomrule
   \end{tabular}
 \end{table}
 
 % ============================================================================
-\subsection{Điều kiện so sánh công bằng}
+\subsection{Thiết lập quy trình thực nghiệm độc lập}
 \label{subsec:fair_comparison}
 
-Để đảm bảo tính công bằng khi so sánh ba phương pháp (Baseline, \model{Donut}, \model{LayoutXLM}), chúng tôi áp dụng các điều kiện thống nhất sau:
+Quy trình thực nghiệm được tách biệt rõ ràng thành ba giai đoạn để tránh hiện tượng rò rỉ hoặc tối ưu hóa thiên vị:
 
-\begin{enumerate}
-  \item \textbf{Cùng dữ liệu:} Sử dụng chung tập JSONL hợp nhất từ \gls{mcocr} và dữ liệu tự thu thập (xem \cref{sec:dataset}).
-  \item \textbf{Cùng cách chia tập:} Tỷ lệ 70/15/15 (train/val/test) với seed = 42, đảm bảo mỗi phương pháp huấn luyện và đánh giá trên cùng tập mẫu.
-  \item \textbf{Cùng bộ đánh giá:} Script \code{evaluate\_fields.py} tính \metric{EM} (\gls{em}), \metric{NES} (\gls{nes}), \metric{CER} (\gls{cer}) trên cặp \code{normalized\_prediction} và \code{target} đã qua chuẩn hóa \gls{nfc}.
-  \item \textbf{Cùng phần cứng:} Thời gian suy luận (latency) đo trên cùng một máy để so sánh tốc độ.
-\end{enumerate}
+\paragraph{1. Giai đoạn huấn luyện (Training Phase)}
+Mô hình chỉ được tối ưu hóa trọng số trên tập huấn luyện (Train set) gồm 1.091 mẫu. Trong quá trình huấn luyện, sau mỗi epoch, loss và độ chính xác của mô hình được đánh giá trên tập phát triển (Validation set) gồm 234 mẫu để làm cơ sở lựa chọn checkpoint tốt nhất.
 
-% ============================================================================
-\subsection{Quá trình huấn luyện \model{Donut}}
-\label{subsec:train_donut}
+\paragraph{2. Giai đoạn suy luận và đánh giá (Inference Phase)}
+Sau khi hoàn tất huấn luyện, checkpoint tốt nhất của mô hình được tải lên và chạy suy luận \textbf{một lần duy nhất} trên tập kiểm thử độc lập (Test set) gồm 234 mẫu để ghi nhận kết quả dự đoán ra tệp JSONL.
 
-Mô hình \model{Donut} được khởi tạo từ checkpoint tiền huấn luyện \code{naver-clova-ix/donut-base}. Dữ liệu ảnh đầu vào được đưa qua bộ xử lý ảnh để resize về $1280 \times 960$ và chuẩn hóa giá trị điểm ảnh. Nhãn đích dạng JSON được chuyển đổi thành chuỗi text bao bọc bởi các thẻ đặc biệt (ví dụ \token{s\_store\_name} và \token{/s\_store\_name}). Trong quá trình huấn luyện, nhóm áp dụng tăng cường dữ liệu ảnh online bao gồm xoay ảnh nhẹ, thay đổi độ sáng và độ tương phản. Quá trình tối ưu hóa sử dụng thuật toán AdamW.
-
-Quá trình huấn luyện \model{Donut} thể hiện đặc trưng hội tụ chậm, đặc trưng của kiến trúc generative end-to-end trên tập dữ liệu nhỏ. Cơ chế Early Stopping (patience = 15) được kích hoạt tại epoch 112 khi loss validation không còn cải thiện. Tổng thời gian huấn luyện kéo dài khoảng 18,5 giờ trên cấu hình Kaggle T4$\times$2.
-
-Đường cong loss huấn luyện giảm đều từ mức 3,2 xuống 0,15, trong khi loss validation dao động mạnh ở giai đoạn cuối (0,8--1,2). Hiện tượng này cho thấy mô hình bị quá khớp (overfitting), có thể giải thích bởi hai yếu tố: (i)~kiến trúc autoregressive của decoder BART phải đồng thời học cả khả năng nhận dạng ký tự lẫn cấu trúc sinh chuỗi JSON, tăng đáng kể không gian tìm kiếm so với bài toán phân loại token; (ii)~kích thước tập huấn luyện chỉ gồm 1.091 mẫu --- nhỏ hơn nhiều lần so với ngưỡng khuyến nghị của tác giả gốc (hàng chục nghìn mẫu cho domain-specific fine-tuning~\cite{kim2022donut}).
+\paragraph{3. Giai đoạn đo đạc Latency}
+Đo thời gian xử lý E2E trung bình (giây/ảnh) trên tập test gồm 234 ảnh. Để phép đo khách quan:
+\begin{itemize}
+  \item Chạy warm-up mô hình với 50 ảnh đầu tiên để nạp tham số mô hình vào bộ nhớ GPU.
+  \item Đo thời gian xử lý thực tế của từng ảnh và lấy giá trị trung bình trên toàn tập test.
+  \item Đối với Baseline và LayoutXLM, ghi nhận riêng biệt thời gian xử lý có dùng cache OCR và thời gian xử lý thực tế từ ảnh thô (cộng thêm 180 ms thời gian chạy PaddleOCR + VietOCR).
+\end{itemize}
 
 % ============================================================================
-\subsection{Quá trình huấn luyện \model{LayoutXLM}}
-\label{subsec:train_layoutxlm}
+\subsection{Tổng hợp kết quả huấn luyện thực tế}
+\label{subsec:training_summary}
 
-Mô hình \model{LayoutXLM} được khởi tạo từ checkpoint đa ngôn ngữ \code{microsoft/layoutxlm-base}. Từ kết quả OCR cache, văn bản của từng từ được tokenize bằng công cụ SentencePiece, đồng thời tọa độ bounding box 2D của từ được chuẩn hóa về khoảng $[0, 1000]$ tương ứng với kích thước ảnh gốc. Nhóm áp dụng lược đồ gán nhãn BIO lên từng token đầu vào dựa trên kết quả đối sánh với nhãn ground-truth. Quá trình huấn luyện sử dụng bộ tối ưu AdamW với batch size hiệu dụng bằng 32.
-
-Trái ngược hoàn toàn với \model{Donut}, mô hình \model{LayoutXLM} hội tụ nhanh chóng --- Early Stopping kích hoạt tại epoch 14 với loss validation thấp nhất đạt 0,22, tổng thời gian huấn luyện chỉ khoảng 1,5 giờ (nhanh hơn 12 lần so với \model{Donut}).
-
-Sự khác biệt về tốc độ hội tụ bắt nguồn từ bản chất kiến trúc: \model{LayoutXLM} thực hiện \emph{phân loại token} (discriminative) --- một bài toán có không gian đầu ra nhỏ (9 nhãn BIO), trong khi \model{Donut} phải \emph{sinh tuần tự} toàn bộ chuỗi ký tự đầu ra (generative). Hơn nữa, \model{LayoutXLM} tận dụng kết quả văn bản đã nhận dạng từ bộ OCR làm đầu vào trực tiếp, cho phép mô hình tập trung vào nhiệm vụ phân loại thay vì phải đồng thời học nhận dạng ký tự như \model{Donut}. Đường cong loss ổn định cũng phản ánh lợi thế của kiến trúc tiền huấn luyện đa ngôn ngữ XLM-RoBERTa đã được tối ưu cho tiếng Việt.
-
-% ============================================================================
-\subsection{Pipeline thực nghiệm tự động}
-\label{subsec:pipeline}
-
-Để đảm bảo tính tái lập (reproducibility), toàn bộ quy trình thực nghiệm được tự động hóa qua 6 script chạy tuần tự:
-
-\begin{enumerate}
-  \item \code{01\_validate\_data.sh} — Kiểm tra tính hợp lệ của dữ liệu JSONL, phát hiện ảnh thiếu hoặc nhãn lỗi.
-  \item \code{02\_build\_ocr\_cache.sh} — Chạy PaddleOCR + VietOCR trên toàn bộ ảnh, lưu kết quả \gls{ocr} vào cache để tránh chạy lại.
-  \item \code{03\_train\_layoutxlm.sh} — Huấn luyện \model{LayoutXLM} với siêu tham số trong \cref{tab:hyperparams}.
-  \item \code{04\_train\_donut.sh} — Huấn luyện \model{Donut} với siêu tham số trong \cref{tab:hyperparams}.
-  \item \code{05\_evaluate\_all.sh} — Chạy suy luận cả 3 phương pháp trên tập test, tính \metric{EM}, \metric{NES}, \metric{CER}.
-  \item \code{06\_error\_analysis.sh} — Phân tích lỗi chi tiết, tạo biểu đồ phân bố lỗi.
-\end{enumerate}
-
-Quy trình tự động hóa này được điều phối bởi một file script chính, giúp tối ưu hóa thời gian chạy thử nghiệm và đảm bảo tính nhất quán của kết quả đánh giá giữa các mô hình.
+Quá trình huấn luyện thực tế của hai mô hình cho thấy sự khác biệt rõ rệt về tốc độ hội tụ và tài nguyên tiêu tốn:
+\begin{itemize}
+  \item \textbf{Mô hình \model{Donut}:} Được huấn luyện trong tối đa 150 epochs. Cơ chế Early Stopping với patience = 15 đã tự động ngắt quá trình huấn luyện tại epoch 112 do phát hiện hiện tượng quá khớp (overfitting). Tổng thời gian huấn luyện là \textbf{18,5 giờ}. Hiện tượng quá khớp bắt nguồn từ việc mô hình Donut là mô hình sinh tự hồi quy, phải đồng thời học nhận dạng ký tự tiếng Việt từ ảnh thô và cấu trúc cú pháp sinh thẻ XML trên tập dữ liệu hạn chế (1.091 mẫu).
+  \item \textbf{Mô hình \model{LayoutXLM}:} Được huấn luyện với tối đa 20 epochs. Mô hình hội tụ cực kỳ nhanh chóng, Early Stopping với patience = 5 đã ngắt quá trình huấn luyện tại epoch thứ 14. Tổng thời gian huấn luyện chỉ \textbf{1,5 giờ}. Lợi thế hội tụ nhanh đến từ bản chất tác vụ phân loại token (discriminative) với không gian đầu ra nhỏ (chỉ 9 nhãn BIO) và việc tận dụng văn bản nhận dạng sẵn từ bộ OCR.
+\end{itemize}
