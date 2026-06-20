@@ -26,7 +26,7 @@ Tuy nhiên, bài toán trích xuất thông tin biên lai tiếng Việt trong m
   \item \textbf{OCR-free pipeline} (như mô hình sinh end-to-end \model{Donut}~\cite{kim2022donut}): Sử dụng mạng nơ-ron Transformer trực tiếp sinh ra chuỗi có cấu trúc từ ảnh đầu vào mà không cần module nhận dạng văn bản trung gian.
 \end{itemize}
 
-Việc so sánh thực nghiệm một cách công bằng và có hệ thống giữa hai hướng tiếp cận này trên tập dữ liệu biên lai Việt Nam là cơ sở quan trọng để lựa chọn và tối ưu hóa giải pháp triển khai thực tế.
+Việc đánh giá hai hướng tiếp cận trên cùng tập kiểm thử giúp mô tả ưu, nhược điểm của các checkpoint hiện có. Tuy nhiên, một phép so sánh kiến trúc tuyệt đối còn đòi hỏi kiểm soát lượng dữ liệu và mức annotation giống nhau.
 
 % ----------------------------------------------------------------------------
 \subsection{Câu hỏi nghiên cứu (Research Questions)}
@@ -35,8 +35,8 @@ Việc so sánh thực nghiệm một cách công bằng và có hệ thống gi
 Để định hướng các nội dung thực nghiệm và đánh giá, đồ án đặt ra ba câu hỏi nghiên cứu cốt lõi sau:
 \begin{itemize}
   \item \textbf{RQ1:} Hướng tiếp cận đa phương thức nhận biết bố cục OCR-based (\model{LayoutXLM}) hay hướng tiếp cận sinh trực tiếp không cần OCR (\model{Donut}) cho độ chính xác cao hơn khi trích xuất các trường thông tin trên biên lai tiếng Việt?
-  \item \textbf{RQ2:} Sự khác biệt về tài nguyên tính toán, tốc độ suy luận (latency) và khả năng ứng dụng thực tế giữa hai kiến trúc trên như thế nào?
-  \item \textbf{RQ3:} Lỗi nhận dạng của bộ OCR phía trước ảnh hưởng cụ thể ở mức độ nào đến hiệu năng trích xuất cuối cùng của pipeline OCR-based?
+  \item \textbf{RQ2:} Các thành phần suy luận đã được ghi nhận có latency khác nhau như thế nào, và phép đo hiện tại cho phép kết luận đến đâu?
+  \item \textbf{RQ3:} Dữ liệu hiện có cung cấp bằng chứng nào về sự phụ thuộc của pipeline OCR-based vào OCR, và cần thí nghiệm nào để định lượng ảnh hưởng đó?
 \end{itemize}
 
 % ----------------------------------------------------------------------------
@@ -48,9 +48,9 @@ Mục tiêu của đồ án là thiết kế, huấn luyện và đánh giá kh�
 Để trả lời các câu hỏi nghiên cứu, hiệu năng của các phương pháp được đo lường định lượng trên cùng tập kiểm thử độc lập thông qua bốn chỉ số:
 \begin{itemize}
   \item \textbf{Exact Match (EM):} Tỷ lệ dự đoán khớp chính xác tuyệt đối từng ký tự với nhãn thật sau chuẩn hóa.
-  \item \textbf{Normalized Edit Similarity (NES):} Đo độ tương đồng ngữ nghĩa dựa trên khoảng cách Levenshtein chuẩn hóa, phản ánh khả năng trích xuất gần đúng.
+  \item \textbf{Normalized Edit Similarity (NES):} Đo độ tương đồng chuỗi ký tự dựa trên khoảng cách Levenshtein chuẩn hóa.
   \item \textbf{Character Error Rate (CER):} Tỷ lệ lỗi ký tự, đo lường chi tiết sai lệch chữ viết.
-  \item \textbf{End-to-End Latency:} Thời gian xử lý trung bình từ ảnh đầu vào đến kết quả JSON đầu ra dưới cùng một cấu hình phần cứng.
+  \item \textbf{Latency thành phần:} Thời gian được ghi trong prediction artifact; phạm vi bắt đầu khác nhau giữa pipeline OCR-based và Donut.
 \end{itemize}
 
 % ----------------------------------------------------------------------------
@@ -67,10 +67,10 @@ Mục tiêu của đồ án là thiết kế, huấn luyện và đánh giá kh�
     \toprule
     \textbf{Trường} & \textbf{Định dạng chuẩn hóa} & \textbf{Ví dụ thực tế} \\
     \midrule
-    \field{store\_name} & Chuỗi Unicode NFC viết thường & circle k \\
+    \field{store\_name} & Chuỗi Unicode NFC & CIRCLE K \\
     \field{date}        & Chuỗi định dạng YYYY-MM-DD    & 2021-03-15 \\
     \field{total}       & Chuỗi số nguyên không dấu     & 115000 \\
-    \field{address}     & Chuỗi Unicode NFC viết thường & 123 nguyen trai, thanh xuan \\
+    \field{address}     & Chuỗi Unicode NFC & 123 Nguyễn Trãi, Thanh Xuân \\
     \bottomrule
   \end{tabular}
 \end{table}
@@ -90,7 +90,7 @@ Mục tiêu của đồ án là thiết kế, huấn luyện và đánh giá kh�
 \begin{enumerate}
   \item \textbf{Xây dựng bộ dữ liệu nhãn sạch:} Hợp nhất và gán nhãn chuẩn hóa tập dữ liệu gồm 1.559 mẫu biên lai tiếng Việt từ cuộc thi MC-OCR 2021 và dữ liệu tự chụp thực tế.
   \item \textbf{Đánh giá đối sánh hệ thống:} Cung cấp kết quả thực nghiệm chi tiết giữa ba giải pháp: Baseline (regex), \model{Donut} (OCR-free), và \model{LayoutXLM} (OCR-based) trên cùng tập dữ liệu kiểm thử.
-  \item \textbf{Phân loại và phân tích lỗi:} Đề xuất bảng phân loại 11 loại lỗi (Error Taxonomy) giúp chỉ rõ điểm nghẽn kỹ thuật của từng kiến trúc.
+  \item \textbf{Phân loại và phân tích lỗi:} Xây dựng taxonomy bảy nhóm lỗi có thể sinh lại tự động từ prediction, ground-truth và OCR cache.
   \item \textbf{Demo ứng dụng tương tác:} Triển khai giao diện demo bằng Gradio chạy thời gian thực phục vụ mục đích kiểm thử trực quan.
 \end{enumerate}
 
@@ -102,9 +102,9 @@ Báo cáo được tổ chức thành các chương cụ thể như sau:
 \begin{itemize}
   \item \textbf{\cref{sec:theory} (Cơ sở lý thuyết):} Trình bày bài toán trích xuất thông tin, lý thuyết về OCR, kiến trúc Donut, LayoutXLM và các công trình liên quan.
   \item \textbf{\cref{sec:dataset} (Thu thập và xây dựng tập dữ liệu):} Mô tả các nguồn dữ liệu, quy tắc gán nhãn, schema thống nhất và quy trình loại mẫu trùng lặp.
-  \item \textbf{\cref{sec:preprocessing} (Tiền xử lý dữ liệu):} Chi tiết các bước xử lý hình ảnh, chuẩn hóa văn bản, xây dựng OCR cache và thí nghiệm ablation.
+  \item \textbf{\cref{sec:preprocessing} (Tiền xử lý dữ liệu):} Chi tiết các bước xử lý hình ảnh, tăng cường dữ liệu, chuẩn hóa văn bản, xây dựng OCR cache và trạng thái khảo sát ablation.
   \item \textbf{\cref{sec:methodology} (Phương pháp thực hiện):} Thiết kế chi tiết và cấu hình triển khai của cả ba pipeline.
-  \item \textbf{\cref{sec:experiments} (Thực nghiệm):} Trình bày môi trường huấn luyện, các siêu tham số và tổng hợp kết quả huấn luyện thực tế.
-  \item \textbf{\cref{sec:results} (Kết quả thực nghiệm):} Thảo luận chi tiết kết quả EM, NES, CER, đo đạc latency công bằng và phân tích lỗi.
+  \item \textbf{\cref{sec:experiments} (Thực nghiệm):} Trình bày cấu hình, phạm vi dữ liệu, protocol đánh giá và giới hạn bằng chứng huấn luyện.
+  \item \textbf{\cref{sec:results} (Kết quả thực nghiệm):} Thảo luận kết quả all-samples, present-only, latency thành phần và phân tích lỗi tái lập.
   \item \textbf{\cref{sec:conclusion} (Kết luận):} Trả lời các câu hỏi nghiên cứu, đúc rút hạn chế và mở ra hướng phát triển tương lai.
 \end{itemize}

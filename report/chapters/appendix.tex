@@ -29,10 +29,10 @@ Dưới đây là một mẫu (sample) trong tệp JSONL thống nhất sau khi 
     "address": "Cho Sui Phu Thi Gia Lam"
   },
   "target": {
-    "store_name": "minimart anan",
+    "store_name": "MINIMART ANAN",
     "date": "2020-08-09",
     "total": "115000",
-    "address": "cho sui phu thi gia lam"
+    "address": "Cho Sui Phu Thi Gia Lam"
   }
 }
 \end{lstlisting}
@@ -131,7 +131,7 @@ generation:
 model:
   name: "microsoft/layoutxlm-base"
   max_length: 512
-  doc_stride: 128
+  doc_stride: 128  # khai bao trong config, chua dung sliding window
   labels:
     - "O"
     - "B-STORE_NAME"
@@ -222,34 +222,30 @@ heuristics:
 \section{Mẫu kết quả trích xuất thực tế}
 \label{appendix:extraction-examples}
 
-\cref{tab:extraction-examples} trình bày các mẫu kết quả trích xuất thực tế từ tập kiểm thử, đối chiếu kết quả dự đoán sau chuẩn hóa của cả ba phương pháp với nhãn ground-truth tương ứng.
+\cref{tab:extraction-examples} trình bày các kết quả được đọc trực tiếp từ prediction artifact hiện có.
 
 \begin{table}[htbp]
   \centering
   \caption{Ví dụ kết quả trích xuất thực tế so với nhãn ground-truth trên tập test.}
   \label{tab:extraction-examples}
-  \small
-  \begin{tabularx}{\textwidth}{l p{2.1cm} l L{3.5cm} L{3.5cm} c}
+  \footnotesize
+  \begin{tabularx}{\textwidth}{l p{2cm} l L{3.2cm} L{3.5cm}}
     \toprule
-    \textbf{ID Mẫu (Test)} & \textbf{Phương pháp} & \textbf{Trường} & \textbf{Nhãn thật (Ground Truth)} & \textbf{Kết quả dự đoán} & \textbf{Đúng?} \\
+    \textbf{ID} & \textbf{Phương pháp} & \textbf{Trường} & \textbf{Ground-truth} & \textbf{Prediction chuẩn hóa} \\
     \midrule
-    % --- Vi du 1 ---
-    \multirow{4}{*}{\makecell[l]{\code{mcocr\_mcocr\_}\\\code{public\_145014}\\\code{mbvkd}}}
-      & \model{LayoutXLM} & \field{store\_name} & nhan sach gd-tc cam pha & nhan sach gd-tc cam pha & \checkmark \\
-      & \model{LayoutXLM} & \field{address}    & dc: 212 duong tran phu-cam pha & dc: 212 duong tran phu-cam pha & \checkmark \\
-      & Baseline  & \field{address}    & dc: 212 duong tran phu-cam pha & dc: 212 duong tran phu-cam pha - nhan vien thu ngan & $\times$ \\
-      & \model{Donut}      & \field{store\_name} & nhan sach gd-tc cam pha & o cafe o cafe nha cafe cafe & $\times$ \\
+    \multirow{3}{*}{\code{...145014mbvkd}}
+      & \model{LayoutXLM} & \field{total} & 76000 & 76000 \\
+      & Baseline & \field{address} & ĐC: 212 Đường Trần Phú-Cẩm Phả & Đc: 212 Đường Trần Phú-Cẩm Phả - Nhân viên thu ngân \\
+      & \model{Donut} & \field{store\_name} & NHÀ SÁCH GD-TC CẨM PHẢ & O cafe O cafe NHA cafe Cafe \ldots \\
     \midrule
-    % --- Vi du 2 ---
-    \multirow{3}{*}{\makecell[l]{\code{mcocr\_mcocr\_}\\\code{public\_145014}\\\code{vauus}}}
-      & \model{LayoutXLM} & \field{total}      & 19000 & 19000 & \checkmark \\
-      & Baseline  & \field{total}      & 19000 & 50000 (lấy nhầm subtotal) & $\times$ \\
-      & Baseline  & \field{store\_name} & vincommerce & vm\% qnh to 7, khu minh tien a & $\times$ \\
+    \multirow{3}{*}{\code{...145014vauus}}
+      & \model{LayoutXLM} & \field{total} & 19000 & 19000 \\
+      & Baseline & \field{total} & 19000 & 50000 \\
+      & \model{Donut} & \field{total} & 19000 & \textit{rỗng} \\
     \midrule
-    % --- Vi du 3 ---
-    \multirow{2}{*}{\makecell[l]{\code{mcocr\_mcocr\_}\\\code{public\_145014}\\\code{aixgf}}}
-      & \model{LayoutXLM} & \field{address}    & dc: 212 duong tran phu - cam pha & dc: 212 duong tran phu-cam pha & \checkmark \\
-      & Baseline  & \field{address}    & dc: 212 duong tran phu - cam pha & dc: 212 duong tran phu-cam pha - nhan vien thu ngan te & $\times$ \\
+    \multirow{2}{*}{\code{...145014aixgf}}
+      & \model{LayoutXLM} & \field{date} & 2020-08-14 & 2020-08-14 \\
+      & Baseline & \field{address} & ĐC: 212 Đường Trần Phú - Cẩm Phả & Đc: 212 Đường Trần Phú-Cẩm Phả - Nhân viên thu ngân tế \\
     \bottomrule
   \end{tabularx}
 \end{table}
@@ -266,12 +262,7 @@ Giao diện ứng dụng Demo Gradio cung cấp một công cụ trực quan hó
 
 Giao diện demo được xây dựng bằng Gradio, hỗ trợ tải ảnh biên lai lên, tự động chạy qua pipeline xử lý đã chọn (Baseline, \model{Donut}, hoặc \model{LayoutXLM}) và trả về kết quả định dạng JSON sạch kèm thông tin latency chi tiết của lượt chạy đó.
 
-\begin{figure}[htbp]
-  \centering
-  \includegraphics[width=0.85\textwidth]{gradio_demo.png}
-  \caption{Giao diện ứng dụng demo Gradio cho trích xuất thông tin biên lai.}
-  \label{fig:gradio-demo}
-\end{figure}
+Ảnh \code{gradio\_demo.png} hiện có trong repository là placeholder, vì vậy không được đưa vào bản báo cáo cuối như bằng chứng triển khai. Giao diện cần được chụp lại từ một lượt chạy thực tế trước khi bổ sung hình minh họa.
 
 \subsection{Hướng dẫn cài đặt và chạy demo}
 \label{appendix:gradio-install}

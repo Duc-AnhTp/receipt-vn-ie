@@ -18,8 +18,6 @@
 \renewcommand{\listtablename}{Danh mục bảng biểu}
 \renewcommand{\figurename}{Hình}
 \renewcommand{\tablename}{Bảng}
-\renewcommand{\lstlistingname}{Đoạn mã}
-\renewcommand{\lstlistlistingname}{Danh mục đoạn mã}
 
 % --- Trang & Layout ---
 \usepackage[
@@ -33,6 +31,7 @@
 
 \usepackage{setspace}
 \onehalfspacing                      % Giãn dòng 1.5
+\setlength{\emergencystretch}{2em}   % Cho phép giãn nhẹ để tránh tràn dòng
 
 % --- Header / Footer ---
 \usepackage{fancyhdr}
@@ -98,6 +97,8 @@
 
 % --- Code listing ---
 \usepackage{listings}
+\renewcommand{\lstlistingname}{Đoạn mã}
+\renewcommand{\lstlistlistingname}{Danh mục đoạn mã}
 \lstset{
   basicstyle=\small\ttfamily,
   backgroundcolor=\color{code-bg},

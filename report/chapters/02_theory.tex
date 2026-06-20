@@ -25,7 +25,7 @@ Bài toán trích xuất thông tin tài liệu đã đạt được nhiều bư
   \caption{So sánh đặc tính và giả thuyết kiểm chứng của ba hướng tiếp cận.}
   \label{tab:method-comparison}
   \small
-  \begin{tabularx}{\textwidth}{l p{2.8cm} L{3.5cm} L{4.5cm}}
+  \begin{tabularx}{\textwidth}{p{2.3cm} p{2.4cm} L{3.2cm} X}
     \toprule
     \textbf{Phương pháp} & \textbf{Đặc trưng kỹ thuật} & \textbf{Ưu điểm \& Hạn chế} & \textbf{Giả thuyết kiểm chứng} \\
     \midrule
@@ -37,12 +37,12 @@ Bài toán trích xuất thông tin tài liệu đã đạt được nhiều bư
     \textbf{\model{LayoutXLM} (OCR-based)}
       & Phân loại token (\gls{bio} tagging) đa phương thức: Text + Layout (2D BBox) + Visual.
       & Độ chính xác cao, khai thác sâu thông tin không gian. Tuy nhiên, pipeline phức tạp, phụ thuộc trực tiếp vào chất lượng OCR đầu vào.
-      & Đạt hiệu năng tối ưu nhất nhờ cơ chế nhúng không gian 2D, nhưng dễ bị đứt gãy gộp thực thể đa dòng khi OCR bị lỗi sắp xếp thứ tự đọc. \\
+      & Có khả năng khai thác bố cục 2D, nhưng dễ bị đứt gãy thực thể đa dòng và phụ thuộc vào độ phủ của nhãn hộp bao. \\
     \addlinespace
     \textbf{\model{Donut} (OCR-free)}
       & Mô hình sinh (generative) end-to-end từ ảnh sang văn bản có cấu trúc (thẻ XML).
       & Loại bỏ hoàn toàn bộ OCR độc lập, giảm thiểu tích lũy sai số. Tuy nhiên, tốc độ suy luận chậm, dễ bị ảo giác (hallucination).
-      & Khó hội tụ và dễ mắc lỗi sinh ảo hoặc lỗi định dạng thẻ tag khi kích thước tập dữ liệu huấn luyện nhỏ (khoảng 1.000 mẫu). \\
+      & Cần kiểm tra mức độ ổn định của chuỗi sinh và khả năng học từ tập dữ liệu tiếng Việt quy mô hạn chế. \\
     \bottomrule
   \end{tabularx}
 \end{table}
@@ -74,14 +74,15 @@ trong đó $P_{i,j}$ là bản bản đồ xác suất chứa ký tự, $T_{i,j}
 \subsubsection{Nhận dạng văn bản tiếng Việt với VietOCR}
 \label{subsubsec:vietocr}
 
-Ảnh của các dòng chữ sau khi được phát hiện sẽ được đưa vào \model{VietOCR}~\cite{vietocr2020} để nhận dạng chuỗi ký tự tiếng Việt. VietOCR kết hợp một mạng CNN (VGG-19 được tinh chỉnh) để trích xuất đặc trưng thị giác từ ảnh dòng chữ, và một bộ giải mã Transformer Encoder-Decoder tuần tự để giải mã các đặc trưng này thành chuỗi Unicode tiếng Việt có dấu. 
+Ảnh của các dòng chữ sau khi được phát hiện được đưa vào \model{VietOCR}~\cite{vietocr2020}. Cấu hình \path{vgg_transformer} sử dụng mạng CNN họ VGG để trích xuất đặc trưng thị giác, sau đó biến đổi bản đồ đặc trưng thành một chuỗi để Transformer encoder--decoder sinh văn bản Unicode tiếng Việt theo cơ chế tự hồi quy.
 
-Mô hình được huấn luyện bằng hàm mất mát Connectionist Temporal Classification (CTC)~\cite{graves2006ctc}, cho phép huấn luyện trực tiếp trên các cặp ảnh-văn bản mà không cần căn chỉnh vị trí từng ký tự ở mức pixel:
+Tại bước giải mã thứ $t$, mô hình dự đoán ký tự kế tiếp dựa trên đặc trưng ảnh $\mathbf{x}$ và các ký tự đích trước đó. Hàm mất mát là cross-entropy theo chuỗi, có label smoothing trong triển khai huấn luyện:
 \begin{equation}
-  \mathcal{L}_{\text{CTC}} = -\ln P(\mathbf{y} \mid \mathbf{x}) = -\ln \sum_{\mathbf{\pi} \in \mathcal{B}^{-1}(\mathbf{y})} P(\mathbf{\pi} \mid \mathbf{x})
-  \label{eq:ctc_loss}
+  \mathcal{L}_{\text{VietOCR}}
+  = -\sum_{t=1}^{T}\log P(y_t \mid y_{<t}, \mathbf{x}).
+  \label{eq:vietocr_loss}
 \end{equation}
-trong đó $\mathbf{x}$ là chuỗi đặc trưng visual, $\mathbf{y}$ là chuỗi ký tự đích, và $\mathcal{B}$ là hàm rút gọn loại bỏ ký tự trống (blank) và các ký tự lặp liên tiếp.
+Vì vậy VietOCR trong đồ án không sử dụng hàm mất mát CTC. Sự phân biệt này quan trọng khi phân tích lỗi: kết quả nhận dạng phụ thuộc vào quá trình giải mã tuần tự chứ không chỉ vào căn chỉnh đơn điệu giữa đặc trưng ảnh và ký tự.
 
 % ============================================================================
 \subsection{Mô hình Donut (OCR-free)}
@@ -115,7 +116,7 @@ Kiến trúc Donut bao gồm hai thành phần chính:
 Trong quá trình huấn luyện mô hình Donut, cần phân biệt rõ hai khái niệm "warm-up" dễ gây nhầm lẫn:
 \begin{itemize}
   \item \textbf{Learning Rate Warm-up (tỷ lệ $warmup\_ratio$ hoặc số bước $warmup\_steps$):} Đây là một kỹ thuật điều tiết tốc độ học trong tối ưu hóa (LR scheduling). Trong số bước đầu tiên (thường là 10\% tổng số bước huấn luyện), tốc độ học được tăng dần tuyến tính từ 0 lên mức cực đại được thiết lập nhằm tránh hiện tượng bùng nổ gradient khi bắt đầu cập nhật trọng số.
-  \item \textbf{Pre-training/Warm-up mô hình trên tập CORD:} Đây là một bước huấn luyện phụ (pre-finetuning). Trước khi huấn luyện trên tập dữ liệu biên lai tiếng Việt chính, mô hình Donut được huấn luyện trên một tập dữ liệu biên lai lớn khác (như CORD v2 gồm 800 mẫu tiếng Anh) để mô hình làm quen với bố cục và cấu trúc biểu diễn thẻ XML tổng quát của biên lai.
+  \item \textbf{Pre-training/Warm-up mô hình trên tập CORD:} Đây là một nhánh pre-finetuning tùy chọn, trong đó mô hình có thể được huấn luyện thêm trên dữ liệu biên lai CORD trước khi fine-tune tiếng Việt. Nhánh này có trong mã nguồn nhưng không được sử dụng để tạo các kết quả chính của báo cáo.
 \end{itemize}
 
 % ============================================================================
@@ -127,17 +128,17 @@ Trong quá trình huấn luyện mô hình Donut, cần phân biệt rõ hai kh�
 \subsubsection{Nhúng đa phương thức (Multimodal Embedding)}
 \label{subsubsec:multimodal_embedding}
 
-Để biểu diễn một token văn bản trong tài liệu, LayoutXLM kết hợp ba loại vector nhúng:
+LayoutXLM tiếp nhận đồng thời chuỗi token OCR, tọa độ 2D và ảnh toàn trang. Ba nguồn biểu diễn chính gồm:
 \begin{enumerate}
   \item \textbf{Nhúng văn bản (Text Embedding):} Mã hóa đặc trưng ngữ nghĩa của từ.
   \item \textbf{Nhúng không gian 2D (Spatial Embedding):} Tọa độ bounding box $[x_1, y_1, x_2, y_2]$ của từ được chuẩn hóa về khoảng $[0, 1000]$ và nhúng thông qua các bảng nhúng tọa độ để mô hình nắm bắt vị trí tương đối và tuyệt đối trên ảnh:
   \begin{equation}
     \mathbf{e}_{2D}(\text{bbox}_i) = \mathbf{e}_{x_1}(x_1) + \mathbf{e}_{y_1}(y_1) + \mathbf{e}_{x_2}(x_2) + \mathbf{e}_{y_2}(y_2) + \mathbf{e}_{w}(w) + \mathbf{e}_{h}(h)
   \end{equation}
-  \item \textbf{Nhúng thị giác (Visual Embedding):} Cắt vùng ảnh tương ứng với bounding box của token và đưa qua mạng CNN (ResNeXt) để trích xuất đặc trưng hình ảnh (phông chữ, độ đậm nhạt, màu sắc).
+  \item \textbf{Nhúng thị giác (Visual Embedding):} Ảnh toàn trang được đưa qua backbone ResNeXt-FPN để tạo bản đồ đặc trưng, sau đó được pooling thành một chuỗi visual token. Các visual token mang nhúng bố cục riêng và được đưa vào Transformer cùng chuỗi token văn bản; hệ thống không cắt riêng từng hộp từ để tạo một vector ảnh cho từng token.
 \end{enumerate}
 
-Vector biểu diễn tổng hợp của token là tổng của ba thành phần trên: $\mathbf{x}_i = \mathbf{t}_i + \mathbf{e}_{2D}(\text{bbox}_i) + \mathbf{v}_i$.
+Đối với token văn bản, embedding đầu vào là tổng của nhúng từ, nhúng vị trí 1D và nhúng bố cục 2D. Đối với visual token, embedding thị giác được kết hợp với nhúng bố cục tương ứng. Hai chuỗi được nối và xử lý chung trong Transformer, cho phép trao đổi thông tin giữa văn bản và hình ảnh.
 
 \subsubsection{Spatial-aware Self-Attention}
 \label{subsubsec:spatial_attention}
@@ -187,7 +188,7 @@ EM đo tỷ lệ khớp chính xác hoàn toàn từng ký tự giữa dự đo�
 \textbf{Quy ước giá trị rỗng:} Nếu cả $pred$ và $gold$ đều là chuỗi rỗng sau chuẩn hóa $\to \metric{EM} = 1.0$. Nếu chỉ một trong hai chuỗi rỗng $\to \metric{EM} = 0.0$.
 
 \subsubsection{Normalized Edit Similarity (NES)}
-NES đo mức độ tương đồng ngữ nghĩa ký tự thông qua khoảng cách Levenshtein chuẩn hóa:
+NES đo mức độ tương đồng chuỗi ký tự thông qua khoảng cách Levenshtein chuẩn hóa; chỉ số này không đo tương đồng ngữ nghĩa:
 \begin{equation}
   \metric{NES}(pred, gold) = 1 - \frac{\text{Levenshtein}(pred, gold)}{\max(\text{len}(pred), \text{len}(gold))}
 \end{equation}
@@ -205,3 +206,11 @@ CER đo tỷ lệ lỗi ở cấp độ ký tự trên chuỗi nhãn thực:
   \item Nếu $gold$ có giá trị nhưng $pred$ rỗng $\to \metric{CER} = 1.0$.
 \end{itemize}
 \textbf{Giải thích hiện tượng CER > 100\%:} Chỉ số CER có thể vượt quá 100\% (hay > 1.0) khi chuỗi dự đoán dài hơn đáng kể so với nhãn thực do mô hình sinh thừa nhiều ký tự rác hoặc bị lỗi lặp chuỗi tự hồi quy (hallucination), dẫn đến khoảng cách Levenshtein lớn hơn độ dài ký tự của nhãn thực $gold$.
+
+\subsubsection{Hai chế độ tổng hợp kết quả}
+Để tránh việc một mô hình nhận điểm do đồng thời trả về rỗng khi ground-truth cũng rỗng, báo cáo trình bày hai chế độ:
+\begin{itemize}
+  \item \textbf{All samples:} đánh giá trên toàn bộ 234 mẫu, tuân thủ các quy ước giá trị rỗng ở trên.
+  \item \textbf{Present-only:} với từng trường, chỉ đánh giá các mẫu có ground-truth khác rỗng. Đây là chế độ chính để phân tích năng lực trích xuất khi thông tin thực sự xuất hiện.
+\end{itemize}
+Macro EM, NES và CER đều là trung bình không trọng số của bốn trường.

@@ -1,83 +1,90 @@
 % ============================================================================
 %  Section 6: Thực nghiệm và huấn luyện mô hình
 % ============================================================================
-\section{Thực nghiệm và huấn luyện mô hình}
+\section{Thiết lập thực nghiệm}
 \label{sec:experiments}
 
-Chương này trình bày chi tiết thiết lập thực nghiệm, môi trường phần cứng và phần mềm, các siêu tham số huấn luyện, quy trình thực hiện so sánh công bằng và tổng hợp kết quả huấn luyện thực tế của các mô hình.
+Chương này mô tả cấu hình được lưu trong repository, phạm vi dữ liệu của từng mô hình và quy trình tạo các artifact đánh giá. Những thông tin không còn log gốc để xác minh, như thời gian huấn luyện hoặc epoch dừng thực tế, không được trình bày như kết quả đo.
 
 % ============================================================================
-\subsection{Môi trường thực nghiệm và phiên bản phần mềm}
+\subsection{Môi trường và cấu hình}
 \label{subsec:exp_env}
 
-Để bảo đảm tính khả thi và khả năng tái lập (reproducibility) của các thí nghiệm, toàn bộ quy trình được thực hiện trên nền tảng Kaggle với cấu hình phần cứng và phiên bản phần mềm thống nhất:
-\begin{itemize}
-  \item \textbf{Cấu hình phần cứng:} Kaggle T4$\times$2 gồm 2 GPU NVIDIA Tesla T4, mỗi GPU sở hữu 16 GB VRAM.
-  \item \textbf{Môi trường phần mềm và phiên bản thư viện cốt lõi:}
-  \begin{itemize}
-    \item Hệ điều hành: Ubuntu 22.04 LTS.
-    \item Python: v3.10.
-    \item PyTorch: v2.1.2.
-    \item Hugging Face Transformers: v4.44.0.
-    \item Hugging Face Datasets: v2.20.0.
-    \item Accelerate: v0.33.0.
-    \item PaddleOCR: v2.7.3 (Text Detection).
-    \item VietOCR: v0.3.13 (Text Recognition).
-    \item RapidFuzz: v3.6.1 (đối sánh OCR Quality).
-  \end{itemize}
-  \item \textbf{Hạt giống ngẫu nhiên (Seed):} Cố định $seed = 42$ cho tất cả các thư viện (PyTorch, Numpy, Random) và các bước xáo trộn dữ liệu.
-\end{itemize}
-
-\cref{tab:hyperparams} so sánh chi tiết siêu tham số huấn luyện của hai mô hình \model{Donut} và \model{LayoutXLM}.
+Các checkpoint được xây dựng cho môi trường GPU NVIDIA Tesla T4. Cấu hình phần mềm của dự án sử dụng Python, PyTorch, Hugging Face Transformers, PaddleOCR, VietOCR và RapidFuzz. Hạt giống chia dữ liệu được đặt là $42$. Do repository không lưu đầy đủ ảnh chụp môi trường và log package của lần huấn luyện tạo checkpoint, các phiên bản thư viện trong tài liệu hướng dẫn chỉ được xem là cấu hình dự kiến để tái lập, không phải bằng chứng về môi trường chạy lịch sử.
 
 \begin{table}[htbp]
   \centering
-  \caption{Bảng so sánh siêu tham số huấn luyện của Donut và LayoutXLM.}
+  \caption{Cấu hình huấn luyện được khai báo cho Donut và LayoutXLM.}
   \label{tab:hyperparams}
   \begin{tabular}{lll}
     \toprule
-    \textbf{Siêu tham số} & \textbf{Mô hình \model{Donut}} & \textbf{Mô hình \model{LayoutXLM}} \\
+    \textbf{Siêu tham số} & \textbf{\model{Donut}} & \textbf{\model{LayoutXLM}} \\
     \midrule
-    Mô hình nền tảng (Base)     & \code{naver-clova-ix/donut-base} & \code{microsoft/layoutxlm-base} \\
-    Kích thước đầu vào         & $1280 \times 960$ pixel          & Tối đa 512 tokens \\
-    Batch size thô (mỗi GPU)   & 2                                & 8 \\
-    Gradient Accumulation      & 8 bước                           & 4 bước \\
-    Batch size hiệu dụng       & 16                               & 32 \\
-    Tốc độ học (Learning Rate) & $2 \times 10^{-5}$               & $2 \times 10^{-5}$ \\
-    Bộ lập lịch (LR Scheduler) & Cosine decay                     & Linear warmup \& decay \\
-    LR Warm-up Ratio           & 0,10 (10\% số bước đầu)          & 0,10 (10\% số bước đầu) \\
-    Độ chính xác hỗn hợp       & FP16                             & FP16 \\
-    Early Stopping Patience    & 15 epochs                        & 5 epochs \\
+    Mô hình nền tảng & \code{donut-base} & \code{layoutxlm-base} \\
+    Epoch tối đa & 150 & 20 \\
+    Batch size mỗi GPU & 2 & 8 \\
+    Gradient accumulation & 8 & 4 \\
+    Learning rate & $2\times10^{-5}$ & $2\times10^{-5}$ \\
+    LR scheduler & Cosine & Linear \\
+    Warm-up ratio & 0,10 & 0,10 \\
+    Mixed precision & FP16 & FP16 \\
+    Early stopping patience & 15 & 5 \\
     \bottomrule
   \end{tabular}
 \end{table}
 
-% ============================================================================
-\subsection{Thiết lập quy trình thực nghiệm độc lập}
-\label{subsec:fair_comparison}
-
-Quy trình thực nghiệm được tách biệt rõ ràng thành ba giai đoạn để tránh hiện tượng rò rỉ hoặc tối ưu hóa thiên vị:
-
-\paragraph{1. Giai đoạn huấn luyện (Training Phase)}
-Mô hình chỉ được tối ưu hóa trọng số trên tập huấn luyện (Train set) gồm 1.091 mẫu. Trong quá trình huấn luyện, sau mỗi epoch, loss và độ chính xác của mô hình được đánh giá trên tập phát triển (Validation set) gồm 234 mẫu để làm cơ sở lựa chọn checkpoint tốt nhất.
-
-\paragraph{2. Giai đoạn suy luận và đánh giá (Inference Phase)}
-Sau khi hoàn tất huấn luyện, checkpoint tốt nhất của mô hình được tải lên và chạy suy luận \textbf{một lần duy nhất} trên tập kiểm thử độc lập (Test set) gồm 234 mẫu để ghi nhận kết quả dự đoán ra tệp JSONL.
-
-\paragraph{3. Giai đoạn đo đạc Latency}
-Đo thời gian xử lý E2E trung bình (giây/ảnh) trên tập test gồm 234 ảnh. Để phép đo khách quan:
-\begin{itemize}
-  \item Chạy warm-up mô hình với 50 ảnh đầu tiên để nạp tham số mô hình vào bộ nhớ GPU.
-  \item Đo thời gian xử lý thực tế của từng ảnh và lấy giá trị trung bình trên toàn tập test.
-  \item Đối với Baseline và LayoutXLM, ghi nhận riêng biệt thời gian xử lý có dùng cache OCR và thời gian xử lý thực tế từ ảnh thô (cộng thêm 180 ms thời gian chạy PaddleOCR + VietOCR).
-\end{itemize}
+Các giá trị trong \cref{tab:hyperparams} phản ánh file cấu hình hiện tại. Chúng không chứng minh số epoch thực chạy, checkpoint tốt nhất hay thời gian huấn luyện.
 
 % ============================================================================
-\subsection{Tổng hợp kết quả huấn luyện thực tế}
-\label{subsec:training_summary}
+\subsection{Phạm vi dữ liệu của từng pipeline}
+\label{subsec:training_data_scope}
 
-Quá trình huấn luyện thực tế của hai mô hình cho thấy sự khác biệt rõ rệt về tốc độ hội tụ và tài nguyên tiêu tốn:
+\begin{table}[htbp]
+  \centering
+  \caption{Số mẫu có thể sử dụng ở từng giai đoạn.}
+  \label{tab:model-data-scope}
+  \begin{tabular}{lccc}
+    \toprule
+    \textbf{Phương pháp} & \textbf{Train} & \textbf{Validation} & \textbf{Test} \\
+    \midrule
+    Baseline & Không huấn luyện & Không áp dụng & 234 \\
+    \model{Donut} & 1.091 & 234 & 234 \\
+    \model{LayoutXLM} & 784 & 168 & 234 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+Donut chỉ cần ảnh và nhãn JSON nên sử dụng cả hai nguồn dữ liệu. LayoutXLM cần hộp bao trường để sinh nhãn BIO và do đó chỉ huấn luyện trên các mẫu \code{json\_and\_boxes}. Tất cả phương pháp được chấm trên cùng 234 ID test, nhưng điều kiện huấn luyện khác nhau là một yếu tố nhiễu cần được giữ trong diễn giải.
+
+% ============================================================================
+\subsection{Quy trình suy luận và đánh giá}
+\label{subsec:evaluation_protocol}
+
+Predictions của ba phương pháp được lưu theo cùng schema, gồm kết quả thô, kết quả chuẩn hóa, trạng thái xử lý và các thành phần latency. Evaluator ghép prediction với ground-truth theo \field{id}. Prediction thiếu hoặc có \code{status=error} được chấm như dự đoán rỗng thay vì bị loại khỏi mẫu số.
+
+Kết quả được báo cáo theo hai chế độ:
+\begin{enumerate}
+  \item \textbf{All samples:} toàn bộ 234 mẫu; trường hợp cả prediction và ground-truth rỗng được tính đúng theo quy ước metric.
+  \item \textbf{Present-only:} chỉ các mẫu có ground-truth khác rỗng của từng trường. Chế độ này được ưu tiên khi phân tích năng lực trích xuất thực sự.
+\end{enumerate}
+
+Các tệp JSON metrics, CSV phân tích lỗi, biểu đồ và bảng LaTeX được sinh lại từ predictions hiện có. Bảng trong chương kết quả được nạp từ thư mục \code{report/generated}, tránh sao chép số liệu thủ công.
+
+% ============================================================================
+\subsection{Phạm vi phép đo latency}
+\label{subsec:latency_protocol}
+
+Artifact prediction chỉ cho phép kết luận về thành phần thời gian đã được ghi:
 \begin{itemize}
-  \item \textbf{Mô hình \model{Donut}:} Được huấn luyện trong tối đa 150 epochs. Cơ chế Early Stopping với patience = 15 đã tự động ngắt quá trình huấn luyện tại epoch 112 do phát hiện hiện tượng quá khớp (overfitting). Tổng thời gian huấn luyện là \textbf{18,5 giờ}. Hiện tượng quá khớp bắt nguồn từ việc mô hình Donut là mô hình sinh tự hồi quy, phải đồng thời học nhận dạng ký tự tiếng Việt từ ảnh thô và cấu trúc cú pháp sinh thẻ XML trên tập dữ liệu hạn chế (1.091 mẫu).
-  \item \textbf{Mô hình \model{LayoutXLM}:} Được huấn luyện với tối đa 20 epochs. Mô hình hội tụ cực kỳ nhanh chóng, Early Stopping với patience = 5 đã ngắt quá trình huấn luyện tại epoch thứ 14. Tổng thời gian huấn luyện chỉ \textbf{1,5 giờ}. Lợi thế hội tụ nhanh đến từ bản chất tác vụ phân loại token (discriminative) với không gian đầu ra nhỏ (chỉ 9 nhãn BIO) và việc tận dụng văn bản nhận dạng sẵn từ bộ OCR.
+  \item Baseline: thời gian áp dụng luật và hậu xử lý trên OCR cache.
+  \item LayoutXLM: thời gian suy luận mô hình từ OCR cache.
+  \item Donut: thời gian suy luận và hậu xử lý trực tiếp từ ảnh.
 \end{itemize}
+
+Thời gian chạy PaddleOCR và VietOCR từ ảnh thô không được ghi đồng nhất trong các prediction hiện có. Vì vậy báo cáo không cộng một hằng số OCR giả định và không gọi bảng latency này là so sánh end-to-end công bằng.
+
+% ============================================================================
+\subsection{Trạng thái bằng chứng huấn luyện}
+\label{subsec:training_evidence}
+
+Repository có checkpoint mô hình và một số \code{trainer\_state.json}, nhưng các state hiện có chỉ phản ánh các lượt chạy ngắn và không xác minh các tuyên bố từng xuất hiện trong bản thảo về Donut dừng ở epoch 112, LayoutXLM dừng ở epoch 14, hoặc thời gian huấn luyện tương ứng 18,5 giờ và 1,5 giờ. Do đó các con số này được loại khỏi báo cáo. Việc tái lập đầy đủ cần lưu log loss/validation, thời gian bắt đầu--kết thúc, cấu hình phần cứng và mã commit cho mỗi lần chạy.

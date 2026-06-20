@@ -4,50 +4,42 @@
 \section{Kết luận và hướng phát triển}
 \label{sec:conclusion}
 
-% ============================================================================
-\subsection{Kết luận và trả lời câu hỏi nghiên cứu}
+\subsection{Trả lời câu hỏi nghiên cứu}
 \label{subsec:conclusion}
 
-Đồ án đã hoàn thành thiết kế, huấn luyện và đánh giá đối sánh hệ thống ba phương pháp trích xuất bốn trường thông tin quan trọng từ ảnh chụp biên lai tiếng Việt. Dựa trên các số liệu đo đạc thực nghiệm thu được, nhóm nghiên cứu đưa ra câu trả lời trực tiếp cho ba câu hỏi nghiên cứu (RQ) đặt ra ban đầu:
+\paragraph{RQ1: Phương pháp nào đạt độ chính xác cao hơn?}
+Trên checkpoint và test set hiện có, LayoutXLM đạt kết quả present-only tốt nhất với Macro EM 42,73\% và Macro NES 62,02\%. Baseline đạt Macro EM 40,41\% và đặc biệt mạnh ở trường ngày. Donut có Macro EM present-only bằng 0\%, cho thấy checkpoint hiện tại chưa học được tác vụ trích xuất bốn trường ở mức sử dụng được. Kết luận này chỉ áp dụng cho các checkpoint đã đánh giá; không chứng minh rằng mọi cấu hình LayoutXLM đều tốt hơn Donut, vì LayoutXLM và Donut sử dụng tập huấn luyện khác nhau về số lượng và annotation.
 
-\paragraph{1. Trả lời RQ1: So sánh hiệu năng chính xác giữa LayoutXLM và Donut}
-\begin{itemize}
-  \item \textbf{Kết quả:} Mô hình đa phương thức \model{LayoutXLM} đạt hiệu năng tốt nhất với chỉ số Macro EM là 43,48\% và Macro NES là 61,86\%. Tuy nhiên, khoảng cách chênh lệch tuyệt đối so với phương pháp heuristics Baseline (Macro EM = 39,74\%) chỉ là \textbf{3,74 điểm phần trăm} (3,74\%). Điều này chứng tỏ sự cải tiến của LayoutXLM là có thực tế nhưng chưa mang tính vượt trội hoàn toàn.
-  \item \textbf{Hiệu năng của Donut:} Mô hình \model{Donut} đạt kết quả rất hạn chế (Macro EM = 5,88\%, Macro CER = 105,23\%) do hiện tượng ảo giác (hallucination) và lỗi sinh sai định dạng thẻ XML. Điều này bác bỏ giả thuyết rằng Donut có thể dễ dàng hoạt động tốt trên các tập dữ liệu nhỏ.
-\end{itemize}
+\paragraph{RQ2: Sự khác biệt về latency và khả năng triển khai là gì?}
+Artifact cho thấy hậu xử lý Baseline từ OCR cache trung bình khoảng 1,08 ms/ảnh, suy luận LayoutXLM từ OCR cache khoảng 851,19 ms/ảnh, còn Donut từ ảnh khoảng 2.449,76 ms/ảnh. Do thiếu thời gian OCR được đo đồng nhất, báo cáo không so sánh end-to-end từ ảnh thô và không kết luận về latency sản xuất của toàn pipeline. Các số liệu epoch dừng và thời gian huấn luyện trước đây cũng được loại bỏ vì thiếu log xác minh.
 
-\paragraph{2. Trả lời RQ2: So sánh tốc độ xử lý (latency) và tài nguyên huấn luyện}
-\begin{itemize}
-  \item \textbf{Thời gian xử lý E2E thực tế (suy luận):} Baseline là nhanh nhất với latency E2E trung bình là \textbf{181,1 ms/ảnh}. LayoutXLM xếp thứ hai với \textbf{1.031,2 ms/ảnh} (1,03 giây). Donut là chậm nhất với \textbf{2.449,8 ms/ảnh} (2,45 giây) do cơ chế giải mã tự hồi quy beam search của BART Decoder rất tốn tài nguyên.
-  \item \textbf{Tài nguyên huấn luyện:} LayoutXLM hội tụ cực kỳ nhanh chóng chỉ sau \textbf{1,5 giờ} huấn luyện (Early Stopping kích hoạt tại epoch 14) nhờ bài toán phân loại token đơn giản. Trong khi đó, Donut cần tới \textbf{18,5 giờ} huấn luyện (Early Stopping tại epoch 112) và gặp hiện tượng quá khớp (overfitting) do phải đồng thời học nhận dạng ký tự tiếng Việt và sinh cấu trúc thẻ XML.
-\end{itemize}
+\paragraph{RQ3: OCR làm giảm hiệu năng LayoutXLM bao nhiêu?}
+Câu hỏi này chưa được trả lời định lượng. Error analysis cho thấy nhiều prediction sai có liên quan đến việc gold không xuất hiện chính xác trong OCR cache, nhưng taxonomy heuristic không thể tách hoàn toàn lỗi OCR khỏi lỗi gán nhãn và mô hình. Cần thực nghiệm Oracle OCR cùng protocol để đo khoảng cách hiệu năng.
 
-\paragraph{3. Trả lời RQ3: Đánh giá ảnh hưởng của lỗi OCR lên pipeline OCR-based}
-\begin{itemize}
-  \item \textbf{Phân tích thực chứng:} Phân tích phân bố lỗi chỉ ra lỗi nhận dạng của bộ OCR đầu vào (\textbf{E2: OCR Wrong}) đóng góp tới \textbf{32\%} tổng lỗi của mô hình LayoutXLM trên tập test. Lỗi này làm sai lệch ký tự tiếng Việt có dấu ngay từ đầu vào, khiến mô hình gán nhãn LayoutXLM bị sai lệch theo. Để khẳng định chính xác cận trên lý thuyết và độ hao hụt hiệu năng do OCR, nhóm nghiên cứu đề xuất chạy kịch bản thực nghiệm \textbf{Oracle OCR} trong các nghiên cứu tiếp theo.
-\end{itemize}
+\subsection{Đe dọa tính hợp lệ}
+\label{subsec:validity-threats}
 
-% ============================================================================
-\subsection{Hạn chế của Đồ án}
-\label{subsec:limitations}
-
-Nhóm nghiên cứu nhận diện các hạn chế cốt lõi của đồ án hiện tại bao gồm:
 \begin{enumerate}
-  \item \textbf{Kích thước dữ liệu huấn luyện còn nhỏ:} Tập dữ liệu 1.559 mẫu chưa đủ để các mô hình học sâu (đặc biệt là Donut) phát huy tối đa khả năng.
-  \item \textbf{Giới hạn mô hình so sánh:} Đồ án chưa đối sánh với các mô hình đa phương thức tiên tiến hơn như LayoutLMv3~\cite{huang2022layoutlmv3}, Pix2Struct~\cite{lee2023pix2struct}, hoặc bộ công cụ OCR mã nguồn mở DocTR.
-  \item \textbf{Chưa thực hiện stress-test trên nhóm held-out:} Thực nghiệm chia stress-test split theo nhóm cửa hàng mới (\code{split\_stress}) đã được viết mã nguồn nhưng chưa được chạy và đo đạc kết quả trên thực tế.
-  \item \textbf{Donut chưa được tiền huấn luyện warm-up:} Donut được fine-tune trực tiếp từ \code{donut-base} mà chưa có bước pre-finetuning trên tập biên lai quốc tế CORD v2.
+  \item \textbf{Nhãn rỗng:} Khi cả prediction và ground-truth rỗng, all-samples EM/NES được tính đúng. Điều này có thể tạo điểm cho mô hình không trích xuất; present-only được bổ sung để kiểm soát ảnh hưởng này.
+  \item \textbf{Khác biệt annotation:} Donut dùng toàn bộ dữ liệu JSON, trong khi LayoutXLM chỉ dùng mẫu có hộp bao. Đây là yếu tố nhiễu khi so sánh kiến trúc.
+  \item \textbf{Giới hạn token:} LayoutXLM cắt chuỗi ở 512 token và chưa triển khai sliding window dù cấu hình có \code{doc\_stride}; trường cuối biên lai có thể bị mất.
+  \item \textbf{Thiếu log huấn luyện:} Checkpoint còn tồn tại nhưng không có log đầy đủ để xác minh thời gian huấn luyện, epoch tốt nhất và đường cong hội tụ.
+  \item \textbf{Phân tích lỗi heuristic:} Taxonomy tự động hỗ trợ thống kê nhất quán nhưng không chứng minh nguyên nhân. Các lỗi phức tạp cần rà soát ảnh và token-level output thủ công.
+  \item \textbf{Thiếu Oracle OCR và ablation hợp lệ:} Chưa có bằng chứng định lượng để tách ảnh hưởng OCR, visual embedding hoặc profile tiền xử lý.
 \end{enumerate}
 
-% ============================================================================
-\subsection{Định hướng phát triển tương lai}
+\subsection{Đóng góp và hạn chế}
+\label{subsec:limitations}
+
+Đồ án cung cấp pipeline dữ liệu thống nhất, ba phương pháp trích xuất, prediction artifact trên cùng test set, evaluator có xử lý rõ giá trị rỗng và taxonomy lỗi tái lập. Hạn chế chính là quy mô dữ liệu nhỏ, annotation không đồng nhất, checkpoint Donut chưa đạt chất lượng, và bằng chứng huấn luyện chưa được lưu trữ đầy đủ.
+
+\subsection{Hướng phát triển}
 \label{subsec:future_work}
 
-Dựa trên các hạn chế và kết quả, nhóm đề xuất các hướng phát triển tiếp theo:
 \begin{enumerate}
-  \item \textbf{Tiền huấn luyện mô hình Donut trên CORD v2:} Huấn luyện Donut trên tập CORD v2 trước để mô hình học cách sinh thẻ XML ổn định, sau đó mới fine-tune trên biên lai tiếng Việt.
-  \item \textbf{Triển khai thực nghiệm Oracle OCR:} Sử dụng nhãn ground-truth hoàn hảo để đo đạc cận trên lý thuyết của LayoutXLM, từ đó cô lập chính xác sai số do bộ OCR gây ra.
-  \item \textbf{Nâng cấp và cải tiến bộ OCR:} Tinh chỉnh VietOCR trên dữ liệu biên lai Việt Nam hoặc tích hợp các kiến trúc nhận dạng chữ viết mới.
-  \item \textbf{Xử lý địa chỉ đa dòng:} Thiết kế thuật toán sắp xếp thứ tự đọc cải tiến và tích hợp hậu xử lý bằng mô hình ngôn ngữ lớn (LLM) để ghép nối và chuẩn hóa địa chỉ phân mảnh.
-  \item \textbf{Tối ưu hóa latency triển khai:} Áp dụng lượng hóa mô hình (INT8 quantization), chưng cất tri thức (knowledge distillation) để giảm latency suy luận của Donut và LayoutXLM xuống mức đáp ứng thời gian thực tốt hơn.
+  \item Chạy Oracle OCR để đo cận trên của LayoutXLM và trả lời RQ3.
+  \item Tạo sliding windows cho tài liệu dài, gộp prediction giữa các cửa sổ và kiểm tra tác động lên \field{total}/\field{address}.
+  \item Huấn luyện lại Donut với log đầy đủ, kiểm tra target sequence, tokenizer, cấu hình ảnh và nhánh pre-finetuning CORD.
+  \item Chạy lại ablation tiền xử lý trên danh sách validation cố định, báo cáo độ phủ cache và confidence interval.
+  \item Lưu model card cho từng checkpoint gồm commit, môi trường, seed, dữ liệu, thời gian và checkpoint selection criterion.
 \end{enumerate}

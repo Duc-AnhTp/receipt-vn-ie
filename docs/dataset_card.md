@@ -16,7 +16,7 @@ Tập dữ liệu biên lai tiếng Việt phục vụ bài toán trích xuất 
 
 ### Tự thu thập (Self-collected)
 
-- **Mô tả**: ~500 ảnh biên lai tiếng Việt tự chụp từ nhiều cửa hàng, siêu thị.
+- **Mô tả processed hiện tại**: 439 ảnh biên lai tiếng Việt trong ba split.
 - **Annotation tool**: Label Studio.
 - **Annotation level**: `json_and_boxes` (tối thiểu 200–300 ảnh) hoặc `json_only`.
 - **Đường dẫn**: `data/raw/self_collected/`
@@ -69,6 +69,6 @@ Xem chi tiết tại [normalization_rules.md](normalization_rules.md).
 
 | Tập | MC-OCR | Self-collected | Tổng |
 |---|---|---|---|
-| Train | — | — | — |
-| Val | — | — | — |
-| Test | — | — | — |
+| Train | 784 | 307 | 1.091 |
+| Val | 168 | 66 | 234 |
+| Test | 168 | 66 | 234 |

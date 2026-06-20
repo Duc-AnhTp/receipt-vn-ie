@@ -97,12 +97,40 @@ class TestMetrics(unittest.TestCase):
         results = evaluate_predictions(predictions, ground_truths)
 
         self.assertEqual(results["n_evaluated"], 2)
-        self.assertEqual(results["n_skipped_error"], 1)
-        self.assertEqual(results["missing_prediction_ids"], ["a"])
+        self.assertEqual(results["n_skipped_error"], 0)
+        self.assertEqual(results["n_inference_errors"], 1)
+        self.assertEqual(results["missing_prediction_ids"], [])
         self.assertEqual(results["store_name"]["EM"], 0.5)
         self.assertEqual(results["date"]["EM"], 0.5)
         self.assertEqual(results["total"]["EM"], 0.5)
         self.assertEqual(results["address"]["EM"], 0.5)
+
+    def test_present_only_and_prediction_coverage(self):
+        ground_truths = [
+            {"id": "a", "target": {"store_name": "", "date": "", "total": "", "address": ""}},
+            {"id": "b", "target": {"store_name": "B", "date": "2026-05-22", "total": "100", "address": "HN"}},
+        ]
+        predictions = [
+            {"id": "a", "status": "ok", "normalized_prediction": {"store_name": "", "date": "", "total": "", "address": ""}},
+            {"id": "b", "status": "ok", "normalized_prediction": {"store_name": "", "date": "", "total": "", "address": ""}},
+        ]
+
+        results = evaluate_predictions(predictions, ground_truths)
+
+        self.assertEqual(results["date"]["EM"], 0.5)
+        self.assertEqual(results["present_only"]["date"]["EM"], 0.0)
+        self.assertEqual(results["present_only"]["date"]["n_samples"], 1)
+        self.assertEqual(results["prediction_coverage"]["date"]["rate"], 0.0)
+        self.assertEqual(results["macro"]["averaging"], "unweighted_mean_over_fields")
+
+    def test_missing_prediction_id_is_scored_as_empty(self):
+        ground_truths = [
+            {"id": "a", "target": {"store_name": "A", "date": "2026-05-22", "total": "100", "address": "HN"}},
+        ]
+        results = evaluate_predictions([], ground_truths)
+        self.assertEqual(results["store_name"]["EM"], 0.0)
+        self.assertEqual(results["n_evaluated"], 1)
+        self.assertEqual(results["missing_prediction_ids"], ["a"])
 
     def test_structure_validity(self):
         task_token = "<s_receipt_ie>"

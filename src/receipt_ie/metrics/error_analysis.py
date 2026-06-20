@@ -1,182 +1,220 @@
-import json
 import argparse
-import os
+import json
 import re
 from pathlib import Path
-from typing import Dict, Any, List
+from typing import Any, Dict, List
+
 import pandas as pd
 from rapidfuzz.distance import Levenshtein
 
 from receipt_ie.postprocess.total_extractor import strip_accents
 
-def normalize_for_compare(s: str) -> str:
-    s = strip_accents(s or "").lower()
-    return re.sub(r"[^\w\s]", "", s).strip()
+
+ERROR_TYPES = [
+    "NONE",
+    "EMPTY_PRED",
+    "FORMAT_ERROR",
+    "OCR_MISS",
+    "OCR_WRONG",
+    "POSTPROCESS_BAD",
+    "MODEL_BAD",
+    "LABEL_BAD",
+]
+OCR_BASED_METHODS = {"baseline", "layoutxlm"}
+
+
+def normalize_for_compare(value: str) -> str:
+    value = strip_accents(value or "").lower()
+    return re.sub(r"[^\w\s]", "", value).strip()
+
+
+def _ocr_similarity(gold_clean: str, ocr_words: List[Dict[str, Any]]) -> float:
+    """Best normalized similarity against OCR word windows."""
+    tokens = [
+        normalize_for_compare(word.get("text", ""))
+        for word in ocr_words
+        if normalize_for_compare(word.get("text", ""))
+    ]
+    if not tokens or not gold_clean:
+        return 0.0
+
+    gold_token_count = max(1, len(gold_clean.split()))
+    candidates = tokens[:]
+    for window_size in range(max(1, gold_token_count - 1), gold_token_count + 2):
+        candidates.extend(
+            " ".join(tokens[index:index + window_size])
+            for index in range(0, max(0, len(tokens) - window_size + 1))
+        )
+    return max(
+        Levenshtein.normalized_similarity(gold_clean, candidate)
+        for candidate in candidates
+    )
+
 
 def classify_error(
     field: str,
     gold_val: str,
     pred_val: str,
     raw_pred_val: str,
-    ocr_words: List[Dict[str, Any]]
+    ocr_words: List[Dict[str, Any]],
+    method: str,
 ) -> str:
-    """
-    Phân loại lỗi của một trường cụ thể thành 7 nhóm lỗi cố định.
-    """
+    """Assign one deterministic error type to a field prediction."""
     gold_val = str(gold_val or "").strip()
     pred_val = str(pred_val or "").strip()
     raw_pred_val = str(raw_pred_val or "").strip()
-    
+    method = method.lower()
+
     if gold_val == pred_val:
         return "NONE"
-        
-    # 1. EMPTY_PRED: Ground truth có giá trị nhưng prediction rỗng
     if gold_val and not pred_val:
         return "EMPTY_PRED"
-        
-    # 2. LABEL_BAD: GT thiếu nhưng pred có trích xuất được (hoặc GT bị sai hiển nhiên)
     if not gold_val and pred_val:
         return "LABEL_BAD"
-        
-    # 3. FORMAT_ERROR: Định dạng prediction sai
-    if field == "date" and pred_val:
-        if not re.match(r"^\d{4}-\d{2}-\d{2}$", pred_val):
-            return "FORMAT_ERROR"
-    elif field == "total" and pred_val:
-        if not pred_val.isdigit():
-            return "FORMAT_ERROR"
-            
-    # Lấy text OCR phẳng
-    ocr_text = " ".join([w.get("text", "") for w in ocr_words if w.get("text")]).strip()
-    ocr_text_clean = normalize_for_compare(ocr_text)
+
+    if field == "date" and pred_val and not re.fullmatch(r"\d{4}-\d{2}-\d{2}", pred_val):
+        return "FORMAT_ERROR"
+    if field == "total" and pred_val and not pred_val.isdigit():
+        return "FORMAT_ERROR"
+
     gold_clean = normalize_for_compare(gold_val)
-    
-    # 4. OCR_MISS: Text gold hoàn toàn không xuất hiện trong kết quả OCR
-    if gold_clean and gold_clean not in ocr_text_clean:
-        # Kiểm tra thêm độ tương đồng Levenshtein để tránh bỏ sót do lỗi chính tả nhỏ
-        # Nếu khoảng cách chỉnh sửa quá lớn trên toàn bộ ocr_text
-        return "OCR_MISS"
-        
-    # 5. POSTPROCESS_BAD: Raw prediction thô đúng/gần đúng nhưng qua normalize bị hỏng
     raw_clean = normalize_for_compare(raw_pred_val)
-    if raw_clean and (gold_clean in raw_clean or Levenshtein.normalized_similarity(gold_clean, raw_clean) > 0.8):
-        # Text thô gần đúng nhưng sau khi normalized bị khác
-        if pred_val != gold_val:
-            return "POSTPROCESS_BAD"
-            
-    # 6. OCR_WRONG: OCR nhận dạng sai từ khóa/ký tự làm mất/sai lệch thông tin
-    # Ví dụ: gold text chứa "anan" nhưng ocr chỉ nhận dạng được "anar"
-    if gold_clean not in ocr_text_clean:
-        # Nếu có một từ trong OCR rất giống với gold_clean (similarity > 0.7)
-        # chứng tỏ OCR nhận dạng sai
-        for w in ocr_words:
-            w_clean = normalize_for_compare(w.get("text", ""))
-            if w_clean and Levenshtein.normalized_similarity(gold_clean, w_clean) > 0.7:
+    pred_clean = normalize_for_compare(pred_val)
+    if raw_clean and raw_clean != pred_clean and (
+        gold_clean in raw_clean
+        or Levenshtein.normalized_similarity(gold_clean, raw_clean) > 0.8
+    ):
+        return "POSTPROCESS_BAD"
+
+    if method in OCR_BASED_METHODS:
+        ocr_text_clean = normalize_for_compare(
+            " ".join(word.get("text", "") for word in ocr_words)
+        )
+        if gold_clean and gold_clean not in ocr_text_clean:
+            if _ocr_similarity(gold_clean, ocr_words) >= 0.7:
                 return "OCR_WRONG"
-                
-    # 7. MODEL_BAD: Mô hình gán nhãn sai lớp (mặc dù OCR có đúng text đó)
+            return "OCR_MISS"
+
     return "MODEL_BAD"
 
-def main():
-    parser = argparse.ArgumentParser(description="Phân tích lỗi chi tiết cho 4 trường thông tin.")
-    parser.add_argument("--gold", required=True, help="Đường dẫn file JSONL ground truth")
-    parser.add_argument("--pred", required=True, help="Đường dẫn file JSONL dự đoán")
-    parser.add_argument("--ocr_cache_dir", default="data/interim/ocr_cache", help="Thư mục OCR cache")
-    parser.add_argument("--output", default="outputs/error_analysis/error_by_field.csv", help="Đường dẫn file CSV đầu ra")
+
+def _read_jsonl(path: str) -> Dict[str, Dict[str, Any]]:
+    records: Dict[str, Dict[str, Any]] = {}
+    with open(path, "r", encoding="utf-8") as handle:
+        for line in handle:
+            if line.strip():
+                item = json.loads(line)
+                if item.get("id"):
+                    records[item["id"]] = item
+    return records
+
+
+def _load_ocr_words(
+    gold_item: Dict[str, Any],
+    sample_id: str,
+    ocr_cache_dir: Path,
+) -> List[Dict[str, Any]]:
+    candidates = []
+    cache_path = gold_item.get("ocr_cache_path")
+    if cache_path:
+        candidates.extend([Path(cache_path), ocr_cache_dir / Path(cache_path).name])
+    candidates.append(ocr_cache_dir / f"{sample_id}.json")
+
+    for path in candidates:
+        if path.exists():
+            try:
+                with open(path, "r", encoding="utf-8") as handle:
+                    return json.load(handle).get("words", [])
+            except (OSError, json.JSONDecodeError):
+                continue
+    return []
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description="Phân tích lỗi có thể tái lập.")
+    parser.add_argument("--gold", required=True)
+    parser.add_argument("--pred", required=True)
+    parser.add_argument("--method", choices=["baseline", "layoutxlm", "donut"])
+    parser.add_argument("--ocr_cache_dir", default="data/interim/ocr_cache")
+    parser.add_argument("--output", default="outputs/error_analysis/error_by_field.csv")
+    parser.add_argument("--summary_output", default=None)
     args = parser.parse_args()
-    
-    # Đọc dữ liệu
-    def read_jsonl(path):
-        records = {}
-        with open(path, "r", encoding="utf-8") as f:
-            for line in f:
-                if line.strip():
-                    item = json.loads(line)
-                    if "id" in item:
-                        records[item["id"]] = item
-        return records
-        
-    gold_records = read_jsonl(args.gold)
-    pred_records = read_jsonl(args.pred)
-    
-    # Đọc OCR cache
-    ocr_cache_dir = Path(args.ocr_cache_dir)
-    
+
+    gold_records = _read_jsonl(args.gold)
+    pred_records = _read_jsonl(args.pred)
+    inferred_method = next(
+        (item.get("method") for item in pred_records.values() if item.get("method")),
+        Path(args.pred).stem.split("_")[0],
+    )
+    method = (args.method or inferred_method).lower()
+
     fields = ["store_name", "date", "total", "address"]
+    error_counts = {
+        field: {error_type: 0 for error_type in ERROR_TYPES}
+        for field in fields
+    }
     error_records = []
-    
-    # Đếm số lượng loại lỗi
-    error_counts = {f: {err: 0 for err in ["NONE", "EMPTY_PRED", "FORMAT_ERROR", "OCR_MISS", "OCR_WRONG", "POSTPROCESS_BAD", "MODEL_BAD", "LABEL_BAD"]} for f in fields}
-    
+    ocr_cache_dir = Path(args.ocr_cache_dir)
+
     for sample_id, gold_item in gold_records.items():
-        pred_item = pred_records.get(sample_id)
-        if not pred_item:
-            continue
-            
-        if pred_item.get("status") == "error":
-            continue
-            
+        pred_item = pred_records.get(sample_id) or {}
         gold_target = gold_item.get("target") or gold_item
-        pred_normalized = pred_item.get("normalized_prediction") or pred_item
-        pred_raw = pred_item.get("prediction") or {}
-        
-        # Load OCR words cho sample này
-        ocr_words = []
-        cache_path = gold_item.get("ocr_cache_path")
-        candidates = []
-        if cache_path:
-            candidates.append(Path(cache_path))
-            candidates.append(ocr_cache_dir / Path(cache_path).name)
-        candidates.append(ocr_cache_dir / f"{sample_id}.json")
-        
-        for path in candidates:
-            if path.exists():
-                try:
-                    with open(path, "r", encoding="utf-8") as f:
-                        ocr_words = json.load(f).get("words", [])
-                    break
-                except Exception:
-                    pass
-                    
-        for f in fields:
-            g_val = gold_target.get(f, "")
-            p_val = pred_normalized.get(f, "")
-            p_raw = pred_raw.get(f, "")
-            
-            err_type = classify_error(f, g_val, p_val, p_raw, ocr_words)
-            error_counts[f][err_type] += 1
-            
-            if err_type != "NONE":
+        prediction_failed = pred_item.get("status") == "error"
+        pred_normalized = {} if prediction_failed else (
+            pred_item.get("normalized_prediction") or pred_item
+        )
+        pred_raw = {} if prediction_failed else (pred_item.get("prediction") or {})
+        ocr_words = (
+            _load_ocr_words(gold_item, sample_id, ocr_cache_dir)
+            if method in OCR_BASED_METHODS
+            else []
+        )
+
+        for field in fields:
+            gold_value = gold_target.get(field, "")
+            pred_value = pred_normalized.get(field, "")
+            raw_value = pred_raw.get(field, "")
+            error_type = classify_error(
+                field,
+                gold_value,
+                pred_value,
+                raw_value,
+                ocr_words,
+                method,
+            )
+            error_counts[field][error_type] += 1
+            if error_type != "NONE":
                 error_records.append({
                     "id": sample_id,
-                    "field": f,
-                    "gold": g_val,
-                    "pred": p_val,
-                    "raw_pred": p_raw,
-                    "error_type": err_type
+                    "method": method,
+                    "field": field,
+                    "gold": gold_value,
+                    "pred": pred_value,
+                    "raw_pred": raw_value,
+                    "error_type": error_type,
                 })
-                
-    # Xuất file CSV phân tích chi tiết các mẫu bị lỗi
-    df_details = pd.DataFrame(error_records)
-    out_path = Path(args.output)
-    out_path.parent.mkdir(parents=True, exist_ok=True)
-    df_details.to_csv(out_path, index=False, encoding="utf-8")
-    
-    # Print summary table
-    print("\n=== ERROR CLASSIFICATION BY FIELD SUMMARY ===")
-    summary_data = []
-    for f in fields:
-        row = {"Field": f}
-        row.update(error_counts[f])
-        summary_data.append(row)
-        
-    df_summary = pd.DataFrame(summary_data)
-    print(df_summary.to_string(index=False))
-    
-    summary_path = out_path.parent / "error_summary.csv"
-    df_summary.to_csv(summary_path, index=False, encoding="utf-8")
-    print(f"\nDetailed error samples saved to: {out_path}")
-    print(f"Summary error stats saved to: {summary_path}")
+
+    output_path = Path(args.output)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    pd.DataFrame(
+        error_records,
+        columns=["id", "method", "field", "gold", "pred", "raw_pred", "error_type"],
+    ).to_csv(output_path, index=False, encoding="utf-8")
+
+    summary_rows = []
+    for field in fields:
+        row = {"method": method, "field": field}
+        row.update(error_counts[field])
+        summary_rows.append(row)
+    summary_path = Path(args.summary_output) if args.summary_output else (
+        output_path.with_name(f"{output_path.stem}_summary.csv")
+    )
+    pd.DataFrame(summary_rows).to_csv(summary_path, index=False, encoding="utf-8")
+
+    print(pd.DataFrame(summary_rows).to_string(index=False))
+    print(f"Detailed errors saved to: {output_path}")
+    print(f"Error summary saved to: {summary_path}")
+
 
 if __name__ == "__main__":
     main()

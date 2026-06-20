@@ -3,7 +3,7 @@ import json
 import unittest
 from pathlib import Path
 
-from receipt_ie.metrics.error_analysis import main as error_analysis_main
+from receipt_ie.metrics.error_analysis import classify_error, main as error_analysis_main
 from receipt_ie.metrics.evaluate_fields import evaluate_predictions
 
 
@@ -53,6 +53,39 @@ class TestErrorAnalysis(unittest.TestCase):
         self.assertEqual(len(rows), 4)
         store_row = next(r for r in rows if r["field"] == "store_name")
         self.assertEqual(store_row["error_type"], "EMPTY_PRED")
+        summary = root / "errors_summary.csv"
+        self.assertTrue(summary.exists())
+
+    def test_donut_never_uses_ocr_error_types(self):
+        error_type = classify_error(
+            "store_name",
+            "A Store",
+            "B Store",
+            "B Store",
+            [{"text": "A St0re"}],
+            "donut",
+        )
+        self.assertEqual(error_type, "MODEL_BAD")
+
+    def test_ocr_method_distinguishes_wrong_and_missing(self):
+        wrong = classify_error(
+            "store_name",
+            "anan",
+            "other",
+            "other",
+            [{"text": "anam"}],
+            "layoutxlm",
+        )
+        missing = classify_error(
+            "store_name",
+            "anan",
+            "other",
+            "other",
+            [{"text": "completely different"}],
+            "baseline",
+        )
+        self.assertEqual(wrong, "OCR_WRONG")
+        self.assertEqual(missing, "OCR_MISS")
 
 
 if __name__ == "__main__":

@@ -9,7 +9,7 @@ So sánh công bằng 3 phương pháp trích xuất thông tin biên lai tiến
 
 ## Điều kiện công bằng
 
-- **Cùng dữ liệu**: Tất cả dùng chung unified JSONL từ MC-OCR + self-collected
+- **Cùng test set**: Tất cả được chấm trên cùng 234 ID test. Donut dùng toàn bộ train JSONL; LayoutXLM chỉ dùng mẫu `json_and_boxes`.
 - **Cùng split**: Main Split 70/15/15 với cùng seed=42
 - **Cùng evaluator**: `evaluate_fields.py` tính EM, NES, CER trên `normalized_prediction` vs `target`
 - **Cùng hardware**: Đo latency trên cùng 1 máy, cùng GPU/CPU mode
@@ -22,6 +22,8 @@ So sánh công bằng 3 phương pháp trích xuất thông tin biên lai tiến
 | NES (Normalized Edit Similarity) | ↑ | `1 - Levenshtein / max(len(pred), len(gold))` |
 | CER (Character Error Rate) | ↓ | Tỷ lệ lỗi ký tự |
 | E2E Latency | ↓ | Thời gian từ ảnh đầu vào → JSON đầu ra |
+
+Ngoài kết quả trên toàn bộ mẫu, evaluator xuất `present_only` để chỉ chấm các mẫu có ground-truth khác rỗng của từng trường. Prediction có `status="error"` hoặc thiếu ID được tính như prediction rỗng, không bị loại khỏi mẫu số.
 
 ## Quy trình thí nghiệm
 
@@ -72,6 +74,8 @@ So sánh công bằng 3 phương pháp trích xuất thông tin biên lai tiến
 | Baseline 0 | | | | | | | | |
 | Donut | | | | | | | | |
 | VietOCR + LayoutXLM | | | | | | | | |
+
+Lưu ý: latency hiện có của Baseline/LayoutXLM bắt đầu từ OCR cache, trong khi Donut bắt đầu từ ảnh; không gọi đây là so sánh E2E đồng nhất nếu chưa đo lại OCR.
 
 ## Bảng phân tích Upper-Bound (Oracle OCR)
 

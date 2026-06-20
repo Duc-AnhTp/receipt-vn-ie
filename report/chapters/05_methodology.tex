@@ -20,7 +20,7 @@ Hệ thống nhận đầu vào là ảnh biên lai và đầu ra là tệp JSON
     Luật / Regex $\rightarrow$ JSON.
 
   \item \textbf{Pipeline 2 — \model{Donut} (OCR-free):}
-    Ảnh $\rightarrow$ Swin Encoder $\rightarrow$ \gls{bart} Decoder
+    Ảnh $\rightarrow$ Swin Encoder $\rightarrow$ \model{mBART} Decoder
     $\rightarrow$ JSON.
 
   \item \textbf{Pipeline 3 — VietOCR + \model{LayoutXLM} (OCR-based):}
@@ -172,7 +172,7 @@ Ví dụ chuỗi đích cho một biên lai:
 \subsubsection{Cấu hình huấn luyện}
 \label{subsubsec:donut_training}
 
-Các siêu tham số của Donut được thiết lập tối ưu cho bộ nhớ VRAM 16GB của GPU Tesla T4. Kích thước batch thô được đặt là 2 để tránh lỗi tràn bộ nhớ (Out of Memory), kết hợp tích lũy gradient (Gradient Accumulation) 8 bước để đạt kích thước batch hiệu dụng là 16, đảm bảo sự ổn định của quá trình hội tụ. Tỷ lệ Warmup 0.1 và bộ lập lịch Cosine giúp mô hình thích ứng dần với bộ từ vựng mới.
+Các siêu tham số của Donut được cấu hình cho GPU Tesla T4 16GB. Kích thước batch thô là 2, kết hợp tích lũy gradient 8 bước để đạt batch hiệu dụng 16. Đây là cấu hình chạy được lưu trong repository, không phải kết quả của một quá trình tối ưu siêu tham số có kiểm soát.
 \Cref{tab:donut_config} trình bày cấu hình huấn luyện của mô hình
 \model{Donut}.
 
@@ -237,22 +237,18 @@ lược đồ \gls{bio}.
 \subsubsection{Chuẩn bị dữ liệu}
 \label{subsubsec:layoutxlm_data}
 
-Quy trình đối sánh được thực hiện như sau: Do nhãn ground-truth chỉ chứa văn bản thô cho mỗi trường mà không có tọa độ của từng từ đơn lẻ, thuật toán sẽ tính toán chỉ số giao trên hợp (IoU) giữa hộp bao của mỗi từ nhận diện được bởi OCR với hộp bao của các trường thông tin thực tế. Từ nào có IoU $\geq 0.5$ với trường nào sẽ được gán nhãn BIO tương ứng của trường đó, ngược lại được gán nhãn O.
+LayoutXLM chỉ sử dụng các mẫu có \code{annotation\_level=json\_and\_boxes}. Với mỗi từ OCR, mã nguồn tính tỷ lệ phần diện tích của hộp từ nằm trong hộp ground-truth:
+\begin{equation}
+  \operatorname{coverage}(W,F)=\frac{|W\cap F|}{|W|}.
+  \label{eq:word_coverage}
+\end{equation}
+Đây là tỷ lệ bao phủ hộp từ, không phải Intersection over Union. Từ được gán vào trường có coverage lớn nhất nếu tỷ lệ đạt ít nhất 0,5; các từ còn lại nhận nhãn \code{O}.
 \textbf{Đầu vào:} Kết quả \gls{ocr} từ cache bao gồm văn bản và bounding box
 cho từng từ (word-level).
 
-\textbf{Gán nhãn \gls{bio}:} Mỗi từ trong kết quả \gls{ocr} được gán nhãn
-\gls{bio} bằng cách đối sánh bounding box của từ đó với bounding box của
-ground-truth. Hai bounding box được coi là khớp khi giá trị \gls{iou} vượt
-ngưỡng $0.5$:
-\begin{equation}
-  \gls{iou}(A, B) = \frac{|A \cap B|}{|A \cup B|} \geq 0.5
-  \label{eq:iou_threshold}
-\end{equation}
+\textbf{Gán nhãn \gls{bio}:} Các từ liên tiếp cùng thuộc một trường nhận lần lượt nhãn \code{B-FIELD} và \code{I-FIELD}. Khi một từ không đạt ngưỡng coverage, chuỗi thực thể hiện tại kết thúc.
 
-\textbf{Tokenization:} Văn bản được tokenize bằng tokenizer của
-\model{LayoutXLM} với \code{max\_length=512} và \code{doc\_stride=128}
-để xử lý các biên lai dài vượt quá giới hạn token.
+\textbf{Tokenization:} Văn bản được tokenize với giới hạn 512 token. Tham số \code{doc\_stride} được đặt là 128 trong cấu hình, nhưng dataset và inference hiện chưa tạo sliding windows. Chuỗi dài bị cắt ở giới hạn token, vì vậy các trường nằm cuối biên lai có thể bị mất.
 
 \begin{figure}[htbp]
   \centering
@@ -266,7 +262,7 @@ ngưỡng $0.5$:
 \subsubsection{Cấu hình huấn luyện}
 \label{subsubsec:layoutxlm_training}
 
-Siêu tham số của LayoutXLM được tinh chỉnh để tận dụng tối đa mô hình pre-trained \code{layoutxlm-base}. Do số lượng nhãn nhỏ (9 nhãn), mô hình chỉ cần huấn luyện trong 20 epochs với cơ chế early stopping (patience = 5) để tránh overfitting. Tốc độ học $2 \times 10^{-5}$ kết hợp với linear decay giúp điều chỉnh nhẹ nhàng các trọng số của lớp phân loại mới.
+Siêu tham số của LayoutXLM được lấy từ cấu hình thực nghiệm trong repository. Số epoch tối đa là 20 và early stopping patience là 5; báo cáo không khẳng định mô hình đã chạy đủ hoặc dừng tại một epoch cụ thể vì log huấn luyện đầy đủ không còn trong artifact hiện tại.
 \Cref{tab:layoutxlm_config} trình bày cấu hình huấn luyện của mô hình
 \model{LayoutXLM}.
 
@@ -280,7 +276,7 @@ Siêu tham số của LayoutXLM được tinh chỉnh để tận dụng tối �
     \midrule
     Pretrained model         & \code{microsoft/layoutxlm-base} \\
     Max length               & 512 tokens \\
-    Doc stride               & 128 \\
+    Doc stride               & 128 (đã khai báo, chưa dùng sliding window) \\
     Số nhãn (labels)         & 9 nhãn \gls{bio} \\
     Epochs                   & 20 \\
     Batch size               & 8 \\
@@ -295,6 +291,8 @@ Siêu tham số của LayoutXLM được tinh chỉnh để tận dụng tối �
 \end{table}
 
 Hệ thống nhãn \gls{bio} gồm 9 nhãn được mô tả chi tiết trong \cref{tab:bio_labels} ở \cref{sec:theory}.
+
+Tập train LayoutXLM gồm 784 mẫu và validation gồm 168 mẫu có hộp bao. Các mẫu \code{json\_only} không thể tham gia huấn luyện token classification theo quy trình này. Donut không cần hộp bao nên sử dụng toàn bộ 1.091 mẫu train và 234 mẫu validation.
 
 % ----------------------------------------------------------------------------
 \subsubsection{Suy luận và hậu xử lý (Inference \& Post-processing)}
@@ -322,7 +320,7 @@ Quy trình suy luận của pipeline \model{LayoutXLM}:
 \subsection{Hậu xử lý chung (Post-processing)}
 \label{subsec:postprocessing}
 
-Hậu xử lý chung là bước bắt buộc để loại bỏ các sai khác nhỏ về định dạng không liên quan đến chất lượng trích xuất (như khoảng trắng thừa hoặc viết hoa/viết thường), đảm bảo việc so sánh giữa các phương pháp diễn ra trên cùng một tiêu chuẩn công bằng.
+Hậu xử lý chung chuẩn hóa schema và một số định dạng trường trước khi đánh giá.
 Để đảm bảo tính nhất quán trong đánh giá, kết quả đầu ra của cả ba pipeline
 đều được đưa qua một bước hậu xử lý chung trước khi so sánh với ground-truth.
 Các bước hậu xử lý bao gồm:
@@ -334,10 +332,9 @@ Các bước hậu xử lý bao gồm:
   \item \textbf{Chuẩn hoá khoảng trắng:} Loại bỏ khoảng trắng đầu/cuối
     và thay thế các chuỗi khoảng trắng liên tiếp bằng một khoảng trắng đơn.
 
-  \item \textbf{Chuyển chữ thường:} Chuyển toàn bộ văn bản về chữ thường
-    để loại bỏ ảnh hưởng của sự khác biệt hoa/thường trong đánh giá.
-
   \item \textbf{Định dạng thống nhất:} Đảm bảo tất cả các trường đầu ra
     đều có mặt trong tệp JSON, sử dụng chuỗi rỗng cho các trường không
     trích xuất được.
 \end{itemize}
+
+Triển khai hiện tại không chuyển \field{store\_name} và \field{address} sang chữ thường; EM vì vậy phân biệt hoa/thường. \field{date} được parse về ISO và \field{total} chỉ giữ chữ số.

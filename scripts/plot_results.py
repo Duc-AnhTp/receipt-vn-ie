@@ -82,6 +82,22 @@ def plot_metrics_comparison():
     plt.tight_layout()
     plt.savefig("outputs/plots/nes_comparison.png", dpi=150)
     plt.close()
+
+    # Present-only EM avoids credit from correctly returning an empty value
+    # when the corresponding ground-truth field is also empty.
+    fig, ax = plt.subplots(figsize=(10, 6))
+    for i, model in enumerate(models):
+        em_values = [data[model]["present_only"][f]["EM"] * 100 for f in fields]
+        ax.bar(x + i*width - width/2, em_values, width, label=model)
+    ax.set_ylabel("Exact Match on present fields (%)")
+    ax.set_title("Present-only Exact Match (EM)")
+    ax.set_xticks(x + width/2)
+    ax.set_xticklabels([f.upper() for f in fields])
+    ax.legend()
+    ax.grid(axis="y", linestyle="--", alpha=0.7)
+    plt.tight_layout()
+    plt.savefig("outputs/plots/em_present_only_comparison.png", dpi=150)
+    plt.close()
     print("Saved metrics comparison plots to outputs/plots/")
 
 def plot_error_analysis():
