@@ -53,9 +53,29 @@ subprocess.run(["rm", "-rf", "receipt-vn-ie"], check=False)
 !git clone -b experiment/retrain-v2 https://github.com/Duc-AnhTp/receipt-vn-ie.git
 os.chdir("/kaggle/working/receipt-vn-ie")
 
-# 3. Liên kết dữ liệu
+# 3. Kết hợp dữ liệu (ảnh thô từ dataset cũ + text mới từ dataset new-data)
 !rm -rf data
-!ln -s /kaggle/input/datasets/ducanhtp/receipt-vn-ie-new-data/data data
+!mkdir -p data
+
+# Tìm và giải nén/liên kết ảnh thô (raw)
+import subprocess
+result = subprocess.run(["find", "/kaggle/input", "-name", "receipt_dataset.zip"], capture_output=True, text=True)
+zip_paths = [z for z in result.stdout.strip().split("\n") if z]
+if zip_paths:
+    print(f"Giải nén ảnh từ: {zip_paths[0]}")
+    !unzip -q {zip_paths[0]} -d /kaggle/working/
+else:
+    result_raw = subprocess.run(["find", "/kaggle/input", "-type", "d", "-name", "raw"], capture_output=True, text=True)
+    raw_dirs = [d for d in result_raw.stdout.strip().split("\n") if "receipt-vn-ie-checkpoints" not in d and d]
+    if raw_dirs:
+        print(f"Liên kết thư mục raw từ: {raw_dirs[0]}")
+        !ln -s {raw_dirs[0]} data/raw
+    else:
+        print("⚠️ CẢNH BÁO: Không tìm thấy thư mục raw chứa ảnh thô!")
+
+# Liên kết dữ liệu processed mới
+!rm -rf data/processed
+!ln -s /kaggle/input/datasets/ducanhtp/receipt-vn-ie-new-data/data/processed data/processed
 
 # 4. Cài đặt dependencies
 !pip install -e . 2>&1 | tail -3
@@ -250,8 +270,29 @@ os.chdir("/kaggle/working")
 !git clone -b experiment/retrain-v2 https://github.com/Duc-AnhTp/receipt-vn-ie.git
 os.chdir("/kaggle/working/receipt-vn-ie")
 
+# Kết hợp dữ liệu (ảnh thô từ dataset cũ + text mới từ dataset new-data)
 !rm -rf data
-!ln -s /kaggle/input/datasets/ducanhtp/receipt-vn-ie-new-data/data data
+!mkdir -p data
+
+# Tìm và giải nén/liên kết ảnh thô (raw)
+import subprocess
+result = subprocess.run(["find", "/kaggle/input", "-name", "receipt_dataset.zip"], capture_output=True, text=True)
+zip_paths = [z for z in result.stdout.strip().split("\n") if z]
+if zip_paths:
+    print(f"Giải nén ảnh từ: {zip_paths[0]}")
+    !unzip -q {zip_paths[0]} -d /kaggle/working/
+else:
+    result_raw = subprocess.run(["find", "/kaggle/input", "-type", "d", "-name", "raw"], capture_output=True, text=True)
+    raw_dirs = [d for d in result_raw.stdout.strip().split("\n") if "receipt-vn-ie-checkpoints" not in d and d]
+    if raw_dirs:
+        print(f"Liên kết thư mục raw từ: {raw_dirs[0]}")
+        !ln -s {raw_dirs[0]} data/raw
+    else:
+        print("⚠️ CẢNH BÁO: Không tìm thấy thư mục raw chứa ảnh thô!")
+
+# Liên kết dữ liệu processed mới
+!rm -rf data/processed
+!ln -s /kaggle/input/datasets/ducanhtp/receipt-vn-ie-new-data/data/processed data/processed
 
 !pip install -e . 2>&1 | tail -3
 !pip install seqeval evaluate 2>&1 | tail -3
@@ -349,8 +390,29 @@ os.chdir("/kaggle/working")
 !git clone -b experiment/retrain-v2 https://github.com/Duc-AnhTp/receipt-vn-ie.git
 os.chdir("/kaggle/working/receipt-vn-ie")
 
+# Kết hợp dữ liệu (ảnh thô từ dataset cũ + text mới từ dataset new-data)
 !rm -rf data
-!ln -s /kaggle/input/datasets/ducanhtp/receipt-vn-ie-new-data/data data
+!mkdir -p data
+
+# Tìm và giải nén/liên kết ảnh thô (raw)
+import subprocess
+result = subprocess.run(["find", "/kaggle/input", "-name", "receipt_dataset.zip"], capture_output=True, text=True)
+zip_paths = [z for z in result.stdout.strip().split("\n") if z]
+if zip_paths:
+    print(f"Giải nén ảnh từ: {zip_paths[0]}")
+    !unzip -q {zip_paths[0]} -d /kaggle/working/
+else:
+    result_raw = subprocess.run(["find", "/kaggle/input", "-type", "d", "-name", "raw"], capture_output=True, text=True)
+    raw_dirs = [d for d in result_raw.stdout.strip().split("\n") if "receipt-vn-ie-checkpoints" not in d and d]
+    if raw_dirs:
+        print(f"Liên kết thư mục raw từ: {raw_dirs[0]}")
+        !ln -s {raw_dirs[0]} data/raw
+    else:
+        print("⚠️ CẢNH BÁO: Không tìm thấy thư mục raw chứa ảnh thô!")
+
+# Liên kết dữ liệu processed mới
+!rm -rf data/processed
+!ln -s /kaggle/input/datasets/ducanhtp/receipt-vn-ie-new-data/data/processed data/processed
 
 !pip install -e . 2>&1 | tail -3
 !pip install seqeval evaluate 2>&1 | tail -3
