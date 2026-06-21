@@ -60,7 +60,7 @@ os.chdir("/kaggle/working/receipt-vn-ie")
 # 4. Cài đặt dependencies
 !pip install -e . 2>&1 | tail -3
 !pip install seqeval evaluate 2>&1 | tail -3
-!pip install albumentations --upgrade 2>&1 | tail -3
+!pip install "albumentations<1.4.0" 2>&1 | tail -3
 !pip install 'git+https://github.com/facebookresearch/detectron2.git' 2>&1 | tail -3
 !pip install -r requirements/ocr.txt 2>&1 | tail -3
 !pip install paddlepaddle-gpu 2>&1 | tail -3
@@ -256,7 +256,7 @@ os.chdir("/kaggle/working/receipt-vn-ie")
 
 !pip install -e . 2>&1 | tail -3
 !pip install seqeval evaluate 2>&1 | tail -3
-!pip install albumentations --upgrade 2>&1 | tail -3
+!pip install "albumentations<1.4.0" 2>&1 | tail -3
 !pip install 'git+https://github.com/facebookresearch/detectron2.git' 2>&1 | tail -3
 !pip install -r requirements/ocr.txt 2>&1 | tail -3
 !pip install paddlepaddle-gpu 2>&1 | tail -3
@@ -356,7 +356,7 @@ os.chdir("/kaggle/working/receipt-vn-ie")
 
 !pip install -e . 2>&1 | tail -3
 !pip install seqeval evaluate 2>&1 | tail -3
-!pip install albumentations --upgrade 2>&1 | tail -3
+!pip install "albumentations<1.4.0" 2>&1 | tail -3
 !pip install -r requirements/ocr.txt 2>&1 | tail -3
 !pip install paddlepaddle-gpu 2>&1 | tail -3
 
