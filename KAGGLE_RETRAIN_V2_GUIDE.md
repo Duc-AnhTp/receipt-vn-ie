@@ -55,7 +55,7 @@ os.chdir("/kaggle/working/receipt-vn-ie")
 
 # 3. Liên kết dữ liệu
 !rm -rf data
-!ln -s /kaggle/input/receipt-vn-ie-new-data/data data
+!ln -s /kaggle/input/datasets/ducanhtp/receipt-vn-ie-new-data/data data
 
 # 4. Cài đặt dependencies
 !pip install -e . 2>&1 | tail -3
@@ -249,7 +249,7 @@ os.chdir("/kaggle/working")
 os.chdir("/kaggle/working/receipt-vn-ie")
 
 !rm -rf data
-!ln -s /kaggle/input/receipt-vn-ie-new-data/data data
+!ln -s /kaggle/input/datasets/ducanhtp/receipt-vn-ie-new-data/data data
 
 !pip install -e . 2>&1 | tail -3
 !pip install seqeval evaluate 2>&1 | tail -3
@@ -346,7 +346,7 @@ os.chdir("/kaggle/working")
 os.chdir("/kaggle/working/receipt-vn-ie")
 
 !rm -rf data
-!ln -s /kaggle/input/receipt-vn-ie-new-data/data data
+!ln -s /kaggle/input/datasets/ducanhtp/receipt-vn-ie-new-data/data data
 
 !pip install -e . 2>&1 | tail -3
 !pip install seqeval evaluate 2>&1 | tail -3
