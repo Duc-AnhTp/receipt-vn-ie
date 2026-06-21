@@ -223,6 +223,7 @@ heuristics:
 \label{appendix:extraction-examples}
 
 \cref{tab:extraction-examples} trình bày các kết quả được đọc trực tiếp từ prediction artifact hiện có.
+Các hàng Donut được giữ để minh họa artifact chẩn đoán bị giới hạn sinh 20 token, không phải ví dụ đại diện cho một lượt suy luận Donut hoàn chỉnh.
 
 \begin{table}[htbp]
   \centering
@@ -258,11 +259,16 @@ heuristics:
 \section{Giao diện Demo Gradio}
 \label{appendix:gradio-demo}
 
-Giao diện ứng dụng Demo Gradio cung cấp một công cụ trực quan hóa giúp nhanh chóng thử nghiệm khả năng nhận dạng và trích xuất của ba mô hình đối với các ảnh biên lai ngẫu nhiên tải lên từ thiết bị cá nhân.
+Giao diện ứng dụng Demo Gradio cung cấp một công cụ trực quan hóa giúp nhanh chóng thử nghiệm khả năng nhận dạng và trích xuất của ba phương pháp đối với ảnh biên lai tải lên từ thiết bị cá nhân.
 
-Giao diện demo được xây dựng bằng Gradio, hỗ trợ tải ảnh biên lai lên, tự động chạy qua pipeline xử lý đã chọn (Baseline, \model{Donut}, hoặc \model{LayoutXLM}) và trả về kết quả định dạng JSON sạch kèm thông tin latency chi tiết của lượt chạy đó.
+Giao diện demo được xây dựng bằng Gradio, hỗ trợ tải ảnh biên lai, lựa chọn chế độ OCR và hiển thị trực tiếp kết quả so sánh theo từng trường thông tin của Baseline, \model{Donut} và VietOCR~+~\model{LayoutXLM}. Hình~\ref{fig:gradio-demo} là ảnh chụp từ một lượt chạy thực tế trên máy cục bộ.
 
-Ảnh \code{gradio\_demo.png} hiện có trong repository là placeholder, vì vậy không được đưa vào bản báo cáo cuối như bằng chứng triển khai. Giao diện cần được chụp lại từ một lượt chạy thực tế trước khi bổ sung hình minh họa.
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.97\textwidth]{gradio_demo.png}
+    \caption{Giao diện Gradio trong một lượt chạy thực tế, so sánh kết quả của Baseline, \model{Donut} và VietOCR~+~\model{LayoutXLM}.}
+    \label{fig:gradio-demo}
+\end{figure}
 
 \subsection{Hướng dẫn cài đặt và chạy demo}
 \label{appendix:gradio-install}
@@ -272,10 +278,8 @@ Giao diện demo được xây dựng bằng Gradio, hỗ trợ tải ảnh biê
 \begin{lstlisting}[language=bash, caption={Cài đặt và chạy ứng dụng Gradio demo}, label={lst:gradio-install}]
 # Cai dat project o che do editable
 pip install -e .
-
 # Cai dat cac thu vien cho ung dung demo
 pip install -r requirements/app.txt
-
 # Khoi chay ung dung demo (su dung dung module entry point)
 python -m receipt_ie.app.gradio_app
 \end{lstlisting}

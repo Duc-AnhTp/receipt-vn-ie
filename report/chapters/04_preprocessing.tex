@@ -11,21 +11,19 @@ Chương này trình bày các bước xử lý hình ảnh và văn bản đư�
 \subsection{Tiền xử lý ảnh (Image Preprocessing)}
 \label{subsec:image-preprocessing}
 
-Chất lượng ảnh biên lai đầu vào ảnh hưởng trực tiếp đến hiệu năng nhận dạng của bộ OCR. Pipeline hiện đặt profile mặc định là \code{resize}:
+Chất lượng ảnh biên lai đầu vào ảnh hưởng trực tiếp đến hiệu năng nhận dạng của bộ OCR. Pipeline hiện gọi profile mặc định \code{resize}; trong mã thực thi, profile này chỉ resize cạnh dài và không tự động gọi denoise hoặc CLAHE:
 \begin{itemize}
   \item \textbf{Resize hình ảnh:} 
   \begin{itemize}
     \item Đối với pipeline OCR (Baseline và LayoutXLM): Ảnh được resize theo cạnh dài nhất với $\text{max\_long\_side} = 1600$ pixel để bảo đảm nét chữ rõ ràng và duy trì tỷ lệ khung hình (aspect ratio).
     \item Đối với Donut: Ảnh được resize về kích thước cố định $1280 \times 960$ pixel, phần thiếu được lấp đầy bằng khoảng trắng (padding).
   \end{itemize}
-  \item \textbf{Khử nhiễu (Denoise):} Áp dụng bộ lọc Non-local Means Denoising để loại bỏ nhiễu hạt sinh ra do điều kiện chụp thiếu sáng.
-  \item \textbf{Cân bằng tương phản CLAHE:} Cân bằng histogram thích ứng giới hạn độ tương phản (Contrast Limited Adaptive Histogram Equalization) để xử lý các vùng ảnh bị phản quang hoặc có độ sáng không đều.
 \end{itemize}
 
-Mã nguồn còn hỗ trợ các profile khảo sát sau, nhưng artifact hiện có chưa đủ để xếp hạng định lượng:
+Tệp cấu hình còn chứa các cờ \code{denoise=true} và \code{clahe=true}, nhưng pipeline tiền xử lý hiện chưa đọc hoặc thực thi hai cờ này. Vì vậy báo cáo coi chúng là cấu hình dự kiến, không phải bước đã áp dụng cho artifact. Mã nguồn thực thi hỗ trợ thêm:
 \begin{itemize}
-  \item \textbf{Nhị phân hóa (Binarize):} Áp dụng thuật toán nhị phân hóa Otsu để chuyển ảnh về định dạng đen trắng tuyệt đối.
-  \item \textbf{Nắn thẳng ảnh (Rectify):} Sử dụng phép biến đổi affine để xoay và nắn thẳng các ảnh biên lai bị nghiêng hoặc chụp lệch góc.
+  \item \textbf{Nhị phân hóa (Binarize):} Resize cạnh dài rồi áp dụng adaptive Gaussian threshold, không phải Otsu.
+  \item \textbf{Nắn thẳng ảnh (Rectify):} Tìm contour bốn góc và dùng perspective transform; nếu không tìm được contour hợp lệ, ảnh gốc được giữ lại.
 \end{itemize}
 
 % ============================================================================

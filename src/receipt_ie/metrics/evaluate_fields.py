@@ -1,4 +1,5 @@
 from pathlib import Path
+from copy import deepcopy
 from typing import Any, Dict, List
 
 from rapidfuzz.distance import Levenshtein
@@ -138,7 +139,9 @@ def evaluate_predictions(
 
         n_evaluated += 1
 
-    results = _summarize(all_metrics)
+    all_samples = _summarize(all_metrics)
+    results = deepcopy(all_samples)
+    results["all_samples"] = all_samples
     results["present_only"] = _summarize(present_metrics)
     results["prediction_coverage"] = {
         field: {
@@ -153,6 +156,10 @@ def evaluate_predictions(
         field: results["present_only"][field]["n_samples"]
         for field in FIELDS
     }
+    # Explicit aliases used by report generators. The legacy keys above remain
+    # available so existing consumers do not break.
+    results["n_samples"] = n_evaluated
+    results["n_present"] = dict(results["n_ground_truth_present"])
     results["n_evaluated"] = n_evaluated
     results["n_inference_errors"] = n_inference_errors
     results["missing_prediction_ids"] = missing_prediction_ids

@@ -66,7 +66,7 @@ Các file sau đang là **ảnh placeholder** cần thay bằng ảnh thực t�
 - [ ] `bio_tagging_example.png` — Ví dụ BIO tagging
 - [ ] `sample_receipts.png` — Mẫu ảnh biên lai + annotation
 - [ ] `layoutxlm_loss.png` — Đường cong loss (từ TensorBoard/WandB)
-- [ ] `gradio_demo.png` — Chụp màn hình giao diện demo
+- [x] `gradio_demo.png` — Ảnh chụp giao diện demo từ lượt chạy thực tế
 
 ## Custom Commands
 

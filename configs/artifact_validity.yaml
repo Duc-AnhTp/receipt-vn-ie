@@ -1,0 +1,38 @@
+version: 1
+gold_path: data/processed/test.jsonl
+methods:
+  baseline:
+    label: Baseline
+    prediction_path: outputs/predictions/baseline_test.jsonl
+    checkpoint: null
+    valid_for_main_comparison: true
+    validity_status: valid
+    measurement_scope: postprocess_from_ocr_cache
+    known_issues: []
+
+  layoutxlm:
+    label: VietOCR + LayoutXLM
+    prediction_path: outputs/predictions/layoutxlm_test.jsonl
+    checkpoint: checkpoints/layoutxlm/receipt_ie/ocr_cache/best_model
+    valid_for_main_comparison: true
+    validity_status: valid_with_sensitivity_check
+    measurement_scope: model_and_postprocess_from_ocr_cache
+    known_issues:
+      - Four legacy predictions used OCR boxes from a resized image with the raw image dimensions.
+    sensitivity_exclude_ids:
+      - self_img_272
+      - self_img_340
+      - self_img_458
+      - self_img_188
+
+  donut:
+    label: Donut
+    prediction_path: outputs/predictions/donut_test.jsonl
+    checkpoint: checkpoints/donut/receipt_ie/finetune/best_model
+    valid_for_main_comparison: false
+    validity_status: invalid_diagnostic_only
+    measurement_scope: truncated_generation_from_image
+    configured_generation_max_length: 768
+    invalid_reason: Legacy inference inherited the Transformers default generation limit of 20 tokens.
+    known_issues:
+      - The measured quality and latency describe truncated generation, not a complete Donut inference run.

@@ -6,6 +6,7 @@ import json
 from pathlib import Path
 
 from receipt_ie.data.build_layoutxlm_dataset import LayoutXLMDataset, layoutxlm_collate_fn
+from receipt_ie.inference.cache_coordinates import resolve_cached_image_path
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
@@ -144,6 +145,16 @@ class TestLayoutXlmDatasetImage(unittest.TestCase):
         _, _, field_boxes = mock_assign_labels.call_args.args
         self.assertEqual(field_boxes, {"store_name": [[5, 5, 30, 10]]})
         self.assertEqual(mock_assign_labels.call_args.kwargs["overlap_threshold"], 0.3)
+
+    def test_inference_resolves_preprocessed_cache_image(self):
+        preprocessed_path = self.project_root / "cached.png"
+        Image.new("RGB", (50, 25), color="green").save(preprocessed_path)
+        resolved = resolve_cached_image_path(
+            {"preprocessed_image_path": "cached.png"},
+            cache_path=self.project_root / "cache.json",
+            project_root=self.project_root,
+        )
+        self.assertEqual(resolved, preprocessed_path)
 
 if __name__ == "__main__":
     unittest.main()

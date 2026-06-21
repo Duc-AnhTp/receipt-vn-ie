@@ -122,6 +122,9 @@ class TestMetrics(unittest.TestCase):
         self.assertEqual(results["present_only"]["date"]["n_samples"], 1)
         self.assertEqual(results["prediction_coverage"]["date"]["rate"], 0.0)
         self.assertEqual(results["macro"]["averaging"], "unweighted_mean_over_fields")
+        self.assertEqual(results["all_samples"]["date"]["EM"], 0.5)
+        self.assertEqual(results["n_samples"], 2)
+        self.assertEqual(results["n_present"]["date"], 1)
 
     def test_missing_prediction_id_is_scored_as_empty(self):
         ground_truths = [

@@ -70,10 +70,10 @@ Quy trình xử lý gồm hai bước chính:
 
 Logic hoạt động cụ thể cho từng trường như sau:
 \begin{itemize}
-  \item \textbf{Tên cửa hàng (\field{store\_name}):} Do tên thương hiệu thường in to và nằm ở đầu hóa đơn, logic Baseline sẽ quét tối đa 4 dòng đầu tiên của kết quả OCR. Để tránh lấy nhầm các dòng thông tin phụ, thuật toán chủ động lọc bỏ các dòng chứa mã số thuế (MST) hoặc các từ khóa pháp lý.
-  \item \textbf{Ngày tháng (\field{date}):} Áp dụng lần lượt các mẫu biểu thức chính quy (Regex) để tìm các cấu trúc ngày tháng phổ biến trong tiếng Việt (ngày/tháng/năm). Thuật toán loại bỏ các tiền tố ngày giờ để chỉ lấy phần ngày thô.
-  \item \textbf{Tổng tiền (\field{total}):} Quét toàn bộ kết quả văn bản để định vị các từ khóa chỉ tổng tiền như "Tổng cộng", "Thanh toán". Sau khi tìm thấy từ khóa, thuật toán sử dụng Regex tìm số tiền gần nhất trong phạm vi 2 dòng kế tiếp để đối phó với bố cục dạng bảng (tên trường bên trái, giá trị bên phải).
-  \item \textbf{Địa chỉ (\field{address}):} Định vị dòng văn bản chứa các từ khóa chỉ địa danh hành chính tiếng Việt như "quận", "phường", "đường" và lấy toàn bộ dòng đó làm địa chỉ.
+  \item \textbf{Tên cửa hàng (\field{store\_name}):} Chấm điểm tối đa 5 dòng đầu theo vị trí, tỷ lệ chữ hoa và độ dài. Các dòng chứa từ khóa hóa đơn, mã số thuế, điện thoại hoặc địa chỉ, dòng quá ngắn và dòng có tỷ lệ chữ số cao bị loại.
+  \item \textbf{Ngày tháng (\field{date}):} Duyệt từ trên xuống, chuẩn hóa từng dòng và lấy ngày hợp lệ đầu tiên trong khoảng năm 2010--2030. Bộ chuẩn hóa hỗ trợ dấu \code{/}, \code{-}, \code{.} và năm hai chữ số.
+  \item \textbf{Tổng tiền (\field{total}):} Duyệt từ cuối hóa đơn lên để ưu tiên từ khóa tổng tiền gần phần thanh toán. Với mỗi dòng có từ khóa, xét dòng đó và tối đa một dòng kế tiếp, lọc số điện thoại, mã số thuế, ngày và giá trị dưới 1.000 rồi chọn số tiền lớn nhất. Nếu không có từ khóa, thuật toán tìm ứng viên hợp lệ trong một phần ba cuối hóa đơn.
+  \item \textbf{Địa chỉ (\field{address}):} Tìm dòng có từ khóa địa chỉ nhưng không chứa ngày, điện thoại, mã số thuế hoặc từ khóa thanh toán. Nếu dòng kế tiếp không bị chặn và có nội dung đủ dài, nối thêm tối đa dòng này trước khi chuẩn hóa.
 \end{itemize}
 Các quy tắc trích xuất được thiết kế dựa trên quan sát thực nghiệm trên tập
 dữ liệu biên lai tiếng Việt. \Cref{tab:baseline_rules} tóm tắt các quy tắc
@@ -88,23 +88,20 @@ chính cho từng trường.
     \textbf{Trường} & \textbf{Mô tả quy tắc} \\
     \midrule
     \field{store\_name}
-      & Lấy các dòng văn bản đầu tiên (tối đa 4 dòng), bỏ qua các dòng
-        bắt đầu bằng tiền tố: \code{cửa hàng}, \code{siêu thị},
-        \code{mst}. \\
+      & Chấm điểm tối đa 5 dòng đầu; loại các dòng giống tiêu đề hóa đơn,
+        mã số thuế, điện thoại, địa chỉ hoặc chứa quá nhiều chữ số. \\
     \addlinespace
     \field{date}
       & Tìm chuỗi khớp regex ngày tháng, bỏ qua các từ khoá:
         \code{ngày}, \code{date}, \code{time}. \\
     \addlinespace
     \field{total}
-      & Tìm từ khoá tổng tiền (\code{tổng cộng}, \code{thanh toán},
-        \code{total}, \code{phải trả}), sau đó trích xuất số tiền trong
-        phạm vi 2 dòng từ vị trí từ khoá. \\
+      & Duyệt từ cuối lên, xét dòng có từ khóa và một dòng kế tiếp; nếu
+        không có từ khóa thì tìm số tiền hợp lệ trong một phần ba cuối. \\
     \addlinespace
     \field{address}
-      & Tìm dòng chứa từ khoá địa chỉ: \code{địa chỉ}, \code{đường},
-        \code{phường}, \code{quận}, \code{huyện}, \code{tỉnh},
-        \code{thành phố}. \\
+      & Tìm dòng có từ khóa địa chỉ, loại ngữ cảnh bị chặn và nối tối đa
+        một dòng kế tiếp hợp lệ. \\
     \bottomrule
   \end{tabularx}
 \end{table}
@@ -128,7 +125,7 @@ DATE_IGNORE_KW = ['ngay', 'date', 'time']
 # --- Regex cho truong total ---
 TOTAL_KEYWORDS = ['tong cong', 'thanh toan', 'total', 'phai tra']
 MONEY_PATTERN  = r'\d[\d\.,\s]*'   # so tien: 150.000, 1,500,000
-TOTAL_SEARCH_RANGE = 2              # tim trong 2 dong tu vi tri keyword
+TOTAL_SEARCH_RANGE = 1              # dong keyword va mot dong ke tiep
 \end{lstlisting}
 
 
@@ -203,7 +200,7 @@ Các siêu tham số của Donut được cấu hình cho GPU Tesla T4 16GB. Kí
 \subsubsection{Suy luận (Inference)}
 \label{subsubsec:donut_inference}
 
-Trong quá trình suy luận, Donut nhận đầu vào là ảnh biên lai và từ khóa khởi tạo (prompt) \token{s\_receipt\_ie}. Decoder sẽ sinh tuần tự các token tiếp theo. Trong trường hợp mô hình sinh chuỗi bị lỗi cấu trúc thẻ XML (ví dụ thiếu thẻ đóng \token{/s\_store\_name}), thuật toán hậu xử lý sẽ tự động áp dụng các biểu thức chính quy sửa lỗi để khôi phục cấu trúc JSON hoặc gán giá trị rỗng cho trường bị lỗi để tránh gây sập hệ thống.
+Trong quá trình suy luận, Donut nhận đầu vào là ảnh biên lai và prompt \token{s\_receipt\_ie}. Decoder sinh tuần tự các token tiếp theo. Bộ phân tích cú pháp tìm nội dung giữa các token mở/đóng; trường không tạo được cặp token hợp lệ được gán chuỗi rỗng trước khi chuẩn hóa.
 Trong giai đoạn suy luận, mô hình \model{Donut} nhận ảnh biên lai làm đầu vào
 và sinh chuỗi văn bản thông qua beam search với \code{num\_beams=2}. Chuỗi đầu
 ra sau đó được phân tích cú pháp (parse) để trích xuất giá trị của từng trường
@@ -218,6 +215,10 @@ Quy trình suy luận:
     các cặp token \token{s\_field} và \token{/s\_field}.
   \item Kết quả được ghi vào tệp JSON.
 \end{enumerate}
+
+\begin{warnbox}[Trạng thái artifact Donut]
+Cấu hình và mã suy luận hiện tại đặt \code{max\_length=768}. Tuy nhiên, prediction artifact dùng trong báo cáo được tạo trước khi tham số này được truyền tường minh và đã kế thừa mặc định 20 token của Transformers. Có 225/234 chuỗi đích dài hơn giới hạn này và 173/234 output chạm giới hạn sinh. Vì vậy artifact được giữ để chẩn đoán lỗi cấu hình, không dùng trong bảng xếp hạng chất lượng hoặc latency chính.
+\end{warnbox}
 
 
 % ============================================================================
@@ -298,7 +299,7 @@ Tập train LayoutXLM gồm 784 mẫu và validation gồm 168 mẫu có hộp b
 \subsubsection{Suy luận và hậu xử lý (Inference \& Post-processing)}
 \label{subsubsec:layoutxlm_inference}
 
-Thuật toán gộp nhãn (Span Aggregation) hoạt động theo nguyên lý máy trạng thái: Khi gặp nhãn bắt đầu thực thể \code{B-[FIELD]}, thuật toán khởi tạo một span mới. Các token tiếp theo có nhãn \code{I-[FIELD]} cùng loại sẽ được nối tiếp vào span hiện tại. Khi gặp nhãn \code{O} hoặc nhãn \code{B-} của thực thể khác, span hiện tại được đóng lại, toàn bộ văn bản của các token trong span được ghép nối theo khoảng cách không gian và lưu vào trường tương ứng của kết quả.
+Thuật toán gộp nhãn hoạt động như một máy trạng thái: \code{B-FIELD} mở span mới; \code{I-FIELD} cùng loại nối vào span đang mở. Nếu gặp \code{I-FIELD} khi không có span cùng loại, triển khai hiện tại vẫn mở một span mới để không làm mất thực thể, tương đương chính sách sửa chuỗi BIO bị đứt. Nhãn \code{O} hoặc nhãn của trường khác đóng span hiện tại.
 Quy trình suy luận của pipeline \model{LayoutXLM}:
 
 \begin{enumerate}
@@ -306,9 +307,7 @@ Quy trình suy luận của pipeline \model{LayoutXLM}:
     đầu vào gồm token, bounding box và ảnh, sau đó dự đoán nhãn \gls{bio}
     cho từng token.
 
-  \item \textbf{Gộp span:} Các token liên tiếp có cùng nhãn thực thể
-    (B-\textit{field} tiếp nối bởi I-\textit{field}) được gộp lại thành
-    một span hoàn chỉnh, từ đó trích xuất văn bản tương ứng cho từng trường.
+  \item \textbf{Gộp span và chọn ứng viên:} Sau khi tạo span, tên cửa hàng lấy span đầu tiên; ngày lấy span đầu tiên chuẩn hóa hợp lệ; tổng tiền loại số giống điện thoại/MST hoặc quá nhỏ rồi chọn giá trị lớn nhất; các span địa chỉ gần nhau theo trục $y$ được ghép thành block và ưu tiên block có từ khóa địa chỉ hoặc có độ dài lớn nhất.
 
   \item \textbf{Chuẩn hoá:} Văn bản trích xuất được chuẩn hoá (loại bỏ
     khoảng trắng thừa, chuẩn hoá Unicode \gls{nfc}) trước khi ghi vào

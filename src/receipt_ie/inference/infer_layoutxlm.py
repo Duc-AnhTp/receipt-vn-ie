@@ -14,6 +14,8 @@ from receipt_ie.ocr.recognize_vietocr import load_vietocr_model, recognize_regio
 from receipt_ie.ocr.reading_order import sort_reading_order
 from receipt_ie.data.build_layoutxlm_labels import normalize_bbox
 from receipt_ie.inference.postprocess_json import postprocess_extracted_fields
+from receipt_ie.inference.artifact_metadata import write_inference_sidecar
+from receipt_ie.inference.cache_coordinates import resolve_cached_image_path
 from receipt_ie.postprocess.total_extractor import is_probably_phone, is_probably_tax_code, is_too_small_for_total
 from receipt_ie.data.normalize_text import normalize_money, normalize_date
 
@@ -348,7 +350,16 @@ class LayoutXLMExtractor(BaseExtractor):
         words = [w["text"] for w in flat_words]
         boxes = [w["bbox"] for w in flat_words]
         
-        res = self.predict_from_ocr(image, words, boxes)
+        cached_image_path = resolve_cached_image_path(
+            ocr_data,
+            project_root=self.project_root,
+        )
+        model_image = (
+            Image.open(cached_image_path).convert("RGB")
+            if cached_image_path
+            else image
+        )
+        res = self.predict_from_ocr(model_image, words, boxes)
         res["latency_ocr_ms"] = latency_ocr_ms
         res["latency_e2e_ms"] = latency_ocr_ms + res["latency_model_ms"]
         return res
@@ -372,8 +383,13 @@ def parse_args():
     parser.add_argument(
         "--output_jsonl",
         type=str,
-        default="outputs/predictions/layoutxlm_test.jsonl",
+        default="outputs/predictions/layoutxlm_test_v2.jsonl",
         help="Đường dẫn file JSONL đầu ra"
+    )
+    parser.add_argument(
+        "--allow_overwrite",
+        action="store_true",
+        help="Allow overwriting an existing output artifact.",
     )
     parser.add_argument(
         "--limit",
@@ -396,6 +412,11 @@ def main():
         return
         
     out_file = Path(args.output_jsonl)
+    if out_file.exists() and not args.allow_overwrite:
+        raise FileExistsError(
+            f"Output already exists: {out_file}. "
+            "Choose a new path or pass --allow_overwrite explicitly."
+        )
     out_file.parent.mkdir(parents=True, exist_ok=True)
     
     extractor = LayoutXLMExtractor()
@@ -472,7 +493,17 @@ def main():
                 words = [w["text"] for w in flat_words]
                 boxes = [w["bbox"] for w in flat_words]
                 
-                res = extractor.predict_from_ocr(img, words, boxes)
+                cached_image_path = resolve_cached_image_path(
+                    ocr_data,
+                    cache_path=ocr_cache_path_str,
+                    project_root=extractor.project_root,
+                )
+                model_image = (
+                    Image.open(cached_image_path).convert("RGB")
+                    if cached_image_path
+                    else img
+                )
+                res = extractor.predict_from_ocr(model_image, words, boxes)
                 
                 prediction_record["prediction"] = res["prediction"]
                 prediction_record["normalized_prediction"] = res["normalized_prediction"]
@@ -493,6 +524,18 @@ def main():
             count += 1
             
     print(f"LayoutXLM inference completed. Saved {count} predictions to {args.output_jsonl}")
+    sidecar = write_inference_sidecar(
+        out_file,
+        method="layoutxlm",
+        checkpoint=args.checkpoint,
+        device=extractor.device,
+        prediction_count=count,
+        inference_arguments={
+            "max_length": extractor.max_length,
+            "image_source": "ocr_cache_preprocessed_image_when_available",
+        },
+    )
+    print(f"Inference metadata saved to {sidecar}")
 
 
 if __name__ == "__main__":

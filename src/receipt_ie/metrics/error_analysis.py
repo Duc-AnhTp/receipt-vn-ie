@@ -18,7 +18,7 @@ ERROR_TYPES = [
     "OCR_WRONG",
     "POSTPROCESS_BAD",
     "MODEL_BAD",
-    "LABEL_BAD",
+    "GT_EMPTY_PRED_NONEMPTY",
 ]
 OCR_BASED_METHODS = {"baseline", "layoutxlm"}
 
@@ -70,7 +70,9 @@ def classify_error(
     if gold_val and not pred_val:
         return "EMPTY_PRED"
     if not gold_val and pred_val:
-        return "LABEL_BAD"
+        # This observation alone cannot establish whether the label or the
+        # prediction is wrong, so use a neutral, reproducible category.
+        return "GT_EMPTY_PRED_NONEMPTY"
 
     if field == "date" and pred_val and not re.fullmatch(r"\d{4}-\d{2}-\d{2}", pred_val):
         return "FORMAT_ERROR"

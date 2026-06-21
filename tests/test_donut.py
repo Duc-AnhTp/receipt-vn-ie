@@ -1,5 +1,9 @@
+import json
+import tempfile
 import unittest
+from pathlib import Path
 from receipt_ie.data.build_donut_dataset import target_to_donut_sequence, donut_sequence_to_target
+from receipt_ie.inference.infer_donut import checkpoint_generation_max_length
 
 class TestDonutDataConversion(unittest.TestCase):
     def setUp(self):
@@ -74,6 +78,33 @@ class TestDonutDataConversion(unittest.TestCase):
         self.assertEqual(parsed_no_close["date"], "2020-08-09")
         self.assertEqual(parsed_no_close["total"], "115000")
         self.assertEqual(parsed_no_close["address"], "Gia Lâm")
+
+    def test_checkpoint_generation_limit_detects_implicit_default(self):
+        with tempfile.TemporaryDirectory(dir=r"C:\tmp") as directory:
+            checkpoint = Path(directory)
+            (checkpoint / "config.json").write_text(
+                json.dumps({"model_type": "vision-encoder-decoder"}),
+                encoding="utf-8",
+            )
+            value, source = checkpoint_generation_max_length(str(checkpoint))
+            self.assertEqual(value, 20)
+            self.assertEqual(source, "transformers_default")
+
+    def test_checkpoint_generation_limit_prefers_generation_config(self):
+        with tempfile.TemporaryDirectory(dir=r"C:\tmp") as directory:
+            checkpoint = Path(directory)
+            (checkpoint / "config.json").write_text(
+                json.dumps({"max_length": 30}),
+                encoding="utf-8",
+            )
+            (checkpoint / "generation_config.json").write_text(
+                json.dumps({"max_length": 768}),
+                encoding="utf-8",
+            )
+            value, source = checkpoint_generation_max_length(str(checkpoint))
+            self.assertEqual(value, 768)
+            self.assertEqual(source, "generation_config.json")
+
 
 if __name__ == "__main__":
     unittest.main()

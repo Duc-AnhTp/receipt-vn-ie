@@ -11,14 +11,45 @@ from transformers import DonutProcessor, VisionEncoderDecoderModel
 from receipt_ie.data.schemas import BaseExtractor
 from receipt_ie.data.build_donut_dataset import donut_sequence_to_target
 from receipt_ie.inference.postprocess_json import postprocess_extracted_fields
+from receipt_ie.inference.artifact_metadata import write_inference_sidecar
+
+
+DEFAULT_GENERATION_MAX_LENGTH = 768
+
+
+def checkpoint_generation_max_length(checkpoint_path: str) -> tuple[int, str]:
+    """Read a checkpoint limit, including Transformers' implicit default."""
+    checkpoint = Path(checkpoint_path)
+    generation_path = checkpoint / "generation_config.json"
+    config_path = checkpoint / "config.json"
+    generation_config = (
+        json.loads(generation_path.read_text(encoding="utf-8"))
+        if generation_path.exists()
+        else {}
+    )
+    model_config = (
+        json.loads(config_path.read_text(encoding="utf-8"))
+        if config_path.exists()
+        else {}
+    )
+    if "max_length" in generation_config:
+        return int(generation_config["max_length"]), "generation_config.json"
+    if "max_length" in model_config:
+        return int(model_config["max_length"]), "config.json"
+    return 20, "transformers_default"
 
 class DonutExtractor(BaseExtractor):
     """
     Bộ trích xuất thông tin biên lai sử dụng mô hình Donut.
     Kế thừa interface BaseExtractor chung.
     """
-    def __init__(self, task_token: str = "<s_receipt_ie>"):
+    def __init__(
+        self,
+        task_token: str = "<s_receipt_ie>",
+        generation_max_length: int = DEFAULT_GENERATION_MAX_LENGTH,
+    ):
         self.task_token = task_token
+        self.generation_max_length = int(generation_max_length)
         self.model = None
         self.processor = None
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -30,6 +61,25 @@ class DonutExtractor(BaseExtractor):
         print(f"Loading Donut model from {checkpoint_path}...")
         self.processor = DonutProcessor.from_pretrained(checkpoint_path)
         self.model = VisionEncoderDecoderModel.from_pretrained(checkpoint_path)
+        checkpoint_limit, checkpoint_limit_source = (
+            checkpoint_generation_max_length(checkpoint_path)
+        )
+        if checkpoint_limit != self.generation_max_length:
+            print(
+                "Generation limit override: "
+                f"{checkpoint_limit} ({checkpoint_limit_source}) -> "
+                f"{self.generation_max_length} (explicit inference argument)."
+            )
+        self.model.config.max_length = self.generation_max_length
+        self.model.generation_config.max_length = self.generation_max_length
+        if (
+            self.model.config.max_length != self.generation_max_length
+            or self.model.generation_config.max_length
+            != self.generation_max_length
+        ):
+            raise RuntimeError(
+                "Unable to apply the requested Donut generation max length."
+            )
         self.model.to(self.device)
         self.model.eval()
         print("Donut model loaded successfully.")
@@ -66,7 +116,7 @@ class DonutExtractor(BaseExtractor):
             outputs = self.model.generate(
                 pixel_values,
                 decoder_input_ids=decoder_input_ids,
-                max_length=self.model.config.max_length,
+                max_length=self.generation_max_length,
                 num_beams=num_beams,
                 early_stopping=True,
                 pad_token_id=self.processor.tokenizer.pad_token_id,
@@ -118,8 +168,19 @@ def parse_args():
     parser.add_argument(
         "--output_jsonl",
         type=str,
-        default="outputs/predictions/donut_test.jsonl",
+        default="outputs/predictions/donut_test_v2.jsonl",
         help="Đường dẫn file JSONL đầu ra"
+    )
+    parser.add_argument(
+        "--generation_max_length",
+        type=int,
+        default=DEFAULT_GENERATION_MAX_LENGTH,
+        help="Explicit generation limit; default is 768 tokens.",
+    )
+    parser.add_argument(
+        "--allow_overwrite",
+        action="store_true",
+        help="Allow overwriting an existing output artifact.",
     )
     parser.add_argument(
         "--limit",
@@ -141,9 +202,16 @@ def main():
         return
         
     out_file = Path(args.output_jsonl)
+    if out_file.exists() and not args.allow_overwrite:
+        raise FileExistsError(
+            f"Output already exists: {out_file}. "
+            "Choose a new path or pass --allow_overwrite explicitly."
+        )
     out_file.parent.mkdir(parents=True, exist_ok=True)
     
-    extractor = DonutExtractor()
+    extractor = DonutExtractor(
+        generation_max_length=args.generation_max_length,
+    )
     extractor.load(args.checkpoint)
     
     samples = []
@@ -200,6 +268,18 @@ def main():
             count += 1
             
     print(f"Donut inference completed. Saved {count} predictions to {args.output_jsonl}")
+    sidecar = write_inference_sidecar(
+        out_file,
+        method="donut",
+        checkpoint=args.checkpoint,
+        device=extractor.device,
+        prediction_count=count,
+        inference_arguments={
+            "generation_max_length": args.generation_max_length,
+            "task_token": extractor.task_token,
+        },
+    )
+    print(f"Inference metadata saved to {sidecar}")
 
 
 if __name__ == "__main__":

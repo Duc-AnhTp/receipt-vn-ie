@@ -4,7 +4,7 @@
 \section{Kết quả thực nghiệm và đánh giá}
 \label{sec:results}
 
-Chương này trình bày kết quả được tính lại trực tiếp từ ba tệp prediction trên 234 mẫu test. Các bảng metrics và latency được sinh tự động bởi script \path{scripts/generate_report_artifacts.py}; vì vậy số liệu trong báo cáo và artifact JSON có cùng nguồn.
+Chương này trình bày kết quả được tính lại trực tiếp từ các prediction artifact đóng băng trên 234 mẫu test. Các bảng metrics và latency được sinh tự động bởi script \path{scripts/generate_report_artifacts.py}; vì vậy số liệu trong báo cáo và artifact JSON có cùng nguồn. Baseline và LayoutXLM được dùng trong so sánh chính; Donut được tách sang phân tích chẩn đoán theo trạng thái hợp lệ ở \cref{subsec:artifact-validity}.
 
 % ============================================================================
 \subsection{Kết quả trên toàn bộ mẫu và trên trường có mặt}
@@ -12,11 +12,13 @@ Chương này trình bày kết quả được tính lại trực tiếp từ ba
 
 \input{generated/results_tables}
 
-\Cref{tab:all-results} phản ánh hành vi của hệ thống trên toàn bộ test set, bao gồm trường hợp trường thông tin không có nhãn. \Cref{tab:present-results} loại các ground-truth rỗng theo từng trường và được dùng làm cơ sở chính để đánh giá khả năng trích xuất.
+\Cref{tab:all-results} phản ánh hành vi của hai artifact hợp lệ trên toàn bộ test set, bao gồm trường hợp trường thông tin không có nhãn. \Cref{tab:present-results} loại các ground-truth rỗng theo từng trường và được dùng làm cơ sở chính để đánh giá khả năng trích xuất. \Cref{tab:coverage-results} bổ sung tỷ lệ prediction khác rỗng để phân biệt chất lượng với xu hướng trả về rỗng.
 
-Trên chế độ present-only, LayoutXLM đạt Macro EM 42,73\% và Macro NES 62,02\%, cao hơn Baseline tương ứng 40,41\% và 55,47\%. Khoảng cách Macro EM chỉ là 2,32 điểm phần trăm. Kết quả cho thấy checkpoint LayoutXLM hiện có tốt hơn về tổng thể, nhưng không đủ để kết luận ưu thế tuyệt đối vì hai mô hình học sâu không dùng cùng lượng và thành phần dữ liệu huấn luyện.
+Trên chế độ present-only, LayoutXLM đạt Macro EM 42,73\% và Macro NES 62,02\%, cao hơn Baseline tương ứng 40,41\% và 55,47\%. Khoảng cách Macro EM chỉ là 2,32 điểm phần trăm. Kết quả cho thấy checkpoint LayoutXLM hiện có tốt hơn Baseline về tổng thể trên test set này, nhưng không chứng minh ưu thế phổ quát của học sâu: Baseline và LayoutXLM có giả định, mức giám sát và độ phức tạp khác nhau.
 
-Donut có Macro EM present-only bằng 0\%. Mô hình không tạo giá trị chuẩn hóa khác rỗng cho \field{date}, \field{total} và \field{address}; 73/234 mẫu có dự đoán \field{store\_name} khác rỗng nhưng không mẫu có nhãn \field{store\_name} nào khớp hoàn toàn. Các điểm EM all-samples 7,69\%, 7,26\% và 4,70\% của ba trường còn lại lần lượt trùng với tỷ lệ ground-truth rỗng, nên không thể diễn giải là mô hình đã trích xuất đúng các trường đó.
+\input{generated/analysis_tables}
+
+Paired bootstrap trên chính 234 mẫu cho chênh lệch LayoutXLM trừ Baseline có khoảng 95\% dương đối với cả Macro EM và Macro NES. Đây chỉ là bất định lấy mẫu trên test set đóng băng; nó không loại bỏ sai lệch do cấu hình, dữ liệu huấn luyện hoặc annotation khác nhau. Sau khi loại bốn mẫu có sai lệch hệ tọa độ, thứ tự tổng thể không đổi: LayoutXLM vẫn có Macro EM/NES present-only cao hơn Baseline. Kết quả sensitivity không thay thế bảng 234 mẫu mà chỉ kiểm tra độ bền của nhận định.
 
 \begin{figure}[htbp]
   \centering
@@ -44,7 +46,15 @@ Các nhận định trên là mô tả kết quả, không phải chứng minh c
 
 \input{generated/latency_table}
 
-\Cref{tab:latency-comparison} không phải phép so sánh end-to-end đồng nhất. Baseline và LayoutXLM bắt đầu từ OCR cache, trong khi Donut bắt đầu từ ảnh. Có thể kết luận rằng phần luật của Baseline rất nhẹ và bước suy luận LayoutXLM trong artifact nhanh hơn giải mã tự hồi quy Donut. Không thể suy ra latency sản xuất từ ảnh thô của hai pipeline OCR-based khi thiếu phép đo PaddleOCR + VietOCR cùng điều kiện phần cứng.
+\Cref{tab:latency-comparison} đặt hai artifact hợp lệ có cùng điểm bắt đầu sau OCR cache cạnh nhau. Có thể kết luận rằng phần luật của Baseline nhẹ hơn bước suy luận và hậu xử lý LayoutXLM trong điều kiện đã ghi. Không thể suy ra latency sản xuất từ ảnh thô khi thiếu phép đo PaddleOCR + VietOCR cùng điều kiện phần cứng.
+
+% ============================================================================
+\subsection{Chẩn đoán artifact Donut}
+\label{subsec:donut_diagnostic}
+
+\input{generated/diagnostic_tables}
+
+Các giá trị Donut trong artifact cũ được giữ nguyên nhưng không dùng để xếp hạng. Giới hạn sinh hiệu lực 20 token ngắn hơn phần lớn chuỗi đích, nên output thường kết thúc trước khi sinh đủ bốn trường và latency cũng thấp hơn một lượt giải mã hoàn chỉnh có thể có. Macro EM present-only bằng 0\% mô tả artifact bị cắt này, không chứng minh checkpoint hoặc kiến trúc Donut không thể học bài toán.
 
 % ============================================================================
 \subsection{Phân tích lỗi có thể tái lập}
@@ -71,7 +81,7 @@ Phân tích lỗi tự động sử dụng taxonomy trong \cref{tab:error-taxono
   \end{tabular}
 \end{table}
 
-Kết quả CSV cho thấy lỗi nổi bật của Donut là prediction rỗng: 216 mẫu ở \field{date}, 217 ở \field{total} và 223 ở \field{address}. Donut không được gán lỗi OCR vì pipeline không sử dụng OCR độc lập. Với LayoutXLM, \code{EMPTY\_PRED}, \code{OCR\_MISS} và \code{MODEL\_BAD} đều xuất hiện; điều này phù hợp với nhận định rằng pipeline phụ thuộc vào OCR, nhưng taxonomy tự động chưa đủ để định lượng chính xác phần hao hụt do OCR.
+Với LayoutXLM, \code{EMPTY\_PRED}, \code{OCR\_MISS} và \code{MODEL\_BAD} đều xuất hiện; điều này phù hợp với nhận định rằng pipeline phụ thuộc vào OCR, nhưng taxonomy tự động chưa đủ để định lượng chính xác phần hao hụt do OCR. CSV Donut vẫn cho thấy nhiều prediction rỗng, nhưng phân bố này bị chi phối bởi giới hạn 20 token và chỉ có ý nghĩa chẩn đoán artifact.
 
 Các khái niệm như hallucination hoặc lỗi BIO phân mảnh chỉ được dùng trong phân tích ví dụ định tính nếu có đối chiếu ảnh, chuỗi sinh và token labels. Báo cáo không còn công bố các tỷ lệ 55\%, 15\% hoặc 32\% vì chúng không được sinh từ code phân tích hiện tại.
 

@@ -34,7 +34,7 @@ Việc đánh giá hai hướng tiếp cận trên cùng tập kiểm thử giú
 
 Để định hướng các nội dung thực nghiệm và đánh giá, đồ án đặt ra ba câu hỏi nghiên cứu cốt lõi sau:
 \begin{itemize}
-  \item \textbf{RQ1:} Hướng tiếp cận đa phương thức nhận biết bố cục OCR-based (\model{LayoutXLM}) hay hướng tiếp cận sinh trực tiếp không cần OCR (\model{Donut}) cho độ chính xác cao hơn khi trích xuất các trường thông tin trên biên lai tiếng Việt?
+  \item \textbf{RQ1:} Trên các prediction artifact đủ điều kiện đánh giá, mô hình OCR-based \model{LayoutXLM} cải thiện như thế nào so với Baseline dựa trên luật? Artifact hiện có cho phép kết luận đến đâu về \model{Donut}?
   \item \textbf{RQ2:} Các thành phần suy luận đã được ghi nhận có latency khác nhau như thế nào, và phép đo hiện tại cho phép kết luận đến đâu?
   \item \textbf{RQ3:} Dữ liệu hiện có cung cấp bằng chứng nào về sự phụ thuộc của pipeline OCR-based vào OCR, và cần thí nghiệm nào để định lượng ảnh hưởng đó?
 \end{itemize}
@@ -89,7 +89,7 @@ Mục tiêu của đồ án là thiết kế, huấn luyện và đánh giá kh�
 Đồ án mang lại các đóng góp thực tiễn cụ thể phục vụ bài toán trích xuất tài liệu tiếng Việt:
 \begin{enumerate}
   \item \textbf{Xây dựng bộ dữ liệu nhãn sạch:} Hợp nhất và gán nhãn chuẩn hóa tập dữ liệu gồm 1.559 mẫu biên lai tiếng Việt từ cuộc thi MC-OCR 2021 và dữ liệu tự chụp thực tế.
-  \item \textbf{Đánh giá đối sánh hệ thống:} Cung cấp kết quả thực nghiệm chi tiết giữa ba giải pháp: Baseline (regex), \model{Donut} (OCR-free), và \model{LayoutXLM} (OCR-based) trên cùng tập dữ liệu kiểm thử.
+  \item \textbf{Đánh giá có kiểm soát bằng chứng:} So sánh Baseline và \model{LayoutXLM} trên cùng tập kiểm thử, đồng thời tách artifact \model{Donut} không hoàn chỉnh sang phạm vi chẩn đoán thay vì dùng để xếp hạng.
   \item \textbf{Phân loại và phân tích lỗi:} Xây dựng taxonomy bảy nhóm lỗi có thể sinh lại tự động từ prediction, ground-truth và OCR cache.
   \item \textbf{Demo ứng dụng tương tác:} Triển khai giao diện demo bằng Gradio chạy thời gian thực phục vụ mục đích kiểm thử trực quan.
 \end{enumerate}

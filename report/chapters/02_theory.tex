@@ -36,12 +36,12 @@ Bài toán trích xuất thông tin tài liệu đã đạt được nhiều bư
     \addlinespace
     \textbf{\model{LayoutXLM} (OCR-based)}
       & Phân loại token (\gls{bio} tagging) đa phương thức: Text + Layout (2D BBox) + Visual.
-      & Độ chính xác cao, khai thác sâu thông tin không gian. Tuy nhiên, pipeline phức tạp, phụ thuộc trực tiếp vào chất lượng OCR đầu vào.
+      & Kết hợp văn bản, vị trí và ảnh trong cùng encoder. Tuy nhiên, pipeline phức tạp, phụ thuộc trực tiếp vào chất lượng và thứ tự đọc của OCR đầu vào.
       & Có khả năng khai thác bố cục 2D, nhưng dễ bị đứt gãy thực thể đa dòng và phụ thuộc vào độ phủ của nhãn hộp bao. \\
     \addlinespace
     \textbf{\model{Donut} (OCR-free)}
       & Mô hình sinh (generative) end-to-end từ ảnh sang văn bản có cấu trúc (thẻ XML).
-      & Loại bỏ hoàn toàn bộ OCR độc lập, giảm thiểu tích lũy sai số. Tuy nhiên, tốc độ suy luận chậm, dễ bị ảo giác (hallucination).
+      & Loại bỏ bộ OCR độc lập và tránh truyền lỗi từ OCR rời rạc. Tuy nhiên, giải mã tự hồi quy có thể sinh chuỗi sai cấu trúc, lặp hoặc không có căn cứ trong ảnh.
       & Cần kiểm tra mức độ ổn định của chuỗi sinh và khả năng học từ tập dữ liệu tiếng Việt quy mô hạn chế. \\
     \bottomrule
   \end{tabularx}
@@ -64,7 +64,7 @@ Hệ thống OCR hiện đại thường được thiết kế thành một pipe
 \subsubsection{Phát hiện văn bản với PaddleOCR}
 \label{subsubsec:paddleocr}
 
-\model{PaddleOCR}~\cite{du2020ppocr} sử dụng thuật toán Differentiable Binarization (DB) để phát hiện các vùng chứa chữ viết. Khác với các thuật toán nhị phân hóa truyền thống sử dụng ngưỡng cố định, DBNet tích hợp một bước nhị phân hóa khả vi (differentiable binarization) vào mạng nơ-ron:
+Pipeline sử dụng module phát hiện văn bản của \model{PaddleOCR}~\cite{du2020ppocr}; phần nhận dạng tích hợp của PaddleOCR bị tắt. Họ PP-OCR sử dụng bộ phát hiện dựa trên Differentiable Binarization (DB), trong đó bước nhị phân hóa được đưa vào mạng dưới dạng khả vi:
 \begin{equation}
   \hat{B}_{i,j} = \frac{1}{1 + \exp(-k(P_{i,j} - T_{i,j}))}
   \label{eq:db_binarization}
@@ -88,7 +88,7 @@ Vì vậy VietOCR trong đồ án không sử dụng hàm mất mát CTC. Sự p
 \subsection{Mô hình Donut (OCR-free)}
 \label{subsec:donut}
 
-\model{Donut} (Document Understanding Transformer)~\cite{kim2022donut} là kiến trúc Transformer end-to-end ánh xạ trực tiếp điểm ảnh của tài liệu thành văn bản có cấu trúc dưới dạng thẻ tag XML mà không cần thông qua module OCR trung gian.
+\model{Donut} (Document Understanding Transformer)~\cite{kim2022donut} là kiến trúc Transformer encoder--decoder ánh xạ trực tiếp điểm ảnh của tài liệu thành chuỗi có cấu trúc mà không cần module OCR trung gian. Trong đồ án, cấu trúc đích dùng các token mở/đóng tương tự XML.
 
 \subsubsection{Kiến trúc tổng quan}
 \label{subsubsec:donut_arch}
@@ -96,7 +96,7 @@ Vì vậy VietOCR trong đồ án không sử dụng hàm mất mát CTC. Sự p
 Kiến trúc Donut bao gồm hai thành phần chính:
 \begin{enumerate}
   \item \textbf{Vision Encoder (Swin Transformer):} Mã hóa hình ảnh biên lai thành chuỗi biểu diễn đặc trưng thị giác phân cấp $\mathbf{z} = \{z_1, z_2, \ldots, z_n\}$. Swin Transformer~\cite{liu2021swin} sử dụng cơ chế cửa sổ tự chú ý trượt (Shifted Window MSA) để giảm độ phức tạp tính toán từ bậc hai xuống bậc tuyến tính theo kích thước ảnh, đồng thời duy trì sự liên tục ngữ cảnh.
-  \item \textbf{Text Decoder (mBART):} Bộ giải mã tự hồi quy (autoregressive) đa ngôn ngữ~\cite{lewis2020bart}. Tại mỗi bước thời gian $i$, decoder kết hợp thông tin tự chú ý của các token đã sinh phía trước và thực hiện cơ chế Cross-Attention lên biểu diễn đặc trưng thị giác $\mathbf{z}$ của Encoder để dự đoán xác suất token tiếp theo:
+  \item \textbf{Text Decoder (mBART):} Checkpoint \code{donut-base} dùng decoder thuộc họ mBART, một biến thể đa ngôn ngữ của kiến trúc BART~\cite{lewis2020bart}. Tại mỗi bước thời gian $i$, decoder kết hợp tự chú ý trên các token đã sinh và cross-attention lên biểu diễn thị giác $\mathbf{z}$ để dự đoán token tiếp theo:
   \begin{equation}
     \mathcal{L}_{\text{Donut}} = -\sum_{i=1}^{T} \log P(y_i \mid y_{<i}^*, \mathbf{z})
     \label{eq:donut_loss}
@@ -123,7 +123,7 @@ Trong quá trình huấn luyện mô hình Donut, cần phân biệt rõ hai kh�
 \subsection{Mô hình LayoutXLM (OCR-based)}
 \label{subsec:layoutxlm}
 
-\model{LayoutXLM}~\cite{xu2021layoutxlm} là mô hình đa phương thức đa ngôn ngữ tiền huấn luyện dành riêng cho các tài liệu có cấu trúc bố cục phong phú, kế thừa backbone XLM-RoBERTa~\cite{conneau2020xlmr}.
+\model{LayoutXLM}~\cite{xu2021layoutxlm} là mô hình đa phương thức đa ngôn ngữ cho tài liệu có bố cục phong phú. Mô hình mở rộng kiến trúc đa phương thức của LayoutLMv2 bằng backbone văn bản XLM-RoBERTa~\cite{conneau2020xlmr}, nhờ đó tiếp nhận văn bản đa ngôn ngữ cùng thông tin bố cục và ảnh.
 
 \subsubsection{Nhúng đa phương thức (Multimodal Embedding)}
 \label{subsubsec:multimodal_embedding}
@@ -143,7 +143,7 @@ LayoutXLM tiếp nhận đồng thời chuỗi token OCR, tọa độ 2D và ả
 \subsubsection{Spatial-aware Self-Attention}
 \label{subsubsec:spatial_attention}
 
-Cơ chế tự chú ý nhận biết không gian (spatial-aware) của LayoutXLM bổ sung thêm các thông tin thiên lệch vị trí (bias) theo chiều dọc và chiều ngang dựa trên khoảng cách vật lý giữa hai bounding box của token $i$ và token $j$:
+Cơ chế tự chú ý nhận biết không gian, được kế thừa từ LayoutLMv2, bổ sung các bias vị trí 1D và 2D dựa trên quan hệ tương đối giữa các bounding box của token $i$ và token $j$:
 \begin{equation}
   \alpha_{ij} = \frac{\mathbf{q}_i \mathbf{k}_j^T}{\sqrt{d}} + b^{1D}(j - i) + b^{2D}_x(x_{1,i} - x_{1,j}) + b^{2D}_y(y_{1,i} - y_{1,j})
 \end{equation}

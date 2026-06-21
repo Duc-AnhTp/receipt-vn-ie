@@ -67,6 +67,17 @@ class TestErrorAnalysis(unittest.TestCase):
         )
         self.assertEqual(error_type, "MODEL_BAD")
 
+    def test_empty_ground_truth_uses_neutral_category(self):
+        error_type = classify_error(
+            "store_name",
+            "",
+            "Unexpected store",
+            "Unexpected store",
+            [],
+            "baseline",
+        )
+        self.assertEqual(error_type, "GT_EMPTY_PRED_NONEMPTY")
+
     def test_ocr_method_distinguishes_wrong_and_missing(self):
         wrong = classify_error(
             "store_name",
