@@ -277,7 +277,11 @@ print("=" * 60)
 
 !accelerate launch --multi_gpu --num_processes 2 \
   -m receipt_ie.training.train_layoutxlm \
-  --mode oracle_ocr
+  --mode oracle_ocr \
+  --train_batch_size 2 \
+  --eval_batch_size 4 \
+  --gradient_accumulation_steps 16 \
+  --gradient_checkpointing
 
 print(f"Kết thúc: {time.strftime('%Y-%m-%d %H:%M:%S UTC', time.gmtime())}")
 ```
