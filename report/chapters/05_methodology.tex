@@ -216,9 +216,9 @@ Quy trình suy luận:
   \item Kết quả được ghi vào tệp JSON.
 \end{enumerate}
 
-\begin{warnbox}[Trạng thái artifact Donut]
-Cấu hình và mã suy luận hiện tại đặt \code{max\_length=768}. Tuy nhiên, prediction artifact dùng trong báo cáo được tạo trước khi tham số này được truyền tường minh và đã kế thừa mặc định 20 token của Transformers. Có 225/234 chuỗi đích dài hơn giới hạn này và 173/234 output chạm giới hạn sinh. Vì vậy artifact được giữ để chẩn đoán lỗi cấu hình, không dùng trong bảng xếp hạng chất lượng hoặc latency chính.
-\end{warnbox}
+\begin{notebox}[Cấu hình suy luận Donut]
+Trong phiên bản thực nghiệm trước đây, do không truyền tham số \code{max\_length} một cách tường minh khi gọi hàm sinh của thư viện Transformers, mô hình Donut đã kế thừa giá trị mặc định là 20 token, dẫn đến hầu hết chuỗi kết quả sinh ra bị cắt bớt (173/234 mẫu test chạm giới hạn này). Lỗi cấu hình này hiện đã được khắc phục hoàn toàn bằng việc truyền tường minh tham số \code{max\_length=768} trong lệnh suy luận mới. Nhờ đó, artifact kết quả của Donut trong báo cáo hiện tại đại diện cho một lượt suy luận Donut đầy đủ và hợp lệ để đưa vào so sánh chất lượng và latency chính.
+\end{notebox}
 
 
 % ============================================================================

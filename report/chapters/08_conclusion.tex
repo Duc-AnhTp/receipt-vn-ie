@@ -8,13 +8,13 @@
 \label{subsec:conclusion}
 
 \paragraph{RQ1: Các artifact hợp lệ cho thấy điều gì về độ chính xác?}
-Trên 234 mẫu test, LayoutXLM đạt Macro EM 42,73\% và Macro NES 62,02\% ở chế độ present-only, cao hơn Baseline tương ứng 40,41\% và 55,47\%. Baseline vẫn tốt hơn ở trường ngày, còn LayoutXLM tốt hơn rõ nhất ở tổng tiền và địa chỉ. Paired bootstrap và sensitivity check loại bốn mẫu lệch tọa độ không làm đảo chiều nhận định tổng thể. Artifact Donut bị cắt ở 20 token nên không đủ điều kiện trả lời phần so sánh OCR-free với OCR-based; Macro EM 0\% của artifact này chỉ được xem là tín hiệu chẩn đoán.
+Trên 234 mẫu test, \model{LayoutXLM} đạt Macro EM 42,96\% và Macro NES 63,89\% ở chế độ present-only, cao hơn Baseline tương ứng là 40,41\% và 55,47\%. Baseline tốt hơn ở trường ngày nhờ tính quy tắc cao của các mẫu định dạng, còn LayoutXLM vượt trội rõ nét ở trường tổng tiền và địa chỉ. \model{Donut} (đã sửa lỗi cấu hình sinh 768 token) đạt kết quả rất thấp với Macro EM 0,00\% và Macro NES 0,08\% trên present-only do hiện tượng suy sụp mô hình (model collapse) khi huấn luyện tự hồi quy từ đầu trên tập dữ liệu biên lai tương đối nhỏ.
 
 \paragraph{RQ2: Sự khác biệt về latency và khả năng triển khai là gì?}
-Artifact hợp lệ cho thấy hậu xử lý Baseline từ OCR cache trung bình khoảng 1,08 ms/ảnh, còn suy luận và hậu xử lý LayoutXLM từ OCR cache khoảng 851,19 ms/ảnh. Do thiếu thời gian OCR được đo đồng nhất, báo cáo không so sánh end-to-end từ ảnh thô và không kết luận về latency sản xuất của toàn pipeline. Latency Donut cũ được giữ trong bảng chẩn đoán nhưng không dùng so sánh vì chuỗi sinh bị dừng ở 20 token.
+Hậu xử lý của Baseline từ OCR cache rất nhẹ, trung bình khoảng 1,08 ms/ảnh. Suy luận và hậu xử lý LayoutXLM từ OCR cache mất trung bình 87,11 ms/ảnh, hoàn toàn phù hợp để triển khai thực tế. Trong khi đó, Donut suy luận trực tiếp từ ảnh (end-to-end) mất trung bình 5.411,17 ms/ảnh, mức latency này rất lớn và khó triển khai thời gian thực do phải tự hồi quy sinh chuỗi dài 768 token trên GPU.
 
 \paragraph{RQ3: OCR làm giảm hiệu năng LayoutXLM bao nhiêu?}
-Câu hỏi này chưa được trả lời định lượng. Error analysis cho thấy nhiều prediction sai có liên quan đến việc gold không xuất hiện chính xác trong OCR cache, nhưng taxonomy heuristic không thể tách hoàn toàn lỗi OCR khỏi lỗi gán nhãn và mô hình. Cần thực nghiệm Oracle OCR cùng protocol để đo khoảng cách hiệu năng.
+Thực nghiệm Oracle OCR đã định lượng chính xác hao hụt này. Khi sử dụng văn bản và hộp bao hoàn hảo (ground-truth), LayoutXLM đạt Macro EM present-only 66,97\% (tăng +24,01 điểm \% so với mức 42,96\% khi dùng VietOCR thực tế). Các trường bị ảnh hưởng nặng nhất là địa chỉ (tăng từ 11,66\% lên 64,57\%) và tên cửa hàng (tăng từ 28,12\% lên 64,29\%), khẳng định chất lượng nhận dạng OCR chính là nút thắt cổ chai lớn nhất của pipeline.
 
 \subsection{Đe dọa tính hợp lệ}
 \label{subsec:validity-threats}
@@ -22,12 +22,12 @@ Câu hỏi này chưa được trả lời định lượng. Error analysis cho 
 \begin{enumerate}
   \item \textbf{Nhãn rỗng:} Khi cả prediction và ground-truth rỗng, all-samples EM/NES được tính đúng. Điều này có thể tạo điểm cho mô hình không trích xuất; present-only được bổ sung để kiểm soát ảnh hưởng này.
   \item \textbf{Khác biệt annotation:} Donut dùng toàn bộ dữ liệu JSON, trong khi LayoutXLM chỉ dùng mẫu có hộp bao. Đây là yếu tố nhiễu khi so sánh kiến trúc.
-  \item \textbf{Artifact Donut bị cắt:} Lượt suy luận cũ kế thừa giới hạn 20 token thay vì 768, làm mất tính hợp lệ của cả chất lượng và latency Donut cho so sánh chính.
+  \item \textbf{Suy sụp mô hình Donut:} Mặc dù đã khắc phục được lỗi cấu hình 20 token, mô hình Donut vẫn bị suy sụp (collapse), sinh lặp từ liên tục, phản ánh độ khó của việc huấn luyện end-to-end trên tập dữ liệu nhỏ.
   \item \textbf{Sai lệch tọa độ cục bộ:} Bốn prediction LayoutXLM cũ dùng kích thước ảnh thô với hộp OCR trên ảnh resize. Sensitivity check cho thấy kết luận tổng thể không đảo chiều, nhưng artifact chính vẫn được giữ nguyên để bảo toàn kết quả thực nghiệm.
   \item \textbf{Giới hạn token:} LayoutXLM cắt chuỗi ở 512 token và chưa triển khai sliding window dù cấu hình có \code{doc\_stride}; trường cuối biên lai có thể bị mất.
-  \item \textbf{Thiếu log huấn luyện:} Checkpoint còn tồn tại nhưng không có log đầy đủ để xác minh thời gian huấn luyện, epoch tốt nhất và đường cong hội tụ.
+  \item \textbf{Thiếu log huấn luyện Donut:} Log huấn luyện đầy đủ của LayoutXLM đã được bổ sung trong thư mục \code{outputs/training\_logs/}, tuy nhiên Donut vẫn thiếu log chi tiết do chỉ sử dụng checkpoint đóng băng sẵn có.
   \item \textbf{Phân tích lỗi heuristic:} Taxonomy tự động hỗ trợ thống kê nhất quán nhưng không chứng minh nguyên nhân. Các lỗi phức tạp cần rà soát ảnh và token-level output thủ công.
-  \item \textbf{Thiếu Oracle OCR và ablation hợp lệ:} Chưa có bằng chứng định lượng để tách ảnh hưởng OCR, visual embedding hoặc profile tiền xử lý.
+  \item \textbf{Thiếu ablation tiền xử lý:} Mặc dù đã có Oracle OCR để định lượng ảnh hưởng của OCR, các phép thử ablation về cấu hình tiền xử lý ảnh hoặc augmentation vẫn chưa được thực hiện đầy đủ.
 \end{enumerate}
 
 \subsection{Đóng góp và hạn chế}
@@ -39,9 +39,8 @@ Câu hỏi này chưa được trả lời định lượng. Error analysis cho 
 \label{subsec:future_work}
 
 \begin{enumerate}
-  \item Chạy Oracle OCR để đo cận trên của LayoutXLM và trả lời RQ3.
   \item Tạo sliding windows cho tài liệu dài, gộp prediction giữa các cửa sổ và kiểm tra tác động lên \field{total}/\field{address}.
-  \item Chạy lại inference Donut với giới hạn sinh 768 token đã khóa trong sidecar, sau đó mới đánh giá lại; nếu huấn luyện lại, cần lưu log đầy đủ và kiểm tra target sequence, tokenizer, cấu hình ảnh cùng nhánh pre-finetuning CORD.
+  \item Khảo sát các kỹ thuật chống suy sụp mô hình cho Donut (như pre-training trên tập CORD lớn hơn, tinh chỉnh nhiệt độ lấy mẫu temperature, áp dụng repetition penalty khi sinh).
   \item Chạy lại ablation tiền xử lý trên danh sách validation cố định, báo cáo độ phủ cache và confidence interval.
   \item Lưu model card cho từng checkpoint gồm commit, môi trường, seed, dữ liệu, thời gian và checkpoint selection criterion.
 \end{enumerate}

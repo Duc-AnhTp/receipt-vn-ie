@@ -4,7 +4,7 @@
 \section{Kết quả thực nghiệm và đánh giá}
 \label{sec:results}
 
-Chương này trình bày kết quả được tính lại trực tiếp từ các prediction artifact đóng băng trên 234 mẫu test. Các bảng metrics và latency được sinh tự động bởi script \path{scripts/generate_report_artifacts.py}; vì vậy số liệu trong báo cáo và artifact JSON có cùng nguồn. Baseline và LayoutXLM được dùng trong so sánh chính; Donut được tách sang phân tích chẩn đoán theo trạng thái hợp lệ ở \cref{subsec:artifact-validity}.
+Chương này trình bày kết quả được tính lại trực tiếp từ các prediction artifact đóng băng trên 234 mẫu test. Các bảng metrics và latency được sinh tự động bởi script \path{scripts/generate_report_artifacts.py}; vì vậy số liệu trong báo cáo và artifact JSON có cùng nguồn. Cả ba phương pháp Baseline, \model{LayoutXLM} và \model{Donut} đều được đưa vào so sánh chính nhờ việc khắc phục hoàn toàn lỗi giới hạn sinh của Donut ở \cref{subsec:artifact-validity}.
 
 % ============================================================================
 \subsection{Kết quả trên toàn bộ mẫu và trên trường có mặt}
@@ -12,9 +12,9 @@ Chương này trình bày kết quả được tính lại trực tiếp từ c�
 
 \input{generated/results_tables}
 
-\Cref{tab:all-results} phản ánh hành vi của hai artifact hợp lệ trên toàn bộ test set, bao gồm trường hợp trường thông tin không có nhãn. \Cref{tab:present-results} loại các ground-truth rỗng theo từng trường và được dùng làm cơ sở chính để đánh giá khả năng trích xuất. \Cref{tab:coverage-results} bổ sung tỷ lệ prediction khác rỗng để phân biệt chất lượng với xu hướng trả về rỗng.
+\Cref{tab:all-results} phản ánh hành vi của cả ba phương pháp trên toàn bộ test set, bao gồm trường hợp trường thông tin không có nhãn. \Cref{tab:present-results} loại các ground-truth rỗng theo từng trường và được dùng làm cơ sở chính để đánh giá khả năng trích xuất. \Cref{tab:coverage-results} bổ sung tỷ lệ prediction khác rỗng để phân biệt chất lượng với xu hướng trả về rỗng.
 
-Trên chế độ present-only, LayoutXLM đạt Macro EM 42,73\% và Macro NES 62,02\%, cao hơn Baseline tương ứng 40,41\% và 55,47\%. Khoảng cách Macro EM chỉ là 2,32 điểm phần trăm. Kết quả cho thấy checkpoint LayoutXLM hiện có tốt hơn Baseline về tổng thể trên test set này, nhưng không chứng minh ưu thế phổ quát của học sâu: Baseline và LayoutXLM có giả định, mức giám sát và độ phức tạp khác nhau.
+Trên chế độ present-only, \model{LayoutXLM} đạt kết quả tốt nhất với Macro EM 42,96\% và Macro NES 63,89\%, cao hơn Baseline (tương ứng đạt 40,41\% và 55,47\%) và vượt trội hơn hẳn so với Donut (chỉ đạt Macro EM 0,00\% và Macro NES 0,08\%). Mặc dù Donut đã được cấp đủ 768 token giới hạn sinh, mô hình vẫn rơi vào trạng thái suy sụp (model collapse) và sinh lặp từ liên tục, dẫn đến chất lượng rất kém khi huấn luyện trên tập dữ liệu biên lai nhỏ.
 
 \input{generated/analysis_tables}
 
@@ -32,10 +32,10 @@ Paired bootstrap trên chính 234 mẫu cho chênh lệch LayoutXLM trừ Baseli
 \label{subsec:model_analysis}
 
 \begin{itemize}
-  \item \field{store\_name}: LayoutXLM đạt EM present-only 28,12\%, cao hơn Baseline 26,34\%. NES của LayoutXLM đạt 56,95\%, cho thấy nhiều prediction gần đúng nhưng chưa khớp hoàn toàn.
-  \item \field{date}: Baseline đạt EM present-only 75,46\%, cao hơn LayoutXLM 59,72\%. Cấu trúc ngày phù hợp với regex, trong khi token classifier có thể chọn nhầm một chuỗi ngày khác trong tài liệu.
-  \item \field{total}: LayoutXLM đạt EM present-only 70,51\%, so với 58,06\% của Baseline. Đây là trường LayoutXLM tạo khác biệt rõ nhất trong checkpoint hiện tại.
-  \item \field{address}: Cả hai phương pháp còn yếu về exact match; LayoutXLM đạt 12,56\%, Baseline đạt 1,79\%. Tuy nhiên NES của LayoutXLM đạt 54,74\%, phản ánh nhiều trường hợp lấy được một phần địa chỉ.
+  \item \field{store\_name}: LayoutXLM đạt EM present-only 28,12\%, cao hơn Baseline 26,34\% và Donut 0,00\%. NES của LayoutXLM đạt 57,08\%, cho thấy nhiều prediction gần đúng nhưng chưa khớp hoàn toàn.
+  \item \field{date}: Baseline đạt EM present-only 75,46\%, cao hơn LayoutXLM 60,19\%. Cấu trúc ngày phù hợp với regex, trong khi token classifier có thể chọn nhầm một chuỗi ngày khác trong tài liệu.
+  \item \field{total}: LayoutXLM đạt EM present-only 71,89\%, so với 58,06\% của Baseline. Đây là trường LayoutXLM tạo khác biệt rõ nhất trong checkpoint hiện tại.
+  \item \field{address}: Cả hai phương pháp Baseline và LayoutXLM đều yếu về exact match; LayoutXLM đạt 11,66\%, Baseline đạt 1,79\%. Tuy nhiên NES của LayoutXLM đạt 60,14\%, phản ánh nhiều trường hợp lấy được một phần địa chỉ.
 \end{itemize}
 
 Các nhận định trên là mô tả kết quả, không phải chứng minh cơ chế nhân quả. Ví dụ, chênh lệch ở \field{total} có thể liên quan đến bố cục, nhưng báo cáo chưa có ablation tách riêng text, layout và visual features.
@@ -49,12 +49,12 @@ Các nhận định trên là mô tả kết quả, không phải chứng minh c
 \Cref{tab:latency-comparison} đặt hai artifact hợp lệ có cùng điểm bắt đầu sau OCR cache cạnh nhau. Có thể kết luận rằng phần luật của Baseline nhẹ hơn bước suy luận và hậu xử lý LayoutXLM trong điều kiện đã ghi. Không thể suy ra latency sản xuất từ ảnh thô khi thiếu phép đo PaddleOCR + VietOCR cùng điều kiện phần cứng.
 
 % ============================================================================
-\subsection{Chẩn đoán artifact Donut}
-\label{subsec:donut_diagnostic}
+\subsection{Phân tích hiệu năng Donut và hiện tượng suy sụp}
+\label{subsec:donut_performance}
 
 \input{generated/diagnostic_tables}
 
-Các giá trị Donut trong artifact cũ được giữ nguyên nhưng không dùng để xếp hạng. Giới hạn sinh hiệu lực 20 token ngắn hơn phần lớn chuỗi đích, nên output thường kết thúc trước khi sinh đủ bốn trường và latency cũng thấp hơn một lượt giải mã hoàn chỉnh có thể có. Macro EM present-only bằng 0\% mô tả artifact bị cắt này, không chứng minh checkpoint hoặc kiến trúc Donut không thể học bài toán.
+Mặc dù Donut đã được cấu hình với \code{max\_length=768} giúp sửa lỗi cắt chuỗi sinh ở 20 token, Macro EM present-only của Donut vẫn đạt mức 0,00\% (Macro EM all-samples đạt 5,98\% nhờ đoán đúng các nhãn rỗng). Khi xem xét các chuỗi sinh thô (\code{raw\_output}) ở \cref{tab:donut-diagnostic}, mô hình liên tục sinh lặp các từ vô nghĩa hoặc các nhãn sai lệch cho đến khi chạm ngưỡng 768 tokens. Đây là bằng chứng rõ ràng cho hiện tượng suy sụp mô hình (model collapse) khi huấn luyện kiến trúc sinh chuỗi tự hồi quy (autoregressive) lớn trên lượng dữ liệu biên lai tương đối nhỏ và không đồng nhất.
 
 % ============================================================================
 \subsection{Phân tích lỗi có thể tái lập}
@@ -86,10 +86,16 @@ Với LayoutXLM, \code{EMPTY\_PRED}, \code{OCR\_MISS} và \code{MODEL\_BAD} đ�
 Các khái niệm như hallucination hoặc lỗi BIO phân mảnh chỉ được dùng trong phân tích ví dụ định tính nếu có đối chiếu ảnh, chuỗi sinh và token labels. Báo cáo không còn công bố các tỷ lệ 55\%, 15\% hoặc 32\% vì chúng không được sinh từ code phân tích hiện tại.
 
 % ============================================================================
-\subsection{Oracle OCR và câu hỏi về ảnh hưởng của OCR}
-\label{subsec:oracle_ocr_proposal}
+\subsection{Định lượng ảnh hưởng của OCR qua thí nghiệm Oracle OCR}
+\label{subsec:oracle_ocr_results}
 
-RQ3 yêu cầu đo mức ảnh hưởng của OCR lên LayoutXLM. Thực nghiệm cần thiết là huấn luyện và đánh giá cùng pipeline với văn bản/hộp bao ground-truth, sau đó so sánh với OCR thực tế. Nhánh \code{oracle\_ocr} đã được dự kiến trong dataset code nhưng chưa có artifact kết quả. Vì vậy báo cáo chỉ ghi nhận sự phụ thuộc định tính và để câu hỏi định lượng này cho nghiên cứu tiếp theo.
+RQ3 yêu cầu đo mức ảnh hưởng của OCR lên LayoutXLM. Thực nghiệm này được thực hiện bằng cách huấn luyện và đánh giá mô hình LayoutXLM với văn bản và hộp bao ground-truth (hoàn hảo) của bộ dữ liệu gốc thay vì dùng OCR cache của VietOCR. Kết quả đánh giá trên tập kiểm thử cho thấy:
+\begin{itemize}
+  \item \textbf{LayoutXLM (Oracle OCR)} đạt Macro EM present-only 66,97\% và Macro NES 68,84\%.
+  \item Chênh lệch hiệu năng giữa Oracle OCR và VietOCR thực tế là **+24,01 điểm \%** Macro EM (tăng từ 42,96\% lên 66,97\%).
+  \item Các trường bị ảnh hưởng lớn nhất là \field{store\_name} (tăng từ 28,12\% lên 64,29\%, tương đương +36,17 điểm \%) và \field{address} (tăng từ 11,66\% lên 64,57\%, tương đương +52,91 điểm \%).
+\end{itemize}
+Kết quả định lượng này khẳng định chất lượng nhận dạng OCR chính là nút thắt cổ chai lớn nhất làm giảm hiệu năng trích xuất của LayoutXLM trên tập dữ liệu tiếng Việt. Tuy nhiên, khi OCR được cung cấp hoàn hảo, LayoutXLM thể hiện năng lực vượt trội hơn hẳn so với tất cả các phương pháp còn lại.
 
 % ============================================================================
 \subsection{Demo ứng dụng}
