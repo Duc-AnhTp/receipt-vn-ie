@@ -58,10 +58,9 @@ os.chdir("/kaggle/working/receipt-vn-ie")
 !ln -s /kaggle/input/datasets/ducanhtp/receipt-vn-ie-data-new/data data
 
 # 4. Cài đặt dependencies
-!pip install "numpy<2.0.0" 2>&1 | tail -3
+!pip install "numpy<2.0.0" "albumentations<1.4.0" 2>&1 | tail -3
 !pip install -e . 2>&1 | tail -3
 !pip install seqeval evaluate 2>&1 | tail -3
-!pip install "albumentations<1.4.0" 2>&1 | tail -3
 !pip install 'git+https://github.com/facebookresearch/detectron2.git' 2>&1 | tail -3
 !pip install -r requirements/ocr.txt 2>&1 | tail -3
 !pip install paddlepaddle-gpu 2>&1 | tail -3
@@ -255,10 +254,9 @@ os.chdir("/kaggle/working/receipt-vn-ie")
 !rm -rf data
 !ln -s /kaggle/input/datasets/ducanhtp/receipt-vn-ie-data-new/data data
 
-!pip install "numpy<2.0.0" 2>&1 | tail -3
+!pip install "numpy<2.0.0" "albumentations<1.4.0" 2>&1 | tail -3
 !pip install -e . 2>&1 | tail -3
 !pip install seqeval evaluate 2>&1 | tail -3
-!pip install "albumentations<1.4.0" 2>&1 | tail -3
 !pip install 'git+https://github.com/facebookresearch/detectron2.git' 2>&1 | tail -3
 !pip install -r requirements/ocr.txt 2>&1 | tail -3
 !pip install paddlepaddle-gpu 2>&1 | tail -3
@@ -356,10 +354,9 @@ os.chdir("/kaggle/working/receipt-vn-ie")
 !rm -rf data
 !ln -s /kaggle/input/datasets/ducanhtp/receipt-vn-ie-data-new/data data
 
-!pip install "numpy<2.0.0" 2>&1 | tail -3
+!pip install "numpy<2.0.0" "albumentations<1.4.0" 2>&1 | tail -3
 !pip install -e . 2>&1 | tail -3
 !pip install seqeval evaluate 2>&1 | tail -3
-!pip install "albumentations<1.4.0" 2>&1 | tail -3
 !pip install -r requirements/ocr.txt 2>&1 | tail -3
 !pip install paddlepaddle-gpu 2>&1 | tail -3
 
