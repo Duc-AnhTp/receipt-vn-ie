@@ -232,7 +232,6 @@ print("=" * 60)
 ```
 
 ---
-
 ## NOTEBOOK 2: Oracle OCR — Trả lời RQ3 (NÊN LÀM)
 
 **Mục đích:** Train LayoutXLM với ground-truth OCR → đo "OCR gap" → trả lời RQ3
@@ -280,8 +279,7 @@ print("=" * 60)
   --mode oracle_ocr \
   --train_batch_size 2 \
   --eval_batch_size 4 \
-  --gradient_accumulation_steps 16 \
-  --gradient_checkpointing
+  --gradient_accumulation_steps 16
 
 print(f"Kết thúc: {time.strftime('%Y-%m-%d %H:%M:%S UTC', time.gmtime())}")
 ```
