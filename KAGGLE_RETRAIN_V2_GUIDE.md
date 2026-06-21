@@ -103,6 +103,10 @@ else:
     !ls -la {DONUT_CHECKPOINT}
 ```
 
+> **⚠️ LƯU Ý QUAN TRỌNG TRÁNH LỖI OOM (OUT OF MEMORY) TRÊN T4 x2:**
+> - **Batch Size:** Mặc định trong cấu hình sử dụng `train_batch_size: 8` per device, rất dễ gây ra lỗi tràn bộ nhớ (OOM / SIGKILL 9) trên GPU Kaggle T4. Khuyến nghị chạy với `--train_batch_size 2` và tăng `--gradient_accumulation_steps 16` tương ứng.
+> - **Gradient Checkpointing:** Tuyệt đối không dùng `--gradient_checkpointing` vì lớp mô hình `LayoutLMv2ForTokenClassification` không hỗ trợ tính năng này trong thư viện Transformers.
+
 ### Cell 3: Train LayoutXLM (có log đầy đủ)
 
 ```python
@@ -115,7 +119,10 @@ print("=" * 60)
 
 !accelerate launch --multi_gpu --num_processes 2 \
   -m receipt_ie.training.train_layoutxlm \
-  --mode ocr_cache
+  --mode ocr_cache \
+  --train_batch_size 2 \
+  --eval_batch_size 4 \
+  --gradient_accumulation_steps 16
 
 print("=" * 60)
 print(f"Thời gian kết thúc: {time.strftime('%Y-%m-%d %H:%M:%S UTC', time.gmtime())}")
@@ -262,6 +269,10 @@ os.chdir("/kaggle/working/receipt-vn-ie")
 
 !mkdir -p checkpoints outputs/predictions outputs/training_logs
 ```
+
+> **⚠️ LƯU Ý QUAN TRỌNG TRÁNH LỖI OOM (OUT OF MEMORY) TRÊN T4 x2:**
+> - **Batch Size:** Mặc định trong cấu hình có thể sử dụng `train_batch_size: 8` per device, dễ gây ra lỗi tràn bộ nhớ (OOM / SIGKILL 9) trên GPU Kaggle T4. Khuyến nghị chạy với `--train_batch_size 2` (hoặc `--train_batch_size 4` nếu dữ liệu nhẹ) và tăng `--gradient_accumulation_steps` tương ứng để đảm bảo ổn định.
+> - **Gradient Checkpointing:** Tuyệt đối không dùng `--gradient_checkpointing` vì lớp mô hình `LayoutLMv2ForTokenClassification` không hỗ trợ tính năng này trong thư viện Transformers và sẽ gây crash ngay lập tức.
 
 ### Cell 2: Train LayoutXLM Oracle OCR
 
