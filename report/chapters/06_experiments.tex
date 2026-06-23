@@ -4,20 +4,20 @@
 \section{Thiết lập thực nghiệm}
 \label{sec:experiments}
 
-Chương này mô tả cấu hình được lưu trong repository, phạm vi dữ liệu của từng mô hình và quy trình tạo các artifact đánh giá. Những thông tin không còn log gốc để xác minh, như thời gian huấn luyện hoặc epoch dừng thực tế, không được trình bày như kết quả đo.
+Phần này đi vào cấu hình lưu trong repository, phạm vi dữ liệu mỗi mô hình dùng, và cách tạo các artifact phục vụ đánh giá. Những thông tin không còn log gốc để kiểm chứng (thời gian huấn luyện, epoch dừng thực tế) sẽ không được đưa ra như kết quả đo.
 
 \subsection{Trạng thái prediction artifact}
 \label{subsec:artifact-validity}
 
 \input{generated/artifact_validity_table}
 
-Cả ba phương pháp Baseline, LayoutXLM và Donut đều có đủ 234 bản ghi dự đoán trên tập test, không có bản ghi nào bị lỗi (\code{status=error}) và đều được đưa vào so sánh chính. Với LayoutXLM, báo cáo bổ sung sensitivity check loại bốn ID có sai lệch tọa độ ảnh. Với Donut, lỗi cắt chuỗi 20 token trước đây đã được khắc phục hoàn toàn bằng cách đặt tham số sinh \code{generation\_max\_length=768}, giúp phục hồi đầy đủ năng lực suy luận của mô hình. SHA-256 trong bảng khóa đúng nội dung các artifact được phân tích.
+Cả ba phương pháp Baseline, LayoutXLM và Donut đều có đủ 234 bản ghi dự đoán trên tập test, không có bản ghi nào bị lỗi (\code{status=error}), và đều được đưa vào bảng kết quả để người đọc thấy cùng một protocol đánh giá. Riêng LayoutXLM, báo cáo có thêm sensitivity check loại bốn ID bị sai lệch tọa độ ảnh. Với Donut, metadata của prediction ghi nhận tham số sinh \code{generation\_max\_length=768}; tuy nhiên đầu ra vẫn lặp mạnh và rất ít cặp thẻ hợp lệ, nên kết quả Donut được diễn giải như chẩn đoán checkpoint hiện có hơn là kết luận tổng quát về toàn bộ hướng OCR-free. SHA-256 trong bảng khóa đúng nội dung các artifact được phân tích.
 
 % ============================================================================
 \subsection{Môi trường và cấu hình}
 \label{subsec:exp_env}
 
-Các checkpoint được xây dựng cho môi trường GPU NVIDIA Tesla T4. Cấu hình phần mềm của dự án sử dụng Python, PyTorch, Hugging Face Transformers, PaddleOCR, VietOCR và RapidFuzz. Hạt giống chia dữ liệu được đặt là $42$. Do repository không lưu đầy đủ ảnh chụp môi trường và log package của lần huấn luyện tạo checkpoint, các phiên bản thư viện trong tài liệu hướng dẫn chỉ được xem là cấu hình dự kiến để tái lập, không phải bằng chứng về môi trường chạy lịch sử.
+Các checkpoint được huấn luyện trên GPU NVIDIA Tesla T4. Về phần mềm, dự án dùng Python, PyTorch, Hugging Face Transformers, PaddleOCR, VietOCR và RapidFuzz. Hạt giống chia dữ liệu là $42$. Do repository không lưu đầy đủ ảnh chụp môi trường cùng log package từ lần huấn luyện tạo checkpoint, các phiên bản thư viện ghi trong tài liệu hướng dẫn chỉ nên xem là cấu hình dự kiến để tái lập, không phải bằng chứng về môi trường chạy trước đó.
 
 \begin{table}[htbp]
   \centering
@@ -40,7 +40,7 @@ Các checkpoint được xây dựng cho môi trường GPU NVIDIA Tesla T4. C�
   \end{tabular}
 \end{table}
 
-Các giá trị trong \cref{tab:hyperparams} phản ánh file cấu hình hiện tại. Chúng không chứng minh số epoch thực chạy, checkpoint tốt nhất hay thời gian huấn luyện.
+Các giá trị trong \cref{tab:hyperparams} lấy từ file cấu hình hiện tại. Chúng không cho biết số epoch thực chạy, checkpoint tốt nhất hay thời gian huấn luyện.
 
 % ============================================================================
 \subsection{Phạm vi dữ liệu của từng pipeline}
@@ -61,34 +61,34 @@ Các giá trị trong \cref{tab:hyperparams} phản ánh file cấu hình hiện
   \end{tabular}
 \end{table}
 
-Donut chỉ cần ảnh và nhãn JSON nên sử dụng cả hai nguồn dữ liệu. LayoutXLM cần hộp bao trường để sinh nhãn BIO và do đó chỉ huấn luyện trên các mẫu \code{json\_and\_boxes}. Tất cả phương pháp được chấm trên cùng 234 ID test, nhưng điều kiện huấn luyện khác nhau là một yếu tố nhiễu cần được giữ trong diễn giải.
+Donut chỉ cần ảnh và nhãn JSON nên dùng được cả hai nguồn dữ liệu. LayoutXLM cần hộp bao trường để sinh nhãn BIO, do đó chỉ huấn luyện trên các mẫu \code{json\_and\_boxes}. Cả ba phương pháp đều chấm trên cùng 234 ID test, tuy nhiên điều kiện huấn luyện khác nhau là yếu tố nhiễu cần lưu ý khi diễn giải kết quả.
 
 % ============================================================================
 \subsection{Quy trình suy luận và đánh giá}
 \label{subsec:evaluation_protocol}
 
-Predictions của ba phương pháp được lưu theo cùng schema, gồm kết quả thô, kết quả chuẩn hóa, trạng thái xử lý và các thành phần latency. Evaluator ghép prediction với ground-truth theo \field{id}. Prediction thiếu hoặc có \code{status=error} được chấm như dự đoán rỗng thay vì bị loại khỏi mẫu số.
+Predictions của ba phương pháp được lưu theo cùng schema, bao gồm kết quả thô, kết quả chuẩn hóa, trạng thái xử lý và các thành phần latency. Evaluator ghép prediction với ground-truth theo \field{id}. Prediction thiếu hoặc có \code{status=error} sẽ được chấm như dự đoán rỗng thay vì bị loại khỏi mẫu số.
 
 Kết quả được báo cáo theo hai chế độ:
 \begin{enumerate}
   \item \textbf{All samples:} toàn bộ 234 mẫu; trường hợp cả prediction và ground-truth rỗng được tính đúng theo quy ước metric.
-  \item \textbf{Present-only:} chỉ các mẫu có ground-truth khác rỗng của từng trường. Chế độ này được ưu tiên khi phân tích năng lực trích xuất thực sự.
+  \item \textbf{Present-only:} chỉ các mẫu có ground-truth khác rỗng của từng trường. Chế độ này được ưu tiên khi phân tích khả năng trích xuất thực tế.
 \end{enumerate}
 
-Các tệp JSON metrics, CSV phân tích lỗi, biểu đồ và bảng LaTeX được sinh lại từ predictions hiện có. Bảng trong chương kết quả được nạp từ thư mục \code{report/generated}, tránh sao chép số liệu thủ công.
+Các tệp JSON metrics, CSV phân tích lỗi, biểu đồ và bảng LaTeX đều được sinh lại từ predictions hiện có. Bảng trong chương kết quả được nạp từ thư mục \code{report/generated} để tránh sao chép số liệu bằng tay.
 
 % ============================================================================
 \subsection{Phạm vi phép đo latency}
 \label{subsec:latency_protocol}
 
-Artifact prediction chỉ cho phép kết luận về thành phần thời gian đã được ghi:
+Artifact prediction chỉ cho phép rút ra kết luận về thành phần thời gian đã được ghi:
 \begin{itemize}
   \item Baseline: thời gian áp dụng luật và hậu xử lý trên OCR cache.
   \item LayoutXLM: thời gian suy luận mô hình từ OCR cache.
   \item Donut: thời gian suy luận trực tiếp từ ảnh đầu vào (end-to-end từ ảnh sang chuỗi).
 \end{itemize}
 
-Thời gian chạy PaddleOCR và VietOCR từ ảnh thô không được ghi đồng nhất trong các prediction hiện có. Vì vậy bảng latency chính chỉ đặt Baseline và LayoutXLM cạnh nhau vì cùng bắt đầu từ OCR cache; báo cáo không cộng một hằng số OCR giả định và không gọi đây là latency end-to-end từ ảnh thô.
+Thời gian chạy PaddleOCR và VietOCR từ ảnh thô không được ghi đồng nhất trong các prediction hiện có. Vì vậy, Baseline và LayoutXLM có thể so sánh trực tiếp với nhau ở phạm vi sau OCR cache, còn Donut được báo cáo riêng trong cùng bảng như thời gian suy luận trực tiếp từ ảnh. Báo cáo không cộng thêm một hằng số OCR giả định và không gọi các phép đo này là so sánh end-to-end đồng nhất từ ảnh thô.
 
 % ============================================================================
 \subsection{Trạng thái bằng chứng huấn luyện}
@@ -99,4 +99,4 @@ Các thực nghiệm chạy lại trên Kaggle đã ghi nhận đầy đủ tệ
   \item \textbf{LayoutXLM (ocr\_cache):} Tiến trình dừng tại bước 200 (tương đương 15,4 epochs) với F1 đạt 83,65\% trên tập validation.
   \item \textbf{LayoutXLM (oracle\_ocr):} Chạy đầy đủ 80 bước (20 epochs) trên tập dữ liệu MC-OCR rút gọn có ground-truth OCR (256 mẫu train).
 \end{itemize}
-Các log huấn luyện chi tiết này hiện được lưu trữ trong thư mục \code{outputs/training\_logs/} làm bằng chứng kiểm chứng và tái lập kết quả.
+Các log huấn luyện chi tiết này hiện được lưu trong thư mục \code{outputs/training\_logs/} làm bằng chứng kiểm chứng và tái lập kết quả.

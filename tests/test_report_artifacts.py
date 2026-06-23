@@ -14,25 +14,45 @@ assert SPEC and SPEC.loader
 SPEC.loader.exec_module(REPORT_ARTIFACTS)
 
 
+def _make_dummy_metrics():
+    metrics = {}
+    for method in ("baseline", "layoutxlm", "donut"):
+        metrics[method] = {}
+        for view in ("all_samples", "present_only"):
+            metrics[method][view] = {
+                field: {"EM": 0.0, "NES": 0.0, "CER": 0.0}
+                for field in REPORT_ARTIFACTS.FIELDS
+            }
+        metrics[method]["prediction_coverage"] = {
+            field: {"rate": 0.0}
+            for field in REPORT_ARTIFACTS.FIELDS[:-1]
+        }
+        metrics[method]["n_samples"] = 1
+        metrics[method]["n_inference_errors"] = 0
+        metrics[method]["n_present"] = {
+            field: 1 for field in REPORT_ARTIFACTS.FIELDS[:-1]
+        }
+    return metrics
+
+
 class TestReportArtifacts(unittest.TestCase):
+    def test_valid_donut_is_in_main_results(self):
+        """Donut valid_for_main_comparison=True → xuất hiện trong bảng chính."""
+        metrics = _make_dummy_metrics()
+        manifest = {
+            "methods": {
+                "baseline": {"valid_for_main_comparison": True},
+                "layoutxlm": {"valid_for_main_comparison": True},
+                "donut": {"valid_for_main_comparison": True},
+            }
+        }
+        output = REPORT_ARTIFACTS.generate_results_tables(metrics, manifest)
+        self.assertIn(r"\model{Donut}", output)
+        self.assertIn(r"\model{LayoutXLM}", output)
+
     def test_invalid_donut_is_not_in_main_results(self):
-        metrics = {}
-        for method in ("baseline", "layoutxlm", "donut"):
-            metrics[method] = {}
-            for view in ("all_samples", "present_only"):
-                metrics[method][view] = {
-                    field: {"EM": 0.0, "NES": 0.0, "CER": 0.0}
-                    for field in REPORT_ARTIFACTS.FIELDS
-                }
-            metrics[method]["prediction_coverage"] = {
-                field: {"rate": 0.0}
-                for field in REPORT_ARTIFACTS.FIELDS[:-1]
-            }
-            metrics[method]["n_samples"] = 1
-            metrics[method]["n_inference_errors"] = 0
-            metrics[method]["n_present"] = {
-                field: 1 for field in REPORT_ARTIFACTS.FIELDS[:-1]
-            }
+        """Donut valid_for_main_comparison=False → không xuất hiện trong bảng chính."""
+        metrics = _make_dummy_metrics()
         manifest = {
             "methods": {
                 "baseline": {"valid_for_main_comparison": True},

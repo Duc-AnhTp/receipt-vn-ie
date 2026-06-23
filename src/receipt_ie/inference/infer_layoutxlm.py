@@ -49,7 +49,7 @@ class LayoutXLMExtractor(BaseExtractor):
         self.max_length = 512
         self.y_threshold = 12
 
-    def load(self, checkpoint_path: str) -> None:
+    def load(self, checkpoint_path: str, init_ocr: bool = True) -> None:
         """
         Nạp mô hình LayoutXLM và Tokenizer từ checkpoint.
         Đồng thời khởi tạo luôn bộ máy OCR nếu chưa có.
@@ -70,7 +70,7 @@ class LayoutXLMExtractor(BaseExtractor):
         print("LayoutXLM model loaded successfully.")
         
         # Tự động nạp bộ OCR nếu chưa được truyền từ ngoài
-        if self.detector is None or self.recognizer is None:
+        if init_ocr and (self.detector is None or self.recognizer is None):
             self._init_ocr()
 
     def _init_ocr(self):

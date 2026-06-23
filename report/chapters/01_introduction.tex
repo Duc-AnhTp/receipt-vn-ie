@@ -5,36 +5,36 @@
 \section{Tổng quan đề tài}
 \label{sec:introduction}
 
-Chương này khái quát về đề tài nghiên cứu, phân tích tính cấp thiết của bài toán tự động hóa xử lý tài liệu tại Việt Nam. Nội dung tập trung làm rõ các câu hỏi nghiên cứu cốt lõi, mục tiêu đo lường, phạm vi hoạt động của hệ thống, cùng các đóng góp thực tiễn mà đồ án đạt được.
+Chương này giới thiệu bối cảnh của đề tài, lý do chọn bài toán tự động xử lý biên lai tiếng Việt, các câu hỏi nghiên cứu, mục tiêu đo lường, phạm vi hệ thống và những đóng góp thực tiễn đạt được.
 
 % ----------------------------------------------------------------------------
 \subsection{Đặt vấn đề (Problem Statement)}
 \label{subsec:problem-statement}
 
-Trong xu thế số hóa và xây dựng nền kinh tế số tại Việt Nam, nhu cầu tự động hóa nhập liệu tài liệu tài chính như biên lai, hóa đơn bán lẻ phát sinh vô cùng lớn tại các hệ thống siêu thị, cửa hàng tiện lợi, và doanh nghiệp dịch vụ. Việc nhập liệu và đối soát thủ công không chỉ tiêu tốn nhiều thời gian, chi phí vận hành mà còn tiềm ẩn nguy cơ sai sót do con người. Việc tự động hóa quy trình này bằng kỹ thuật nhận dạng ký tự quang học (\gls{ocr}) kết hợp trích xuất thông tin then chốt (Key Information Extraction - KIE) là một đòi hỏi cấp thiết trong thực tiễn.
+Trong bối cảnh số hóa và phát triển kinh tế số tại Việt Nam, nhu cầu tự động nhập liệu tài liệu tài chính như biên lai, hóa đơn bán lẻ ngày càng lớn ở các hệ thống siêu thị, cửa hàng tiện lợi và doanh nghiệp dịch vụ. Nhập liệu và đối soát bằng tay không chỉ tốn thời gian, tăng chi phí vận hành mà còn dễ gây sai sót. Vì vậy, việc tự động hóa quy trình này bằng nhận dạng ký tự quang học (\gls{ocr}) kết hợp trích xuất thông tin (Key Information Extraction - KIE) là rất cần thiết.
 
-Tuy nhiên, bài toán trích xuất thông tin biên lai tiếng Việt trong môi trường thực tế đối mặt với nhiều thách thức lớn:
+Tuy nhiên, bài toán trích xuất thông tin biên lai tiếng Việt ngoài thực tế gặp nhiều khó khăn:
 \begin{enumerate}
   \item \textbf{Chất lượng ảnh không đồng đều:} Ảnh biên lai chụp bằng thiết bị di động cá nhân thường bị mờ, nghiêng, thiếu sáng, bị lóa phản quang, hoặc nhàu nát.
   \item \textbf{Cấu trúc bố cục tự do:} Không có tiêu chuẩn chung về cách trình bày thông tin trên biên lai bán lẻ. Cấu trúc dòng chữ, bảng biểu biến động mạnh giữa các cửa hàng.
-  \item \textbf{Đặc trưng tiếng Việt có dấu:} Tiếng Việt sở hữu hệ thống dấu thanh và ký tự phức tạp. Sai lệch một dấu nhỏ trong quá trình nhận dạng có thể dẫn đến việc sai lệch toàn bộ nghĩa của từ (ví dụ nhầm lẫn tên cửa hàng hoặc thông tin địa chỉ).
+  \item \textbf{Đặc trưng tiếng Việt có dấu:} Tiếng Việt có hệ thống dấu thanh và ký tự phức tạp. Chỉ cần sai một dấu nhỏ khi nhận dạng là có thể làm sai nghĩa cả từ (ví dụ nhầm tên cửa hàng hoặc địa chỉ).
 \end{enumerate}
 
-Để giải quyết bài toán này, các hướng nghiên cứu hiện đại chia làm hai trường phái kỹ thuật chính:
+Hiện tại có hai hướng tiếp cận chính cho bài toán này:
 \begin{itemize}
-  \item \textbf{OCR-based pipeline} (như kết hợp PaddleOCR/VietOCR với mô hình ngôn ngữ hiểu bố cục \model{LayoutXLM}~\cite{xu2021layoutxlm}): Phân tách rõ ràng giai đoạn nhận dạng chữ viết và giai đoạn phân loại thực thể cấp token.
-  \item \textbf{OCR-free pipeline} (như mô hình sinh end-to-end \model{Donut}~\cite{kim2022donut}): Sử dụng mạng nơ-ron Transformer trực tiếp sinh ra chuỗi có cấu trúc từ ảnh đầu vào mà không cần module nhận dạng văn bản trung gian.
+  \item \textbf{OCR-based pipeline} (như kết hợp PaddleOCR/VietOCR với mô hình ngôn ngữ hiểu bố cục \model{LayoutXLM}~\cite{xu2021layoutxlm}): Tách riêng giai đoạn nhận dạng chữ và giai đoạn phân loại thực thể cấp token.
+  \item \textbf{OCR-free pipeline} (như mô hình sinh end-to-end \model{Donut}~\cite{kim2022donut}): Dùng mạng Transformer sinh trực tiếp chuỗi có cấu trúc từ ảnh đầu vào, không cần module nhận dạng văn bản trung gian.
 \end{itemize}
 
-Việc đánh giá hai hướng tiếp cận trên cùng tập kiểm thử giúp mô tả ưu, nhược điểm của các checkpoint hiện có. Tuy nhiên, một phép so sánh kiến trúc tuyệt đối còn đòi hỏi kiểm soát lượng dữ liệu và mức annotation giống nhau.
+So sánh hai hướng tiếp cận này trên cùng tập kiểm thử sẽ cho thấy ưu nhược điểm của từng checkpoint. Dù vậy, một phép so sánh kiến trúc hoàn toàn công bằng còn cần kiểm soát cả lượng dữ liệu và mức annotation giống nhau.
 
 % ----------------------------------------------------------------------------
 \subsection{Câu hỏi nghiên cứu (Research Questions)}
 \label{subsec:research-questions}
 
-Để định hướng các nội dung thực nghiệm và đánh giá, đồ án đặt ra ba câu hỏi nghiên cứu cốt lõi sau:
+Đồ án đặt ra ba câu hỏi nghiên cứu chính để định hướng thực nghiệm và đánh giá:
 \begin{itemize}
-  \item \textbf{RQ1:} Trên các prediction artifact đủ điều kiện đánh giá, mô hình OCR-based \model{LayoutXLM} cải thiện như thế nào so với Baseline dựa trên luật? Artifact hiện có cho phép kết luận đến đâu về \model{Donut}?
+  \item \textbf{RQ1:} Trên các prediction artifact đủ điều kiện đánh giá, mô hình OCR-based \model{LayoutXLM} cải thiện như thế nào so với Baseline dựa trên luật? Kết quả hiện có của \model{Donut} cho thấy điều gì về khó khăn của hướng OCR-free trên tập dữ liệu nhỏ?
   \item \textbf{RQ2:} Các thành phần suy luận đã được ghi nhận có latency khác nhau như thế nào, và phép đo hiện tại cho phép kết luận đến đâu?
   \item \textbf{RQ3:} Dữ liệu hiện có cung cấp bằng chứng nào về sự phụ thuộc của pipeline OCR-based vào OCR, và cần thí nghiệm nào để định lượng ảnh hưởng đó?
 \end{itemize}
@@ -43,9 +43,9 @@ Việc đánh giá hai hướng tiếp cận trên cùng tập kiểm thử giú
 \subsection{Mục tiêu và chỉ số đo lường}
 \label{subsec:objectives-metrics}
 
-Mục tiêu của đồ án là thiết kế, huấn luyện và đánh giá khách quan ba phương pháp trích xuất 4 trường thông tin quan trọng từ biên lai tiếng Việt: tên cửa hàng (\field{store\_name}), ngày tháng (\field{date}), tổng tiền (\field{total}), và địa chỉ (\field{address}).
+Đồ án hướng tới thiết kế, huấn luyện và đánh giá ba phương pháp trích xuất 4 trường thông tin quan trọng từ biên lai tiếng Việt: tên cửa hàng (\field{store\_name}), ngày tháng (\field{date}), tổng tiền (\field{total}), và địa chỉ (\field{address}).
 
-Để trả lời các câu hỏi nghiên cứu, hiệu năng của các phương pháp được đo lường định lượng trên cùng tập kiểm thử độc lập thông qua bốn chỉ số:
+Hiệu năng các phương pháp được đo trên cùng tập kiểm thử độc lập qua bốn chỉ số:
 \begin{itemize}
   \item \textbf{Exact Match (EM):} Tỷ lệ dự đoán khớp chính xác tuyệt đối từng ký tự với nhãn thật sau chuẩn hóa.
   \item \textbf{Normalized Edit Similarity (NES):} Đo độ tương đồng chuỗi ký tự dựa trên khoảng cách Levenshtein chuẩn hóa.
@@ -57,7 +57,7 @@ Mục tiêu của đồ án là thiết kế, huấn luyện và đánh giá kh�
 \subsection{Phạm vi đề tài}
 \label{subsec:scope}
 
-Đề tài tập trung tối ưu hóa và đánh giá khả năng trích xuất thông tin trên 4 trường dữ liệu cốt lõi được mô tả trong \cref{tab:target-fields}.
+Đề tài tập trung vào việc đánh giá khả năng trích xuất thông tin trên 4 trường dữ liệu chính được mô tả trong \cref{tab:target-fields}.
 
 \begin{table}[htbp]
   \centering
@@ -86,10 +86,10 @@ Mục tiêu của đồ án là thiết kế, huấn luyện và đánh giá kh�
 \subsection{Đóng góp thực tiễn}
 \label{subsec:contributions}
 
-Đồ án mang lại các đóng góp thực tiễn cụ thể phục vụ bài toán trích xuất tài liệu tiếng Việt:
+Đồ án có các đóng góp thực tiễn sau cho bài toán trích xuất tài liệu tiếng Việt:
 \begin{enumerate}
   \item \textbf{Xây dựng bộ dữ liệu nhãn sạch:} Hợp nhất và gán nhãn chuẩn hóa tập dữ liệu gồm 1.559 mẫu biên lai tiếng Việt từ cuộc thi MC-OCR 2021 và dữ liệu tự chụp thực tế.
-  \item \textbf{Đánh giá có kiểm soát bằng chứng:} So sánh Baseline và \model{LayoutXLM} trên cùng tập kiểm thử, đồng thời tách artifact \model{Donut} không hoàn chỉnh sang phạm vi chẩn đoán thay vì dùng để xếp hạng.
+  \item \textbf{Đánh giá có kiểm soát bằng chứng:} So sánh Baseline, \model{LayoutXLM} và \model{Donut} trên cùng tập kiểm thử, đồng thời diễn giải riêng kết quả \model{Donut} như một ca chẩn đoán model collapse thay vì bằng chứng khẳng định ưu/nhược tuyệt đối của kiến trúc OCR-free.
   \item \textbf{Phân loại và phân tích lỗi:} Xây dựng taxonomy bảy nhóm lỗi có thể sinh lại tự động từ prediction, ground-truth và OCR cache.
   \item \textbf{Demo ứng dụng tương tác:} Triển khai giao diện demo bằng Gradio chạy thời gian thực phục vụ mục đích kiểm thử trực quan.
 \end{enumerate}
@@ -98,13 +98,13 @@ Mục tiêu của đồ án là thiết kế, huấn luyện và đánh giá kh�
 \subsection{Cấu trúc báo cáo}
 \label{subsec:report-structure}
 
-Báo cáo được tổ chức thành các chương cụ thể như sau:
+Báo cáo gồm các chương sau:
 \begin{itemize}
   \item \textbf{\cref{sec:theory} (Cơ sở lý thuyết):} Trình bày bài toán trích xuất thông tin, lý thuyết về OCR, kiến trúc Donut, LayoutXLM và các công trình liên quan.
   \item \textbf{\cref{sec:dataset} (Thu thập và xây dựng tập dữ liệu):} Mô tả các nguồn dữ liệu, quy tắc gán nhãn, schema thống nhất và quy trình loại mẫu trùng lặp.
   \item \textbf{\cref{sec:preprocessing} (Tiền xử lý dữ liệu):} Chi tiết các bước xử lý hình ảnh, tăng cường dữ liệu, chuẩn hóa văn bản, xây dựng OCR cache và trạng thái khảo sát ablation.
   \item \textbf{\cref{sec:methodology} (Phương pháp thực hiện):} Thiết kế chi tiết và cấu hình triển khai của cả ba pipeline.
-  \item \textbf{\cref{sec:experiments} (Thực nghiệm):} Trình bày cấu hình, phạm vi dữ liệu, protocol đánh giá và giới hạn bằng chứng huấn luyện.
-  \item \textbf{\cref{sec:results} (Kết quả thực nghiệm):} Thảo luận kết quả all-samples, present-only, latency thành phần và phân tích lỗi tái lập.
-  \item \textbf{\cref{sec:conclusion} (Kết luận):} Trả lời các câu hỏi nghiên cứu, đúc rút hạn chế và mở ra hướng phát triển tương lai.
+  \item \textbf{\cref{sec:experiments} (Thực nghiệm):} Cấu hình, phạm vi dữ liệu, protocol đánh giá và giới hạn bằng chứng huấn luyện.
+  \item \textbf{\cref{sec:results} (Kết quả thực nghiệm):} Thảo luận kết quả all-samples, present-only, latency thành phần và phân tích lỗi.
+  \item \textbf{\cref{sec:conclusion} (Kết luận):} Trả lời các câu hỏi nghiên cứu, rút ra hạn chế và hướng phát triển tiếp theo.
 \end{itemize}

@@ -5,32 +5,32 @@
 \section{Tiền xử lý dữ liệu}
 \label{sec:preprocessing}
 
-Chương này trình bày các bước xử lý hình ảnh và văn bản được cài đặt trong hệ thống. Các cấu hình được mô tả theo mã nguồn hiện tại; báo cáo không coi chúng là cấu hình tối ưu nếu chưa có thí nghiệm ablation đủ bằng chứng tái lập.
+Trước khi đưa dữ liệu vào các mô hình, cần thực hiện một số bước xử lý ảnh và văn bản. Phần này mô tả các bước đang được cài đặt trong hệ thống theo mã nguồn hiện tại. Báo cáo không coi đây là cấu hình tối ưu nếu chưa có thí nghiệm ablation đủ bằng chứng tái lập.
 
 % ============================================================================
 \subsection{Tiền xử lý ảnh (Image Preprocessing)}
 \label{subsec:image-preprocessing}
 
-Chất lượng ảnh biên lai đầu vào ảnh hưởng trực tiếp đến hiệu năng nhận dạng của bộ OCR. Pipeline hiện gọi profile mặc định \code{resize}; trong mã thực thi, profile này chỉ resize cạnh dài và không tự động gọi denoise hoặc CLAHE:
+Chất lượng ảnh biên lai ảnh hưởng trực tiếp đến khả năng nhận dạng của bộ OCR. Pipeline hiện tại gọi profile mặc định \code{resize}; trên thực tế, profile này chỉ resize cạnh dài mà không tự động gọi denoise hay CLAHE:
 \begin{itemize}
   \item \textbf{Resize hình ảnh:} 
   \begin{itemize}
-    \item Đối với pipeline OCR (Baseline và LayoutXLM): Ảnh được resize theo cạnh dài nhất với $\text{max\_long\_side} = 1600$ pixel để bảo đảm nét chữ rõ ràng và duy trì tỷ lệ khung hình (aspect ratio).
+    \item Đối với pipeline OCR (Baseline và LayoutXLM): Ảnh được resize theo cạnh dài nhất với $\text{max\_long\_side} = 1600$ pixel để giữ nét chữ rõ ràng và không thay đổi tỷ lệ khung hình (aspect ratio).
     \item Đối với Donut: Ảnh được resize về kích thước cố định $1280 \times 960$ pixel, phần thiếu được lấp đầy bằng khoảng trắng (padding).
   \end{itemize}
 \end{itemize}
 
-Tệp cấu hình còn chứa các cờ \code{denoise=true} và \code{clahe=true}, nhưng pipeline tiền xử lý hiện chưa đọc hoặc thực thi hai cờ này. Vì vậy báo cáo coi chúng là cấu hình dự kiến, không phải bước đã áp dụng cho artifact. Mã nguồn thực thi hỗ trợ thêm:
+Tệp cấu hình có chứa cờ \code{denoise=true} và \code{clahe=true}, nhưng pipeline tiền xử lý thực tế chưa đọc hay thực thi hai cờ này. Do đó báo cáo coi chúng là cấu hình dự kiến chứ chưa phải bước đã áp dụng. Ngoài ra, mã nguồn còn hỗ trợ thêm:
 \begin{itemize}
   \item \textbf{Nhị phân hóa (Binarize):} Resize cạnh dài rồi áp dụng adaptive Gaussian threshold, không phải Otsu.
-  \item \textbf{Nắn thẳng ảnh (Rectify):} Tìm contour bốn góc và dùng perspective transform; nếu không tìm được contour hợp lệ, ảnh gốc được giữ lại.
+  \item \textbf{Nắn thẳng ảnh (Rectify):} Tìm contour bốn góc và dùng perspective transform; nếu không tìm được contour hợp lệ thì giữ nguyên ảnh gốc.
 \end{itemize}
 
 % ============================================================================
 \subsection{Tăng cường dữ liệu (Data Augmentation)}
 \label{subsec:augmentation}
 
-Tăng cường dữ liệu được áp dụng trực tuyến và chỉ trên tập train. Hai mô hình sử dụng hai nhóm phép biến đổi khác nhau vì LayoutXLM phải giữ tọa độ OCR và hộp nhãn đồng nhất với ảnh.
+Augmentation được áp dụng trực tuyến, chỉ trên tập train. Hai mô hình dùng hai nhóm phép biến đổi khác nhau do LayoutXLM cần giữ tọa độ OCR và hộp nhãn khớp với ảnh.
 
 \begin{table}[htbp]
   \centering
@@ -50,12 +50,12 @@ Tăng cường dữ liệu được áp dụng trực tuyến và chỉ trên t�
 \subsection{Chuẩn hoá văn bản (Text Normalization)}
 \label{subsec:text-normalization}
 
-Chuẩn hóa văn bản là bước bắt buộc để đồng nhất định dạng dữ liệu đầu ra. Mã nguồn không tự sửa chính tả, không bỏ dấu và không chuyển toàn bộ chuỗi sang chữ thường; vì vậy EM vẫn nhạy với khác biệt hoa/thường và dấu tiếng Việt.
+Chuẩn hóa văn bản là bước bắt buộc để đồng nhất định dạng đầu ra. Mã nguồn không tự sửa chính tả, không bỏ dấu, cũng không chuyển toàn bộ chuỗi về chữ thường. Vì vậy EM vẫn phân biệt hoa/thường và nhạy với dấu tiếng Việt.
 
 \paragraph{1. Chuẩn hóa chung (General Normalization)}
 Áp dụng cho toàn bộ các trường thông tin:
 \begin{itemize}
-  \item \textbf{Unicode NFC:} Chuyển đổi toàn bộ văn bản về dạng chuẩn tổ hợp Unicode NFC để đồng nhất biểu diễn ký tự có dấu.
+  \item \textbf{Unicode NFC:} Chuyển đổi toàn bộ văn bản về dạng chuẩn tổ hợp Unicode NFC để thống nhất cách biểu diễn ký tự có dấu.
   \item \textbf{Whitespace:} Gộp các khoảng trắng liên tiếp và cắt khoảng trắng ở hai đầu chuỗi.
   \item \textbf{Ký tự đặc biệt:} Loại bỏ các ký tự điều khiển không in được.
 \end{itemize}
@@ -90,14 +90,14 @@ Chuẩn hóa văn bản là bước bắt buộc để đồng nhất định d�
 \subsection{Xây dựng OCR Cache}
 \label{subsec:ocr-cache}
 
-Quá trình chạy mô hình OCR (PaddleOCR kết hợp VietOCR) tốn nhiều tài nguyên tính toán và thời gian. Việc xây dựng OCR cache giúp lưu trữ lại kết quả nhận diện của từng ảnh để sử dụng lại tức thì trong các lượt huấn luyện và thực nghiệm khác nhau, đẩy nhanh đáng kể tốc độ thử nghiệm.
+Việc chạy OCR (PaddleOCR kết hợp VietOCR) tốn khá nhiều tài nguyên và thời gian. Để không phải chạy lại OCR mỗi lần thí nghiệm, hệ thống xây dựng OCR cache — lưu lại kết quả nhận dạng của từng ảnh để dùng lại ngay trong các lượt huấn luyện và thử nghiệm khác nhau.
 
-OCR cache lưu danh sách từ, bounding box, thông tin kích thước ảnh sau tiền xử lý và metadata phiên bản OCR. Cache được dùng chung cho Baseline và LayoutXLM nhằm tránh chạy lại OCR trong huấn luyện, suy luận kiểm thử và phân tích lỗi. Báo cáo không công bố thời gian OCR CPU/GPU vì artifact hiện tại không chứa log đo đầy đủ để xác minh các con số đó.
+OCR cache chứa danh sách từ, bounding box, kích thước ảnh sau tiền xử lý và metadata phiên bản OCR. Cache này dùng chung cho cả Baseline và LayoutXLM, tránh phải chạy lại OCR khi huấn luyện, suy luận hay phân tích lỗi. Báo cáo không công bố thời gian OCR CPU/GPU vì artifact hiện tại không có log đo đầy đủ để xác minh.
 
 % ============================================================================
 \subsection{Trạng thái khảo sát tiền xử lý OCR}
 \label{subsec:ocr-ablation}
 
-Script khảo sát hỗ trợ bốn profile \code{none}, \code{resize}, \code{binarize} và \code{rectify}, dự kiến chạy trên validation thay vì test để tránh lựa chọn cấu hình dựa trên tập kiểm thử. Tuy nhiên, các CSV được lưu trong repository hiện chỉ chứa ba mẫu cho mỗi profile và không tái lập được bảng 100 mẫu từng được ghi trong bản thảo. Vì vậy, báo cáo loại bỏ bảng xếp hạng ablation và không khẳng định profile \code{resize} là tối ưu.
+Script khảo sát hỗ trợ bốn profile \code{none}, \code{resize}, \code{binarize} và \code{rectify}, dự kiến chạy trên validation thay vì test để tránh chọn cấu hình dựa trên tập kiểm thử. Tuy nhiên, các CSV lưu trong repository chỉ chứa ba mẫu mỗi profile và không tái lập được bảng 100 mẫu từng có trong bản thảo trước. Vì vậy, báo cáo bỏ bảng xếp hạng ablation và không kết luận profile \code{resize} là tối ưu.
 
-Profile \code{resize} được giữ làm cấu hình mặc định vì đây là lựa chọn kỹ thuật đã được tích hợp nhất quán trong OCR cache và inference. Một thí nghiệm ablation hợp lệ trong tương lai cần cố định danh sách mẫu validation, bảo đảm đủ cache cho từng profile, báo cáo cả độ phủ cache và không cộng điểm tự động cho trường ground-truth rỗng.
+Profile \code{resize} vẫn được giữ làm mặc định vì đây là lựa chọn đã được tích hợp nhất quán trong OCR cache và inference. Nếu muốn làm ablation hợp lệ trong tương lai, cần cố định danh sách mẫu validation, đảm bảo đủ cache cho từng profile, báo cáo cả độ phủ cache và không cộng điểm tự động cho trường ground-truth rỗng.

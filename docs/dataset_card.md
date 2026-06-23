@@ -21,13 +21,6 @@ Tập dữ liệu biên lai tiếng Việt phục vụ bài toán trích xuất 
 - **Annotation level**: `json_and_boxes` (tối thiểu 200–300 ảnh) hoặc `json_only`.
 - **Đường dẫn**: `data/raw/self_collected/`
 
-### CORD v2 (Optional / Future Work)
-
-- **Mô tả**: Consolidated Receipt Dataset v2 từ Naver CLOVA.
-- **Vai trò**: Chỉ giữ như nhánh tham khảo cho warm-up/pretrain Donut trong tương lai. **Không dùng trong pipeline chính và không đưa vào kết quả báo cáo hiện tại**.
-- **Task token riêng**: `<s_cord_receipt_parse>` (tách biệt với task chính `<s_receipt_ie>`).
-- **Đường dẫn**: `data/raw/cord_v2/`
-
 ## Schema thống nhất (Unified JSONL)
 
 Mỗi dòng trong file JSONL chứa:
@@ -37,7 +30,7 @@ Mỗi dòng trong file JSONL chứa:
 | `id` | string | ID duy nhất của mẫu |
 | `group_id` | string | ID nhóm (cùng bill chụp nhiều góc) |
 | `store_group` | string | Nhóm cửa hàng (phục vụ stress-test split) |
-| `source` | string | `mc_ocr_2021` / `self_collected` / `cord_v2` |
+| `source` | string | `mc_ocr_2021` / `self_collected` |
 | `image_path` | string | Đường dẫn tương đối tới ảnh |
 | `width`, `height` | int | Kích thước ảnh gốc (pixels) |
 | `annotation_level` | string | `json_only` hoặc `json_and_boxes` |
