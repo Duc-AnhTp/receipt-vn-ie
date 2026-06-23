@@ -4,21 +4,21 @@
 \section{Cơ sở lý thuyết}
 \label{sec:theory}
 
-Chương này trình bày các cơ sở lý thuyết nền tảng cho đồ án, bao gồm bài toán trích xuất thông tin tài liệu (DIE), tổng quan về các công trình nghiên cứu liên quan, cơ chế hoạt động của nhận dạng ký tự quang học (\gls{ocr}), và chi tiết hai kiến trúc mô hình học sâu đại diện: \model{Donut} (OCR-free) và \model{LayoutXLM} (OCR-based). Cuối cùng, chương định nghĩa các độ đo đánh giá cùng quy ước xử lý đặc biệt đối với giá trị rỗng.
+Phần này trình bày nền tảng lý thuyết phục vụ cho đồ án: bài toán trích xuất thông tin tài liệu (DIE), các công trình liên quan, cơ chế hoạt động của nhận dạng ký tự quang học (\gls{ocr}), và hai kiến trúc mô hình được sử dụng --- \model{Donut} (OCR-free) và \model{LayoutXLM} (OCR-based). Cuối chương định nghĩa các độ đo đánh giá cùng quy ước xử lý giá trị rỗng.
 
 % ============================================================================
 \subsection{Bài toán trích xuất thông tin tài liệu}
 \label{subsec:kie_problem}
 
-Trích xuất thông tin tài liệu (Document Information Extraction - DIE) hay trích xuất thông tin then chốt (Key Information Extraction - KIE) là bài toán nhận dạng và trích xuất các thực thể thông tin có cấu trúc dưới dạng cặp khóa-giá trị (key-value pairs) từ hình ảnh tài liệu bán cấu trúc (như biên lai, hóa đơn, tờ khai).
+Trích xuất thông tin tài liệu (Document Information Extraction - DIE) hay trích xuất thông tin then chốt (Key Information Extraction - KIE) là bài toán nhận dạng và lấy ra các thực thể thông tin có cấu trúc dạng cặp khóa-giá trị (key-value pairs) từ hình ảnh tài liệu bán cấu trúc (biên lai, hóa đơn, tờ khai...).
 
-Đầu vào là một ảnh biên lai $I \in \mathbb{R}^{H \times W \times C}$. Đầu ra mong muốn là một tập hợp các thực thể thông tin: $Y = \{(K_1, V_1), (K_2, V_2), \dots, (K_M, V_M)\}$, trong đó mỗi $K_j$ tương ứng với một trường thông tin đích (ví dụ: \field{store\_name}, \field{date}, \field{total}, \field{address}) và $V_j$ là văn bản đã chuẩn hóa được trích xuất từ tài liệu. Quá trình này yêu cầu mô hình đồng thời nhận diện được ký tự văn bản và hiểu được mối quan hệ không gian, ngữ nghĩa giữa các vùng chữ để liên kết chúng một cách chính xác.
+Đầu vào là một ảnh biên lai $I \in \mathbb{R}^{H \times W \times C}$. Đầu ra mong muốn là một tập thực thể: $Y = \{(K_1, V_1), (K_2, V_2), \dots, (K_M, V_M)\}$, trong đó $K_j$ tương ứng với một trường thông tin đích (ví dụ: \field{store\_name}, \field{date}, \field{total}, \field{address}) và $V_j$ là văn bản chuẩn hóa được trích xuất. Mô hình cần vừa nhận diện được ký tự, vừa hiểu được quan hệ không gian và ngữ nghĩa giữa các vùng chữ để liên kết chúng đúng.
 
 % ============================================================================
 \subsection{Các công trình nghiên cứu liên quan}
 \label{subsec:related_work}
 
-Bài toán trích xuất thông tin tài liệu đã đạt được nhiều bước tiến lớn nhờ sự phát triển của các kiến trúc Transformer và mô hình đa phương thức. \cref{tab:method-comparison} so sánh tổng quan ba hướng tiếp cận được khảo sát trong đồ án cùng giả thuyết thực nghiệm đi kèm.
+Bài toán trích xuất thông tin tài liệu đã có nhiều tiến bộ nhờ sự phát triển của kiến trúc Transformer và mô hình đa phương thức. \cref{tab:method-comparison} so sánh ba hướng tiếp cận được khảo sát trong đồ án cùng giả thuyết thực nghiệm.
 
 \begin{table}[htbp]
   \centering
@@ -47,56 +47,56 @@ Bài toán trích xuất thông tin tài liệu đã đạt được nhiều bư
   \end{tabularx}
 \end{table}
 
-Các nghiên cứu nền tảng và công trình liên quan trực tiếp đến đồ án bao gồm:
+Các nghiên cứu và công trình liên quan trực tiếp đến đồ án gồm:
 \begin{itemize}
-  \item \textbf{MC-OCR 2021:} Cuộc thi xử lý biên lai chụp di động do Zalo AI tổ chức~\cite{mcocr2021}, cung cấp bộ dữ liệu biên lai tiếng Việt thực tế làm cơ sở cho đồ án. Các giải pháp hàng đầu trong cuộc thi thường kết hợp bộ phát hiện chữ (DBNet, YOLO) và bộ nhận dạng mạnh mẽ, kết hợp với các luật hậu xử lý sâu.
-  \item \textbf{CORD:} Bộ dữ liệu biên lai quốc tế Consolidated Receipt Dataset~\cite{park2019cord}, đóng vai trò benchmark chính cho các kiến trúc hiểu tài liệu end-to-end.
-  \item \textbf{LayoutLM và LayoutLMv3:} Các mô hình tiền huấn luyện đa phương thức của Microsoft~\cite{xu2020layoutlm, huang2022layoutlmv3}. \model{LayoutXLM}~\cite{xu2021layoutxlm} là phiên bản mở rộng đa ngôn ngữ dựa trên XLM-RoBERTa, đóng vai trò cốt lõi trong pipeline OCR-based tiếng Việt của đồ án.
-  \item \textbf{TrOCR:} Mô hình nhận dạng chữ viết (Text Recognition) dựa hoàn toàn trên kiến trúc Transformer Encoder-Decoder~\cite{li2023trocr}. TrOCR nhận đầu vào là một ảnh dòng chữ được cắt ra từ bộ phát hiện chữ viết độc lập (Text Detector) và giải mã thành văn bản, đạt hiệu năng rất cao nhờ cơ chế tự chú ý.
+  \item \textbf{MC-OCR 2021:} Cuộc thi xử lý biên lai chụp di động do Zalo AI tổ chức~\cite{mcocr2021}, cung cấp bộ dữ liệu biên lai tiếng Việt thực tế làm nguồn dữ liệu chính cho đồ án. Các giải pháp top đầu thường kết hợp bộ phát hiện chữ (DBNet, YOLO) với bộ nhận dạng mạnh, cùng các luật hậu xử lý phức tạp.
+  \item \textbf{CORD:} Bộ dữ liệu biên lai quốc tế Consolidated Receipt Dataset~\cite{park2019cord}, được dùng làm benchmark chính cho các kiến trúc hiểu tài liệu end-to-end.
+  \item \textbf{LayoutLM và LayoutLMv3:} Các mô hình tiền huấn luyện đa phương thức của Microsoft~\cite{xu2020layoutlm, huang2022layoutlmv3}. \model{LayoutXLM}~\cite{xu2021layoutxlm} là phiên bản đa ngôn ngữ dựa trên XLM-RoBERTa, là thành phần chính trong pipeline OCR-based tiếng Việt của đồ án.
+  \item \textbf{TrOCR:} Mô hình nhận dạng chữ viết (Text Recognition) dựa hoàn toàn trên kiến trúc Transformer Encoder-Decoder~\cite{li2023trocr}. TrOCR nhận đầu vào là ảnh dòng chữ được cắt từ bộ phát hiện chữ và giải mã thành văn bản, đạt hiệu năng cao nhờ cơ chế tự chú ý.
 \end{itemize}
 
 % ============================================================================
 \subsection{Nhận dạng ký tự quang học (OCR)}
 \label{subsec:ocr}
 
-Hệ thống OCR hiện đại thường được thiết kế thành một pipeline gồm hai giai đoạn độc lập: phát hiện văn bản và nhận dạng chữ viết. Trong pipeline OCR-based của đồ án, module OCR đảm nhận vai trò trích xuất văn bản thô cùng tọa độ 2D từ ảnh biên lai để làm đầu vào cho mô hình \model{LayoutXLM}.
+Hệ thống OCR hiện đại thường gồm hai giai đoạn: phát hiện văn bản và nhận dạng chữ viết. Trong pipeline OCR-based của đồ án, module OCR có nhiệm vụ trích xuất văn bản thô cùng tọa độ 2D từ ảnh biên lai, làm đầu vào cho \model{LayoutXLM}.
 
 \subsubsection{Phát hiện văn bản với PaddleOCR}
 \label{subsubsec:paddleocr}
 
-Pipeline sử dụng module phát hiện văn bản của \model{PaddleOCR}~\cite{du2020ppocr}; phần nhận dạng tích hợp của PaddleOCR bị tắt. Họ PP-OCR sử dụng bộ phát hiện dựa trên Differentiable Binarization (DB), trong đó bước nhị phân hóa được đưa vào mạng dưới dạng khả vi:
+Pipeline dùng module phát hiện văn bản của \model{PaddleOCR}~\cite{du2020ppocr}; phần nhận dạng tích hợp của PaddleOCR bị tắt. Họ PP-OCR sử dụng bộ phát hiện dựa trên Differentiable Binarization (DB), trong đó bước nhị phân hóa được đưa vào mạng dưới dạng khả vi:
 \begin{equation}
   \hat{B}_{i,j} = \frac{1}{1 + \exp(-k(P_{i,j} - T_{i,j}))}
   \label{eq:db_binarization}
 \end{equation}
-trong đó $P_{i,j}$ là bản bản đồ xác suất chứa ký tự, $T_{i,j}$ là bản đồ ngưỡng thích ứng học được từ mạng backbone và FPN, và $k$ là hệ số phóng đại khả vi. Cơ chế này cho phép tối ưu hóa trực tiếp ranh giới hộp bao văn bản thông qua lan truyền ngược, đem lại độ chính xác cao đối với các dòng chữ nhỏ và nghiêng trên biên lai.
+trong đó $P_{i,j}$ là bản đồ xác suất chứa ký tự, $T_{i,j}$ là bản đồ ngưỡng thích ứng học được từ backbone và FPN, và $k$ là hệ số phóng đại khả vi. Nhờ cơ chế này, ranh giới hộp bao văn bản được tối ưu trực tiếp qua lan truyền ngược, cho độ chính xác tốt với các dòng chữ nhỏ và nghiêng trên biên lai.
 
 \subsubsection{Nhận dạng văn bản tiếng Việt với VietOCR}
 \label{subsubsec:vietocr}
 
-Ảnh của các dòng chữ sau khi được phát hiện được đưa vào \model{VietOCR}~\cite{vietocr2020}. Cấu hình \path{vgg_transformer} sử dụng mạng CNN họ VGG để trích xuất đặc trưng thị giác, sau đó biến đổi bản đồ đặc trưng thành một chuỗi để Transformer encoder--decoder sinh văn bản Unicode tiếng Việt theo cơ chế tự hồi quy.
+Ảnh các dòng chữ sau khi phát hiện được đưa vào \model{VietOCR}~\cite{vietocr2020}. Cấu hình \path{vgg_transformer} dùng mạng CNN họ VGG trích xuất đặc trưng thị giác, sau đó biến đổi bản đồ đặc trưng thành chuỗi để Transformer encoder--decoder sinh văn bản Unicode tiếng Việt theo cơ chế tự hồi quy.
 
-Tại bước giải mã thứ $t$, mô hình dự đoán ký tự kế tiếp dựa trên đặc trưng ảnh $\mathbf{x}$ và các ký tự đích trước đó. Hàm mất mát là cross-entropy theo chuỗi, có label smoothing trong triển khai huấn luyện:
+Tại bước giải mã thứ $t$, mô hình dự đoán ký tự tiếp theo dựa trên đặc trưng ảnh $\mathbf{x}$ và các ký tự đích trước đó. Hàm mất mát là cross-entropy theo chuỗi, có label smoothing khi huấn luyện:
 \begin{equation}
   \mathcal{L}_{\text{VietOCR}}
   = -\sum_{t=1}^{T}\log P(y_t \mid y_{<t}, \mathbf{x}).
   \label{eq:vietocr_loss}
 \end{equation}
-Vì vậy VietOCR trong đồ án không sử dụng hàm mất mát CTC. Sự phân biệt này quan trọng khi phân tích lỗi: kết quả nhận dạng phụ thuộc vào quá trình giải mã tuần tự chứ không chỉ vào căn chỉnh đơn điệu giữa đặc trưng ảnh và ký tự.
+Do đó VietOCR trong đồ án không dùng hàm mất mát CTC. Điểm này quan trọng khi phân tích lỗi: kết quả nhận dạng phụ thuộc vào giải mã tuần tự chứ không chỉ vào căn chỉnh đơn điệu giữa đặc trưng ảnh và ký tự.
 
 % ============================================================================
 \subsection{Mô hình Donut (OCR-free)}
 \label{subsec:donut}
 
-\model{Donut} (Document Understanding Transformer)~\cite{kim2022donut} là kiến trúc Transformer encoder--decoder ánh xạ trực tiếp điểm ảnh của tài liệu thành chuỗi có cấu trúc mà không cần module OCR trung gian. Trong đồ án, cấu trúc đích dùng các token mở/đóng tương tự XML.
+\model{Donut} (Document Understanding Transformer)~\cite{kim2022donut} là kiến trúc Transformer encoder--decoder ánh xạ trực tiếp điểm ảnh tài liệu thành chuỗi có cấu trúc mà không cần module OCR trung gian. Trong đồ án, cấu trúc đích dùng các token mở/đóng tương tự XML.
 
 \subsubsection{Kiến trúc tổng quan}
 \label{subsubsec:donut_arch}
 
-Kiến trúc Donut bao gồm hai thành phần chính:
+Donut gồm hai thành phần chính:
 \begin{enumerate}
-  \item \textbf{Vision Encoder (Swin Transformer):} Mã hóa hình ảnh biên lai thành chuỗi biểu diễn đặc trưng thị giác phân cấp $\mathbf{z} = \{z_1, z_2, \ldots, z_n\}$. Swin Transformer~\cite{liu2021swin} sử dụng cơ chế cửa sổ tự chú ý trượt (Shifted Window MSA) để giảm độ phức tạp tính toán từ bậc hai xuống bậc tuyến tính theo kích thước ảnh, đồng thời duy trì sự liên tục ngữ cảnh.
-  \item \textbf{Text Decoder (mBART):} Checkpoint \code{donut-base} dùng decoder thuộc họ mBART, một biến thể đa ngôn ngữ của kiến trúc BART~\cite{lewis2020bart}. Tại mỗi bước thời gian $i$, decoder kết hợp tự chú ý trên các token đã sinh và cross-attention lên biểu diễn thị giác $\mathbf{z}$ để dự đoán token tiếp theo:
+  \item \textbf{Vision Encoder (Swin Transformer):} Mã hóa ảnh biên lai thành chuỗi biểu diễn đặc trưng thị giác phân cấp $\mathbf{z} = \{z_1, z_2, \ldots, z_n\}$. Swin Transformer~\cite{liu2021swin} dùng cơ chế cửa sổ tự chú ý trượt (Shifted Window MSA) để giảm độ phức tạp từ bậc hai xuống tuyến tính theo kích thước ảnh, đồng thời giữ được tính liên tục ngữ cảnh.
+  \item \textbf{Text Decoder (mBART):} Checkpoint \code{donut-base} dùng decoder họ mBART, một biến thể đa ngôn ngữ của BART~\cite{lewis2020bart}. Tại mỗi bước $i$, decoder kết hợp tự chú ý trên các token đã sinh và cross-attention lên biểu diễn thị giác $\mathbf{z}$ để dự đoán token tiếp theo:
   \begin{equation}
     \mathcal{L}_{\text{Donut}} = -\sum_{i=1}^{T} \log P(y_i \mid y_{<i}^*, \mathbf{z})
     \label{eq:donut_loss}
@@ -113,46 +113,46 @@ Kiến trúc Donut bao gồm hai thành phần chính:
 \subsubsection{Phân biệt khái niệm Warm-up trong Donut}
 \label{subsubsec:donut_warmup}
 
-Trong quá trình huấn luyện mô hình Donut, cần phân biệt rõ hai khái niệm "warm-up" dễ gây nhầm lẫn:
+Khi huấn luyện Donut, cần phân biệt rõ hai khái niệm ``warm-up'' dễ nhầm lẫn:
 \begin{itemize}
-  \item \textbf{Learning Rate Warm-up (tỷ lệ $warmup\_ratio$ hoặc số bước $warmup\_steps$):} Đây là một kỹ thuật điều tiết tốc độ học trong tối ưu hóa (LR scheduling). Trong số bước đầu tiên (thường là 10\% tổng số bước huấn luyện), tốc độ học được tăng dần tuyến tính từ 0 lên mức cực đại được thiết lập nhằm tránh hiện tượng bùng nổ gradient khi bắt đầu cập nhật trọng số.
-  \item \textbf{Pre-training/Warm-up mô hình trên tập CORD:} Đây là một nhánh pre-finetuning tùy chọn, trong đó mô hình có thể được huấn luyện thêm trên dữ liệu biên lai CORD trước khi fine-tune tiếng Việt. Nhánh này có trong mã nguồn nhưng không được sử dụng để tạo các kết quả chính của báo cáo.
+  \item \textbf{Learning Rate Warm-up (tỷ lệ $warmup\_ratio$ hoặc số bước $warmup\_steps$):} Đây là kỹ thuật điều tiết tốc độ học (LR scheduling). Trong số bước đầu tiên (thường khoảng 10\% tổng số bước huấn luyện), tốc độ học được tăng dần tuyến tính từ 0 lên mức cực đại để tránh bùng nổ gradient khi mới bắt đầu cập nhật trọng số.
+  \item \textbf{Pre-training/Warm-up mô hình trên tập CORD:} Đây là một nhánh pre-finetuning tùy chọn, trong đó mô hình có thể được huấn luyện thêm trên dữ liệu biên lai CORD trước khi fine-tune tiếng Việt. Nhánh này có trong mã nguồn nhưng không được dùng cho các kết quả chính của báo cáo.
 \end{itemize}
 
 % ============================================================================
 \subsection{Mô hình LayoutXLM (OCR-based)}
 \label{subsec:layoutxlm}
 
-\model{LayoutXLM}~\cite{xu2021layoutxlm} là mô hình đa phương thức đa ngôn ngữ cho tài liệu có bố cục phong phú. Mô hình mở rộng kiến trúc đa phương thức của LayoutLMv2 bằng backbone văn bản XLM-RoBERTa~\cite{conneau2020xlmr}, nhờ đó tiếp nhận văn bản đa ngôn ngữ cùng thông tin bố cục và ảnh.
+\model{LayoutXLM}~\cite{xu2021layoutxlm} là mô hình đa phương thức đa ngôn ngữ cho tài liệu có bố cục phong phú. Mô hình mở rộng kiến trúc đa phương thức của LayoutLMv2 bằng backbone văn bản XLM-RoBERTa~\cite{conneau2020xlmr}, qua đó xử lý được văn bản đa ngôn ngữ cùng thông tin bố cục và ảnh.
 
 \subsubsection{Nhúng đa phương thức (Multimodal Embedding)}
 \label{subsubsec:multimodal_embedding}
 
-LayoutXLM tiếp nhận đồng thời chuỗi token OCR, tọa độ 2D và ảnh toàn trang. Ba nguồn biểu diễn chính gồm:
+LayoutXLM nhận đồng thời chuỗi token OCR, tọa độ 2D và ảnh toàn trang. Ba nguồn biểu diễn chính gồm:
 \begin{enumerate}
   \item \textbf{Nhúng văn bản (Text Embedding):} Mã hóa đặc trưng ngữ nghĩa của từ.
-  \item \textbf{Nhúng không gian 2D (Spatial Embedding):} Tọa độ bounding box $[x_1, y_1, x_2, y_2]$ của từ được chuẩn hóa về khoảng $[0, 1000]$ và nhúng thông qua các bảng nhúng tọa độ để mô hình nắm bắt vị trí tương đối và tuyệt đối trên ảnh:
+  \item \textbf{Nhúng không gian 2D (Spatial Embedding):} Tọa độ bounding box $[x_1, y_1, x_2, y_2]$ của từ được chuẩn hóa về khoảng $[0, 1000]$ và nhúng qua các bảng nhúng tọa độ để mô hình nắm được vị trí tương đối và tuyệt đối trên ảnh:
   \begin{equation}
     \mathbf{e}_{2D}(\text{bbox}_i) = \mathbf{e}_{x_1}(x_1) + \mathbf{e}_{y_1}(y_1) + \mathbf{e}_{x_2}(x_2) + \mathbf{e}_{y_2}(y_2) + \mathbf{e}_{w}(w) + \mathbf{e}_{h}(h)
   \end{equation}
-  \item \textbf{Nhúng thị giác (Visual Embedding):} Ảnh toàn trang được đưa qua backbone ResNeXt-FPN để tạo bản đồ đặc trưng, sau đó được pooling thành một chuỗi visual token. Các visual token mang nhúng bố cục riêng và được đưa vào Transformer cùng chuỗi token văn bản; hệ thống không cắt riêng từng hộp từ để tạo một vector ảnh cho từng token.
+  \item \textbf{Nhúng thị giác (Visual Embedding):} Ảnh toàn trang được đưa qua backbone ResNeXt-FPN để tạo bản đồ đặc trưng, sau đó pooling thành chuỗi visual token. Các visual token mang nhúng bố cục riêng và được đưa vào Transformer cùng chuỗi token văn bản; hệ thống không cắt riêng từng hộp từ để tạo vector ảnh cho từng token.
 \end{enumerate}
 
-Đối với token văn bản, embedding đầu vào là tổng của nhúng từ, nhúng vị trí 1D và nhúng bố cục 2D. Đối với visual token, embedding thị giác được kết hợp với nhúng bố cục tương ứng. Hai chuỗi được nối và xử lý chung trong Transformer, cho phép trao đổi thông tin giữa văn bản và hình ảnh.
+Với token văn bản, embedding đầu vào là tổng của nhúng từ, nhúng vị trí 1D và nhúng bố cục 2D. Với visual token, embedding thị giác được kết hợp với nhúng bố cục tương ứng. Hai chuỗi được nối lại và xử lý chung trong Transformer, cho phép trao đổi thông tin giữa văn bản và hình ảnh.
 
 \subsubsection{Spatial-aware Self-Attention}
 \label{subsubsec:spatial_attention}
 
-Cơ chế tự chú ý nhận biết không gian, được kế thừa từ LayoutLMv2, bổ sung các bias vị trí 1D và 2D dựa trên quan hệ tương đối giữa các bounding box của token $i$ và token $j$:
+Cơ chế tự chú ý nhận biết không gian, kế thừa từ LayoutLMv2, thêm các bias vị trí 1D và 2D dựa trên quan hệ tương đối giữa bounding box của token $i$ và token $j$:
 \begin{equation}
   \alpha_{ij} = \frac{\mathbf{q}_i \mathbf{k}_j^T}{\sqrt{d}} + b^{1D}(j - i) + b^{2D}_x(x_{1,i} - x_{1,j}) + b^{2D}_y(y_{1,i} - y_{1,j})
 \end{equation}
-Điều này giúp mô hình tự động học được mối liên hệ logic giữa các từ nằm gần nhau về mặt không gian địa lý trên ảnh tài liệu.
+Nhờ vậy mô hình tự học được mối liên hệ giữa các từ nằm gần nhau trên ảnh tài liệu.
 
 \subsubsection{Gán nhãn BIO (BIO Tagging)}
 \label{subsubsec:bio_tagging}
 
-Để thực hiện trích xuất thông tin, bài toán được định nghĩa dưới dạng phân loại token (token classification). Mỗi token đầu vào được dự đoán một nhãn trong hệ thống nhãn \gls{bio} gồm 9 nhãn được mô tả chi tiết trong \cref{tab:bio_labels}.
+Bài toán trích xuất thông tin được đưa về dạng phân loại token (token classification). Mỗi token đầu vào được dự đoán một nhãn trong hệ thống \gls{bio} gồm 9 nhãn, mô tả chi tiết trong \cref{tab:bio_labels}.
 
 \begin{table}[htbp]
   \centering
@@ -175,7 +175,7 @@ Cơ chế tự chú ý nhận biết không gian, được kế thừa từ Layo
 \subsection{Các độ đo đánh giá và quy ước xử lý rỗng}
 \label{subsec:metrics}
 
-Để đánh giá chính xác chất lượng trích xuất, các dự đoán sau khi được chuẩn hóa sẽ được so sánh với nhãn ground-truth thông qua ba chỉ số chính: EM, NES, và CER. 
+Sau khi chuẩn hóa, các dự đoán được so sánh với nhãn ground-truth qua ba chỉ số: EM, NES, và CER. 
 
 \subsubsection{Exact Match (EM)}
 EM đo tỷ lệ khớp chính xác hoàn toàn từng ký tự giữa dự đoán ($pred$) và nhãn thực ($gold$):
@@ -188,11 +188,11 @@ EM đo tỷ lệ khớp chính xác hoàn toàn từng ký tự giữa dự đo�
 \textbf{Quy ước giá trị rỗng:} Nếu cả $pred$ và $gold$ đều là chuỗi rỗng sau chuẩn hóa $\to \metric{EM} = 1.0$. Nếu chỉ một trong hai chuỗi rỗng $\to \metric{EM} = 0.0$.
 
 \subsubsection{Normalized Edit Similarity (NES)}
-NES đo mức độ tương đồng chuỗi ký tự thông qua khoảng cách Levenshtein chuẩn hóa; chỉ số này không đo tương đồng ngữ nghĩa:
+NES đo mức độ tương đồng chuỗi ký tự qua khoảng cách Levenshtein chuẩn hóa; chỉ số này không đo tương đồng ngữ nghĩa:
 \begin{equation}
   \metric{NES}(pred, gold) = 1 - \frac{\text{Levenshtein}(pred, gold)}{\max(\text{len}(pred), \text{len}(gold))}
 \end{equation}
-\textbf{Quy ước giá trị rỗng:} Nếu cả $pred$ và $gold$ đều là chuỗi rỗng $\to \metric{NES} = 1.0$ (tránh lỗi chia cho 0). Nếu chỉ một trong hai chuỗi rỗng $\to \metric{NES} = 0.0$.
+\textbf{Quy ước giá trị rỗng:} Nếu cả $pred$ và $gold$ đều rỗng $\to \metric{NES} = 1.0$ (tránh chia cho 0). Nếu chỉ một trong hai rỗng $\to \metric{NES} = 0.0$.
 
 \subsubsection{Character Error Rate (CER)}
 CER đo tỷ lệ lỗi ở cấp độ ký tự trên chuỗi nhãn thực:
@@ -205,12 +205,12 @@ CER đo tỷ lệ lỗi ở cấp độ ký tự trên chuỗi nhãn thực:
   \item Nếu $gold$ rỗng nhưng $pred$ có giá trị $\to \metric{CER} = 1.0$.
   \item Nếu $gold$ có giá trị nhưng $pred$ rỗng $\to \metric{CER} = 1.0$.
 \end{itemize}
-\textbf{Giải thích hiện tượng CER > 100\%:} Chỉ số CER có thể vượt quá 100\% (hay > 1.0) khi chuỗi dự đoán dài hơn đáng kể so với nhãn thực do mô hình sinh thừa nhiều ký tự rác hoặc bị lỗi lặp chuỗi tự hồi quy (hallucination), dẫn đến khoảng cách Levenshtein lớn hơn độ dài ký tự của nhãn thực $gold$.
+\textbf{Giải thích hiện tượng CER > 100\%:} CER có thể vượt 100\% (hay > 1.0) khi chuỗi dự đoán dài hơn nhiều so với nhãn thực --- thường do mô hình sinh thừa ký tự rác hoặc bị lặp chuỗi tự hồi quy (hallucination), khiến khoảng cách Levenshtein lớn hơn độ dài $gold$.
 
 \subsubsection{Hai chế độ tổng hợp kết quả}
-Để tránh việc một mô hình nhận điểm do đồng thời trả về rỗng khi ground-truth cũng rỗng, báo cáo trình bày hai chế độ:
+Để tránh trường hợp mô hình được điểm nhờ trả về rỗng đúng lúc ground-truth cũng rỗng, báo cáo dùng hai chế độ:
 \begin{itemize}
-  \item \textbf{All samples:} đánh giá trên toàn bộ 234 mẫu, tuân thủ các quy ước giá trị rỗng ở trên.
-  \item \textbf{Present-only:} với từng trường, chỉ đánh giá các mẫu có ground-truth khác rỗng. Đây là chế độ chính để phân tích năng lực trích xuất khi thông tin thực sự xuất hiện.
+  \item \textbf{All samples:} đánh giá trên toàn bộ 234 mẫu, theo các quy ước giá trị rỗng ở trên.
+  \item \textbf{Present-only:} với từng trường, chỉ đánh giá các mẫu có ground-truth khác rỗng. Đây là chế độ chính để phân tích năng lực trích xuất khi thông tin thực sự có mặt.
 \end{itemize}
 Macro EM, NES và CER đều là trung bình không trọng số của bốn trường.

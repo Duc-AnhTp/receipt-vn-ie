@@ -125,6 +125,9 @@ Kết quả được đánh giá trên tập test 234 mẫu, split 70/15/15, see
 pytest tests/
 ```
 
+```python
+python src/receipt_ie/app/gradio_app.py
+```
 ## License
 
 MIT

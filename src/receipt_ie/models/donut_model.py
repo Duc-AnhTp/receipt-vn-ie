@@ -5,7 +5,6 @@ from typing import Tuple
 def setup_donut_model_and_processor(
     model_name: str = "naver-clova-ix/donut-base",
     task_token: str = "<s_receipt_ie>",
-    cord_task_token: str = "<s_cord_receipt_parse>",
     image_size: Tuple[int, int] = None
 ) -> Tuple[VisionEncoderDecoderModel, DonutProcessor]:
     """
@@ -23,8 +22,6 @@ def setup_donut_model_and_processor(
     new_tokens = [
         task_token, 
         task_token.replace("<", "</"),
-        cord_task_token,
-        cord_task_token.replace("<", "</"),
         "<s_store_name>", "</s_store_name>",
         "<s_date>", "</s_date>",
         "<s_total>", "</s_total>",
@@ -33,7 +30,7 @@ def setup_donut_model_and_processor(
     
     # Thêm tokens vào tokenizer dưới dạng special tokens để bảo vệ cấu trúc thẻ
     num_added_tokens = processor.tokenizer.add_special_tokens({"additional_special_tokens": new_tokens})
-    print(f"Đã thêm {num_added_tokens} special tokens mới vào tokenizer.")
+    print(f"Added {num_added_tokens} new special tokens to tokenizer.")
     
     # 3. Cập nhật model embeddings để nhận diện các token mới
     model.decoder.resize_token_embeddings(len(processor.tokenizer))

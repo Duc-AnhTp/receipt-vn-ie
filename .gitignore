@@ -78,6 +78,7 @@ checkpoints/*
 outputs/*
 !outputs/.gitkeep
 tmp/
+.gradio/
 *.crdownload
 
 # IDEs and editors

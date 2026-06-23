@@ -16,6 +16,9 @@ from transformers import AutoTokenizer
 from receipt_ie.data.build_donut_dataset import target_to_donut_sequence
 
 
+# Fallback khi checkpoint không có max_length trong generation_config.json
+# hoặc config.json. Đây là giá trị mặc định của transformers, không phải
+# giá trị dùng cho Donut project (768 token, đọc từ generation_config.json).
 DEFAULT_GENERATION_MAX_LENGTH = 20
 
 

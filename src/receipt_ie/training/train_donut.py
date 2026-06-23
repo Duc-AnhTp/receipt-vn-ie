@@ -26,15 +26,13 @@ def train_stage(
     val_jsonl: str,
     output_dir: str,
     task_token: str,
-    cord_task_token: str,
     donut_config: Dict[str, Any],
-    project_root: str,
-    is_warmup: bool = False
+    project_root: str
 ):
     """
-    Huấn luyện Donut. Luồng chính là fine-tuning tiếng Việt; CORD chỉ là optional/future work.
+    Huấn luyện Donut bằng cách fine-tuning trên tiếng Việt.
     """
-    print(f"\n=== BẮT ĐẦU HUẤN LUYỆN: {'WARM-UP CORD' if is_warmup else 'FINE-TUNING TIẾNG VIỆT'} ===")
+    print(f"\n=== START TRAINING: FINE-TUNING VIETNAMESE ===")
     print(f"Model name/path: {model_name}")
     print(f"Train data: {train_jsonl}")
     print(f"Val data: {val_jsonl}")
@@ -46,7 +44,6 @@ def train_stage(
     model, processor = setup_donut_model_and_processor(
         model_name=model_name,
         task_token=task_token,
-        cord_task_token=cord_task_token,
         image_size=image_size
     )
     
@@ -83,8 +80,7 @@ def train_stage(
     device = "cuda" if torch.cuda.is_available() else "cpu"
     use_fp16 = t_cfg["fp16"] and torch.cuda.is_available()
     
-    # Giảm epoch nếu là warm-up pretrain để tránh overfitting vào cấu trúc CORD
-    epochs = t_cfg["warmup_epochs"] if is_warmup else t_cfg["epochs"]
+    epochs = t_cfg["epochs"]
     max_steps = t_cfg.get("max_steps", -1)
     
     training_args = Seq2SeqTrainingArguments(
@@ -135,7 +131,7 @@ def train_stage(
         checkpoints = [os.path.join(output_dir, d) for d in os.listdir(output_dir) if d.startswith("checkpoint-")]
         if checkpoints:
             resume_checkpoint = max(checkpoints, key=os.path.getmtime)
-            print(f"Phát hiện checkpoint cũ tại: {resume_checkpoint}. Tiếp tục huấn luyện nối tiếp từ đây...")
+            print(f"Found old checkpoint at: {resume_checkpoint}. Resuming training...")
             
     trainer.train(resume_from_checkpoint=resume_checkpoint)
     
@@ -145,7 +141,7 @@ def train_stage(
         os.makedirs(best_model_dir, exist_ok=True)
         trainer.save_model(best_model_dir)
         processor.save_pretrained(best_model_dir)
-        print(f"Đã lưu mô hình tốt nhất vào: {best_model_dir}")
+        print(f"Saved best model to: {best_model_dir}")
     
     return best_model_dir
 
@@ -154,13 +150,6 @@ def main():
     parser.add_argument("--donut_config", type=str, default="configs/donut.yaml", help="Cấu hình Donut")
     parser.add_argument("--data_config", type=str, default="configs/data.yaml", help="Cấu hình Dữ liệu")
     parser.add_argument("--project_root", type=str, default=".", help="Root thư mục dự án")
-    parser.add_argument(
-        "--mode", 
-        type=str, 
-        choices=["warmup", "finetune", "full"], 
-        default="finetune", 
-        help="Chế độ chạy: finetune là main run; warmup/full dùng CORD v2 optional/future work"
-    )
     parser.add_argument("--epochs", type=int, default=None, help="Ghi đè số epochs từ config file")
     parser.add_argument("--max_steps", type=int, default=None, help="Ghi đè số steps huấn luyện tối đa")
     parser.add_argument("--resume_model", type=str, default=None, help="Đường dẫn tới best_model đã lưu trước đó để train tiếp")
@@ -171,61 +160,29 @@ def main():
     
     if args.epochs is not None:
         donut_cfg["training"]["epochs"] = args.epochs
-        donut_cfg["training"]["warmup_epochs"] = args.epochs
     if args.max_steps is not None:
         donut_cfg["training"]["max_steps"] = args.max_steps
         
     model_name = args.resume_model or donut_cfg["model"]["name"]
     task_token = donut_cfg["model"]["task_token"]
-    cord_task_token = donut_cfg["model"]["cord_task_token"]
     
     # Thư mục checkpoints
     output_dir = donut_cfg["training"]["output_dir"]
     
-    # 1. Optional/future work: Warm-up pretraining trên CORD v2 (nếu chọn warmup hoặc full)
-    current_model = model_name
-    if args.mode in ["warmup", "full"]:
-        cord_train = data_cfg["processed"]["donut_warmup_train"]
-        warmup_out_dir = os.path.join(output_dir, "warmup")
-        
-        # Kiểm tra xem file warmup data có tồn tại không
-        cord_train_path = Path(args.project_root) / cord_train
-        if not cord_train_path.exists():
-            print(f"Lỗi: Không tìm thấy file warmup CORD v2 tại: {cord_train_path}")
-            if args.mode == "warmup":
-                sys.exit(1)
-            else:
-                print("Bỏ qua bước Warm-up, chuyển thẳng sang Fine-tuning...")
-        else:
-            current_model = train_stage(
-                model_name=model_name,
-                train_jsonl=str(cord_train),
-                val_jsonl=None, # Warm-up trên CORD v2 không cần val set phức tạp, chỉ train n epochs
-                output_dir=warmup_out_dir,
-                task_token=cord_task_token,
-                cord_task_token=cord_task_token,
-                donut_config=donut_cfg,
-                project_root=args.project_root,
-                is_warmup=True
-            )
-            
-    # 2. Fine-tuning trên dữ liệu Tiếng Việt (nếu chọn finetune hoặc full)
-    if args.mode in ["finetune", "full"]:
-        train_jsonl = data_cfg["processed"]["train_jsonl"]
-        val_jsonl = data_cfg["processed"]["val_jsonl"]
-        finetune_out_dir = os.path.join(output_dir, "finetune")
-        
-        train_stage(
-            model_name=current_model,
-            train_jsonl=str(train_jsonl),
-            val_jsonl=str(val_jsonl),
-            output_dir=finetune_out_dir,
-            task_token=task_token,
-            cord_task_token=cord_task_token,
-            donut_config=donut_cfg,
-            project_root=args.project_root,
-            is_warmup=False
-        )
+    # Huấn luyện Fine-tuning trên dữ liệu Tiếng Việt
+    train_jsonl = data_cfg["processed"]["train_jsonl"]
+    val_jsonl = data_cfg["processed"]["val_jsonl"]
+    finetune_out_dir = os.path.join(output_dir, "finetune")
+    
+    train_stage(
+        model_name=model_name,
+        train_jsonl=str(train_jsonl),
+        val_jsonl=str(val_jsonl),
+        output_dir=finetune_out_dir,
+        task_token=task_token,
+        donut_config=donut_cfg,
+        project_root=args.project_root
+    )
 
 if __name__ == "__main__":
     main()
