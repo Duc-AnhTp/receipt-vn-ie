@@ -135,11 +135,3 @@ python src/receipt_ie/app/gradio_app.py
 ```
 Sau khi khởi chạy thành công, truy cập trình duyệt tại địa chỉ: `http://localhost:7860`.
 
-## 🧪 Kiểm Thử (Unit Tests)
-Hệ thống được đảm bảo độ tin cậy với 62 unit tests:
-```bash
-pytest tests/
-```
-
-## 📄 Giấy Phép (License)
-Dự án được phân phối dưới giấy phép [MIT](LICENSE).
