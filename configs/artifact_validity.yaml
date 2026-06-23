@@ -29,10 +29,17 @@ methods:
     label: Donut
     prediction_path: outputs/predictions/donut_test.jsonl
     checkpoint: checkpoints/donut/receipt_ie/finetune/best_model
-    valid_for_main_comparison: false
-    validity_status: invalid_diagnostic_only
-    measurement_scope: truncated_generation_from_image
+    valid_for_main_comparison: true
+    validity_status: valid
+    measurement_scope: complete_generation_from_image
     configured_generation_max_length: 768
-    invalid_reason: Legacy inference inherited the Transformers default generation limit of 20 tokens.
-    known_issues:
-      - The measured quality and latency describe truncated generation, not a complete Donut inference run.
+    known_issues: []
+
+  layoutxlm_oracle:
+    label: LayoutXLM (Oracle OCR)
+    prediction_path: outputs/predictions/layoutxlm_oracle_test.jsonl
+    checkpoint: checkpoints/layoutxlm/receipt_ie/oracle_ocr/best_model
+    valid_for_main_comparison: false
+    validity_status: valid
+    measurement_scope: model_and_postprocess_from_oracle_ocr
+    known_issues: []

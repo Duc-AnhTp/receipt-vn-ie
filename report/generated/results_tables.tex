@@ -10,15 +10,18 @@
     \midrule
     \multicolumn{6}{l}{\textbf{Exact Match (EM \%) $\uparrow$}} \\
 Baseline & 25,21 & 74,79 & 54,27 & 4,70 & 39,74 \\
-VietOCR + \model{LayoutXLM} & 29,06 & 60,68 & 69,66 & 14,53 & 43,48 \\
+VietOCR + \model{LayoutXLM} & 29,06 & 61,11 & 71,37 & 13,68 & 43,80 \\
+\model{Donut} & 4,27 & 7,69 & 7,26 & 4,70 & 5,98 \\
     \midrule
     \multicolumn{6}{l}{\textbf{Normalized Edit Similarity (NES \%) $\uparrow$}} \\
 Baseline & 40,84 & 77,01 & 67,86 & 30,29 & 54,00 \\
-VietOCR + \model{LayoutXLM} & 56,65 & 61,75 & 74,30 & 54,73 & 61,86 \\
+VietOCR + \model{LayoutXLM} & 56,78 & 62,18 & 76,11 & 59,88 & 63,74 \\
+\model{Donut} & 4,57 & 7,69 & 7,26 & 4,70 & 6,05 \\
     \midrule
     \multicolumn{6}{l}{\textbf{Character Error Rate (CER \%) $\downarrow$}} \\
 Baseline & 91,35 & 22,99 & 37,00 & 79,49 & 57,71 \\
-VietOCR + \model{LayoutXLM} & 45,79 & 38,25 & 25,79 & 48,74 & 39,64 \\
+VietOCR + \model{LayoutXLM} & 49,51 & 37,82 & 23,99 & 43,98 & 38,82 \\
+\model{Donut} & 993,21 & 92,31 & 92,74 & 95,30 & 318,39 \\
     \bottomrule
   \end{tabularx}
 \end{table}
@@ -34,15 +37,18 @@ VietOCR + \model{LayoutXLM} & 45,79 & 38,25 & 25,79 & 48,74 & 39,64 \\
     \midrule
     \multicolumn{6}{l}{\textbf{Exact Match (EM \%) $\uparrow$}} \\
 Baseline & 26,34 & 75,46 & 58,06 & 1,79 & 40,41 \\
-VietOCR + \model{LayoutXLM} & 28,12 & 59,72 & 70,51 & 12,56 & 42,73 \\
+VietOCR + \model{LayoutXLM} & 28,12 & 60,19 & 71,89 & 11,66 & 42,96 \\
+\model{Donut} & 0,00 & 0,00 & 0,00 & 0,00 & 0,00 \\
     \midrule
     \multicolumn{6}{l}{\textbf{Normalized Edit Similarity (NES \%) $\uparrow$}} \\
 Baseline & 42,66 & 77,87 & 72,72 & 28,64 & 55,47 \\
-VietOCR + \model{LayoutXLM} & 56,95 & 60,88 & 75,52 & 54,74 & 62,02 \\
+VietOCR + \model{LayoutXLM} & 57,08 & 61,34 & 77,01 & 60,14 & 63,89 \\
+\model{Donut} & 0,31 & 0,00 & 0,00 & 0,00 & 0,08 \\
     \midrule
     \multicolumn{6}{l}{\textbf{Character Error Rate (CER \%) $\downarrow$}} \\
 Baseline & 90,97 & 22,13 & 32,53 & 81,62 & 56,81 \\
-VietOCR + \model{LayoutXLM} & 45,60 & 39,12 & 24,58 & 48,90 & 39,55 \\
+VietOCR + \model{LayoutXLM} & 49,49 & 38,66 & 23,10 & 43,90 & 38,79 \\
+\model{Donut} & 1037,55 & 100,00 & 100,00 & 100,00 & 334,39 \\
     \bottomrule
   \end{tabularx}
 \end{table}
@@ -57,7 +63,8 @@ VietOCR + \model{LayoutXLM} & 45,60 & 39,12 & 24,58 & 48,90 & 39,55 \\
     \textbf{Phương pháp} & \textbf{Tên CH} & \textbf{Ngày} & \textbf{Tổng} & \textbf{Địa chỉ} & \textbf{$n$} & \textbf{Lỗi suy luận} \\
     \midrule
 Baseline & 98,29 & 74,79 & 91,88 & 61,54 & 234 & 0 \\
-VietOCR + \model{LayoutXLM} & 69,66 & 58,55 & 75,64 & 67,95 & 234 & 0 \\
+VietOCR + \model{LayoutXLM} & 73,93 & 58,97 & 76,50 & 75,64 & 234 & 0 \\
+\model{Donut} & 9,40 & 0,00 & 0,00 & 0,00 & 234 & 0 \\
     \bottomrule
   \end{tabular}
 \end{table}

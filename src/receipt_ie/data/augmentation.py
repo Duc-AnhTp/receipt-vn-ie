@@ -20,8 +20,6 @@ def get_donut_transforms():
         A.GaussNoise(std_range=(0.04, 0.2), p=0.15),
         A.RandomShadow(
             shadow_roi=(0.0, 0.0, 1.0, 1.0),
-            num_shadows_limit=(1, 1),
-            shadow_dimension=5,
             p=0.2,
         ),
     ])
@@ -34,8 +32,6 @@ def get_layoutxlm_transforms():
         A.GaussianBlur(blur_limit=(3, 5), p=0.2),
         A.RandomShadow(
             shadow_roi=(0.0, 0.0, 1.0, 1.0),
-            num_shadows_limit=(1, 1),
-            shadow_dimension=5,
             p=0.2,
         ),
     ])

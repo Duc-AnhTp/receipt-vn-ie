@@ -1,4 +1,4 @@
-﻿% ============================================================================
+% ============================================================================
 %  CHƯƠNG 0: TÓM TẮT
 % ============================================================================
 
@@ -7,7 +7,7 @@
 
 Đồ án xây dựng hệ thống trích xuất tên cửa hàng, ngày giao dịch, tổng tiền và địa chỉ từ ảnh biên lai tiếng Việt. Ba phương pháp được triển khai gồm Baseline dùng OCR và luật, \model{Donut} sinh chuỗi trực tiếp từ ảnh, và \model{LayoutXLM} phân loại token từ văn bản, bố cục và ảnh. Bộ dữ liệu processed gồm 1.559 mẫu; Donut có thể sử dụng toàn bộ 1.091 mẫu train, còn LayoutXLM sử dụng 784 mẫu train có hộp bao. Các prediction artifact đều bao phủ cùng 234 ID test.
 
-Để tránh điểm số bị ảnh hưởng bởi nhãn rỗng, báo cáo trình bày cả kết quả trên toàn bộ mẫu và kết quả present-only, chỉ xét các mẫu có ground-truth khác rỗng của từng trường. Trong hai artifact hợp lệ cho so sánh chính, LayoutXLM đạt Macro EM 42,73\% và Macro NES 62,02\% trên present-only; Baseline đạt tương ứng 40,41\% và 55,47\%. Baseline tốt nhất ở trường ngày, trong khi LayoutXLM tốt hơn rõ nhất ở tổng tiền và địa chỉ. Artifact Donut được giữ để chẩn đoán nhưng không dùng xếp hạng: lượt suy luận cũ kế thừa giới hạn sinh mặc định 20 token thay vì cấu hình dự kiến 768 token, nên cả chất lượng và latency đều không đại diện cho một lượt suy luận Donut hoàn chỉnh. Báo cáo đồng thời công bố giới hạn về annotation không đồng nhất, bốn mẫu LayoutXLM có sai lệch hệ tọa độ, thiếu log huấn luyện đầy đủ, chưa có Oracle OCR và chưa có ablation tiền xử lý đủ bằng chứng tái lập.
+Để tránh điểm số bị ảnh hưởng bởi nhãn rỗng, báo cáo trình bày cả kết quả trên toàn bộ mẫu và kết quả present-only, chỉ xét các mẫu có ground-truth khác rỗng của từng trường. Trong ba phương pháp so sánh chính, \model{LayoutXLM} đạt kết quả tốt nhất với Macro EM 42,96\% và Macro NES 63,89\% trên present-only; Baseline đạt tương ứng 40,41\% và 55,47\%; trong khi \model{Donut} (đã sửa lỗi cấu hình sinh 20 token) đạt hiệu năng rất thấp (Macro EM 0,00\%) do hiện tượng lặp từ và suy sụp mô hình (model collapse) khi huấn luyện end-to-end trên tập dữ liệu nhỏ. Thí nghiệm Oracle OCR cho thấy khi có OCR hoàn hảo, hiệu năng LayoutXLM tăng vọt lên Macro EM 66,97\% trên present-only, chỉ ra OCR là nút thắt cổ chai lớn nhất của pipeline. Báo cáo đồng thời cập nhật đầy đủ log huấn luyện, phân tích độ nhạy hệ tọa độ và hoàn thiện bằng chứng thực nghiệm của đồ án.
 
 \vspace{1em}
 \noindent\textbf{Từ khoá:} trích xuất thông tin, biên lai, Donut, LayoutXLM, OCR, tiếng Việt.

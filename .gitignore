@@ -78,6 +78,7 @@ checkpoints/*
 outputs/*
 !outputs/.gitkeep
 tmp/
+*.crdownload
 
 # IDEs and editors
 .vscode/

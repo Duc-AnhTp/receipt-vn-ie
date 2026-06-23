@@ -273,6 +273,7 @@ def generate_latency_table(
     scope_labels = {
         "baseline": "Hậu xử lý từ OCR cache",
         "layoutxlm": "Suy luận và hậu xử lý từ OCR cache",
+        "donut": "Suy luận trực tiếp từ ảnh đầu vào",
     }
     rows = [
         f"{METHOD_LATEX[method]} & {scope_labels[method]} & "
