@@ -352,7 +352,7 @@ Quy trình suy luận:
 \end{enumerate}
 
 \begin{notebox}[Cấu hình suy luận Donut]
-Trong một lượt suy luận cũ, nếu không truyền tham số \code{max\_length}, Transformers có thể dùng giới hạn mặc định quá ngắn cho chuỗi JSON nhiều trường. Lượt suy luận được dùng trong báo cáo hiện tại truyền rõ \code{generation\_max\_length=768}; metadata đi kèm prediction cũng ghi nhận giá trị này. Vì vậy, kết quả Donut trong báo cáo phản ánh hiện tượng sinh lặp và thiếu cặp thẻ hợp lệ của checkpoint hiện có, thay vì lỗi do chuỗi sinh quá ngắn.
+Checkpoint Donut hiện tại không lưu \code{max\_length} trong \code{generation\_config.json}; vì vậy manifest chỉ ghi nhận fallback metadata là 20 token trong trường hợp không override. Lượt prediction được dùng trong báo cáo hiện tại có sidecar/code cho thấy đã truyền explicit \code{generation\_max\_length=768} vào \code{generate()}. Do đó, kết quả Donut trong báo cáo phản ánh hiện tượng sinh lặp và thiếu cặp thẻ hợp lệ của checkpoint hiện có, thay vì được diễn giải như bằng chứng rằng inference thực tế bị giới hạn ở 20 token.
 \end{notebox}
 
 

@@ -1,7 +1,7 @@
 <h1 align="center">Receipt VN IE — Trích Xuất Thông Tin Biên Lai Tiếng Việt</h1>
 
 <p align="center">
-  <img alt="Python" src="https://img.shields.io/badge/python-3.8%2B-blue">
+  <img alt="Python" src="https://img.shields.io/badge/python-3.10%2B-blue">
   <img alt="PyTorch" src="https://img.shields.io/badge/PyTorch-%23EE4C2C.svg?logo=PyTorch&logoColor=white">
   <img alt="License" src="https://img.shields.io/badge/license-MIT-green">
 </p>
@@ -56,7 +56,7 @@ Khuyến nghị sử dụng môi trường ảo (Virtual Environment) hoặc Con
 git clone https://github.com/Duc-AnhTp/receipt-vn-ie.git
 cd receipt-vn-ie
 
-# Tạo và kích hoạt môi trường ảo (Python 3.8+)
+# Tạo và kích hoạt môi trường ảo (Python >= 3.10)
 python -m venv venv
 # Windows:
 venv\Scripts\activate
