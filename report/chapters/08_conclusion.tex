@@ -16,24 +16,24 @@ Hậu xử lý của Baseline từ OCR cache rất nhẹ, trung bình khoảng 1
 \paragraph{RQ3: OCR làm giảm hiệu năng LayoutXLM bao nhiêu?}
 Thí nghiệm Oracle OCR đã đo được mức hao hụt này. Khi dùng văn bản và hộp bao hoàn hảo (ground-truth), LayoutXLM đạt Macro EM present-only 66,97\% (tăng +24,01 điểm \% so với mức 42,96\% khi dùng VietOCR thực tế). Các trường bị ảnh hưởng nặng nhất là địa chỉ (tăng từ 11,66\% lên 64,57\%) và tên cửa hàng (tăng từ 28,12\% lên 64,29\%), cho thấy chất lượng nhận dạng OCR chính là nút thắt cổ chai lớn nhất của pipeline.
 
-\subsection{Đe dọa tính hợp lệ}
-\label{subsec:validity-threats}
+\subsection{Những hạn chế cần lưu ý}
+\label{subsec:limitations-and-threats}
 
 \begin{enumerate}
-  \item \textbf{Nhãn rỗng:} Khi cả prediction và ground-truth rỗng, all-samples EM/NES được tính đúng. Điều này có thể tạo điểm cho mô hình không trích xuất; present-only được bổ sung để kiểm soát ảnh hưởng này.
-  \item \textbf{Khác biệt annotation:} Donut dùng toàn bộ dữ liệu JSON, trong khi LayoutXLM chỉ dùng mẫu có hộp bao. Đây là yếu tố nhiễu khi so sánh kiến trúc.
-  \item \textbf{Suy sụp mô hình Donut:} Dù lượt suy luận hiện tại dùng giới hạn sinh 768 token, Donut vẫn bị suy sụp (collapse), sinh lặp từ liên tục — phản ánh độ khó của việc huấn luyện end-to-end trên tập dữ liệu nhỏ.
-  \item \textbf{Sai lệch tọa độ cục bộ:} Bốn prediction LayoutXLM cũ dùng kích thước ảnh thô với hộp OCR trên ảnh resize. Sensitivity check cho thấy kết luận tổng thể không bị đảo ngược, nhưng artifact chính vẫn được giữ nguyên để bảo toàn kết quả thực nghiệm.
-  \item \textbf{Giới hạn token:} LayoutXLM cắt chuỗi ở 512 token và chưa triển khai sliding window dù cấu hình có \code{doc\_stride}; trường cuối biên lai có thể bị mất.
-  \item \textbf{Thiếu log huấn luyện Donut:} Log huấn luyện đầy đủ của LayoutXLM đã được bổ sung trong thư mục \code{outputs/training\_logs/}, tuy nhiên Donut vẫn thiếu log chi tiết do chỉ sử dụng checkpoint đóng băng sẵn có.
-  \item \textbf{Phân tích lỗi heuristic:} Taxonomy tự động giúp thống kê nhất quán nhưng không chứng minh nguyên nhân. Các lỗi phức tạp cần rà soát ảnh và token-level output thủ công.
-  \item \textbf{Thiếu ablation tiền xử lý:} Dù đã có Oracle OCR để đo ảnh hưởng của OCR, các phép thử ablation về cấu hình tiền xử lý ảnh hoặc augmentation vẫn chưa được làm.
+  \item \textbf{Ảnh hưởng của nhãn rỗng:} Khi cả kết quả dự đoán và nhãn gốc đều rỗng, độ chính xác all-samples vẫn được tính là đúng. Điều này có thể làm tăng điểm của mô hình một cách ảo; đồ án đã bổ sung đánh giá present-only để kiểm soát ảnh hưởng này.
+  \item \textbf{Khác biệt dữ liệu huấn luyện:} Donut sử dụng toàn bộ nhãn JSON, trong khi LayoutXLM chỉ dùng các mẫu có tọa độ hộp bao. Sự không đồng nhất này là một yếu tố nhiễu khi so sánh hai kiến trúc.
+  \item \textbf{Hiện tượng suy sụp của Donut:} Dù đã tăng giới hạn sinh lên 768 token khi suy luận, Donut vẫn bị lỗi lặp từ liên tục (model collapse), phản ánh độ khó của việc huấn luyện mô hình sinh trực tiếp từ ảnh trên tập dữ liệu nhỏ.
+  \item \textbf{Sai lệch tọa độ cục bộ:} Có 4 mẫu của LayoutXLM bị sai lệch tọa độ do dùng ảnh gốc với tọa độ OCR trên ảnh đã resize. Kết quả phân tích độ nhạy cho thấy sai sót này không làm thay đổi kết luận chung, nên tệp kết quả dự đoán vẫn được giữ nguyên để bảo toàn kết quả thực nghiệm.
+  \item \textbf{Giới hạn chiều dài chuỗi:} LayoutXLM bị giới hạn ở 512 token và chưa áp dụng kỹ thuật cửa sổ trượt (sliding window), do đó có thể bỏ sót thông tin ở cuối các biên lai quá dài.
+  \item \textbf{Thiếu nhật ký huấn luyện Donut:} Trong khi LayoutXLM có đầy đủ log huấn luyện trong thư mục \code{outputs/training\_logs/}, Donut lại thiếu các thông tin này do chỉ sử dụng checkpoint có sẵn.
+  \item \textbf{Hạn chế của phân loại lỗi tự động:} Việc phân loại lỗi bằng tập luật giúp thống kê nhanh chóng nhưng chưa chỉ rõ được nguyên nhân sâu xa. Các trường hợp phức tạp vẫn cần phải đối chiếu thủ công giữa ảnh gốc và kết quả sinh.
+  \item \textbf{Chưa đánh giá sâu tiền xử lý ảnh:} Đồ án mới chỉ thực hiện thí nghiệm Oracle OCR để đo ảnh hưởng của OCR, chưa làm các thí nghiệm ablation chi tiết để so sánh hiệu quả của các bước tiền xử lý ảnh khác nhau.
 \end{enumerate}
 
 \subsection{Đóng góp và hạn chế}
 \label{subsec:limitations}
 
-Đồ án cung cấp pipeline dữ liệu thống nhất, ba phương pháp trích xuất, prediction artifact trên cùng test set, evaluator xử lý rõ giá trị rỗng, manifest khóa bằng checksum và taxonomy lỗi có thể tái lập. Về hạn chế, quy mô dữ liệu nhỏ, annotation không đồng nhất, checkpoint Donut bị model collapse, bốn mẫu LayoutXLM có sai lệch tọa độ, và bằng chứng huấn luyện Donut chưa đầy đủ.
+Đồ án cung cấp pipeline dữ liệu thống nhất, ba phương pháp trích xuất, tệp kết quả dự đoán trên cùng test set, bộ đánh giá (evaluator) xử lý rõ giá trị rỗng, tệp manifest khóa bằng checksum và phân loại lỗi có thể tái lập. Về hạn chế, quy mô dữ liệu nhỏ, gán nhãn chưa thật sự đồng nhất, checkpoint Donut bị model collapse, bốn mẫu LayoutXLM có sai lệch tọa độ, và bằng chứng huấn luyện Donut chưa đầy đủ.
 
 \subsection{Hướng phát triển}
 \label{subsec:future_work}

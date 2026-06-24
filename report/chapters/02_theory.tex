@@ -93,7 +93,7 @@ Do đó VietOCR trong đồ án không dùng hàm mất mát CTC. Điểm này q
 \subsubsection{Kiến trúc tổng quan}
 \label{subsubsec:donut_arch}
 
-Donut gồm hai thành phần chính:
+Donut gồm hai thành phần chính, minh họa trong \cref{fig:donut_arch}:
 \begin{enumerate}
   \item \textbf{Vision Encoder (Swin Transformer):} Mã hóa ảnh biên lai thành chuỗi biểu diễn đặc trưng thị giác phân cấp $\mathbf{z} = \{z_1, z_2, \ldots, z_n\}$. Swin Transformer~\cite{liu2021swin} dùng cơ chế cửa sổ tự chú ý trượt (Shifted Window MSA) để giảm độ phức tạp từ bậc hai xuống tuyến tính theo kích thước ảnh, đồng thời giữ được tính liên tục ngữ cảnh.
   \item \textbf{Text Decoder (mBART):} Checkpoint \code{donut-base} dùng decoder họ mBART, một biến thể đa ngôn ngữ của BART~\cite{lewis2020bart}. Tại mỗi bước $i$, decoder kết hợp tự chú ý trên các token đã sinh và cross-attention lên biểu diễn thị giác $\mathbf{z}$ để dự đoán token tiếp theo:
@@ -105,8 +105,74 @@ Donut gồm hai thành phần chính:
 
 \begin{figure}[htbp]
   \centering
-  \includegraphics[width=0.85\textwidth]{donut_architecture.jpg}
-  \caption{Kiến trúc tổng quan mô hình \model{Donut} (Swin Encoder kết hợp mBART Decoder)~\cite{kim2022donut}.}
+  \resizebox{0.95\textwidth}{!}{
+    \begin{tikzpicture}[
+      >=stealth,
+      node distance=0.6cm and 0.8cm,
+      block/.style={rectangle, draw=orange!80!black, fill=orange!10, text=orange!90!black, minimum width=2.2cm, minimum height=1.1cm, align=center, font=\small\bfseries, rounded corners=4pt},
+      encoder_block/.style={rectangle, draw=orange!80!black, fill=orange!50, text=white, minimum width=1.8cm, minimum height=0.9cm, align=center, font=\small\bfseries, rounded corners=3pt},
+      decoder_block/.style={rectangle, draw=orange!90!black, fill=orange!80!black, text=white, minimum width=2.4cm, minimum height=1.2cm, align=center, font=\small\bfseries, rounded corners=4pt},
+      input_style/.style={rectangle, draw=gray!60, fill=white, double, minimum width=2.0cm, minimum height=1.5cm, align=center, font=\small\bfseries, rounded corners=3pt},
+      output_style/.style={rectangle, draw=huce-blue!80!black, fill=huce-blue!5, minimum width=2.2cm, minimum height=1.8cm, align=left, font=\small, rounded corners=6pt, line width=1pt},
+      group_box/.style={rectangle, draw=orange!30, fill=orange!5, rounded corners=8pt, inner sep=8pt}
+    ]
+      % Nodes
+      \node[input_style] (input) at (0,0) {Ảnh biên lai\\đầu vào\\($H \times W \times C$)};
+      
+      % Swin Encoder Group
+      \node[encoder_block, right=1.2cm of input, yshift=0.9cm] (stage1) {Stage 1};
+      \node[encoder_block, below=0.2cm of stage1] (stage2) {Stage 2};
+      \node[encoder_block, below=0.2cm of stage2] (stage3) {Stage 3};
+      \node[encoder_block, below=0.2cm of stage3] (stage4) {Stage 4};
+      
+      \node[block, right=1.2cm of stage2.south east, anchor=west, minimum height=1.5cm] (features) {Visual Token\\Embeddings\\$\mathbf{z}$};
+      
+      % mBART Decoder Group
+      \node[decoder_block, right=1.2cm of features] (decoder) {mBART Decoder\\(Autoregressive)};
+      
+      % Output
+      \node[output_style, right=1.2cm of decoder] (output) {
+        \textbf{Structured JSON}\\
+        \texttt{\{} \\
+        \ \ \texttt{"store\_name": ...} \\
+        \ \ \texttt{"date": ...} \\
+        \ \ \texttt{"total": ...} \\
+        \ \ \texttt{"address": ...} \\
+        \texttt{\}}
+      };
+      
+      % Feedback loop for autoregressive generation
+      \node[draw=orange!80!black, fill=orange!5, rounded corners=3pt, below=0.8cm of decoder, font=\scriptsize, align=center] (feedback) {Token đã sinh trước đó\\$y_{<i}$};
+
+      % Background group for Swin Encoder
+      \begin{scope}[on background layer]
+        \node[group_box, fit=(stage1) (stage4), label={[font=\small\bfseries, text=orange!80!black]above:Swin Transformer Encoder}] (encoder_group) {};
+      \end{scope}
+
+      % Arrows
+      \draw[->, thick, draw=huce-blue] (input.east) -- (encoder_group.west);
+      
+      % Connect encoder stages (conceptually they are sequential)
+      \draw[->, draw=gray, dashed] (stage1.south) -- (stage2.north);
+      \draw[->, draw=gray, dashed] (stage2.south) -- (stage3.north);
+      \draw[->, draw=gray, dashed] (stage3.south) -- (stage4.north);
+      
+      % Connection from encoder group to z
+      \draw[->, thick, draw=huce-blue] (encoder_group.east) -- (features.west);
+      
+      % Connection from z to decoder
+      \draw[->, thick, draw=huce-blue] (features.east) -- (decoder.west);
+      
+      % Connection from decoder to output
+      \draw[->, thick, draw=huce-blue] (decoder.east) -- (output.west);
+      
+      % Feedback arrows
+      \draw[->, thick, draw=orange!80!black] (decoder.south) -- ++(0,-0.3) -| (feedback.east);
+      \draw[->, thick, draw=orange!80!black] (feedback.west) -| ([xshift=-0.4cm]decoder.west) |- ([yshift=-0.2cm]decoder.west);
+
+    \end{tikzpicture}
+  }
+  \caption{Kiến trúc tổng quan mô hình \model{Donut}: Vision Encoder (Swin Transformer) trích xuất đặc trưng thị giác $\mathbf{z}$ và Text Decoder (mBART) sinh chuỗi kết quả tự hồi quy~\cite{kim2022donut}.}
   \label{fig:donut_arch}
 \end{figure}
 
