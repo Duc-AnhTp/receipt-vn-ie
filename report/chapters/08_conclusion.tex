@@ -8,7 +8,7 @@
 \label{subsec:conclusion}
 
 \paragraph{RQ1: LayoutXLM cải thiện như thế nào so với Baseline?}
-Trên 234 mẫu test, \model{LayoutXLM} đạt Macro EM 42,96\% và Macro NES 63,89\% ở chế độ present-only, cao hơn Baseline tương ứng 40,41\% và 55,47\%. Chênh lệch Macro EM chỉ là 2,55 điểm \%, nên kết luận phù hợp là LayoutXLM cải thiện vừa phải nhưng ổn định hơn ở các trường cần ngữ cảnh/bố cục như \field{total} và \field{address}; Baseline vẫn mạnh ở \field{date} nhờ cấu trúc ngày phù hợp với luật regex.
+Trên 234 mẫu test, \model{LayoutXLM} đạt Macro EM 42,96\% và Macro NES 63,89\% ở chế độ present-only, cao hơn Baseline tương ứng 40,41\% và 55,47\%. Chênh lệch Macro EM chỉ là 2,55 điểm \%, nên kết luận phù hợp là LayoutXLM cải thiện vừa phải nhưng ổn định hơn ở các trường cần ngữ cảnh/bố cục như \field{total} và \field{address}; Baseline vẫn mạnh ở \field{date} nhờ cấu trúc ngày phù hợp với luật regex. Mức tăng 2,55 điểm EM này cần được cân nhắc với chi phí vận hành cao hơn của \model{LayoutXLM} (bao gồm GPU, OCR cache) so với phương pháp không cần huấn luyện như Baseline.
 
 \paragraph{RQ2: Donut OCR-free hoạt động ra sao trên dữ liệu nhỏ?}
 \model{Donut} được suy luận với \code{generation\_max\_length=768} nhưng đạt Macro EM present-only 0,00\% và Macro NES 0,08\%. Kết quả này phản ánh model collapse của checkpoint/thiết lập hiện tại, với chuỗi sinh lặp và thiếu cặp thẻ hợp lệ, không phải bằng chứng phủ định toàn bộ hướng OCR-free.
@@ -26,6 +26,7 @@ Baseline mất trung bình khoảng 1,08 ms/ảnh từ OCR cache, còn LayoutXLM
   \item \textbf{Nhãn rỗng và mất cân bằng annotation:} All-samples có thể cho điểm khi cả prediction và ground-truth rỗng; present-only được dùng để kiểm soát, nhưng số mẫu có mặt vẫn khác nhau giữa các trường.
   \item \textbf{Khác biệt dữ liệu huấn luyện:} Donut dùng toàn bộ dữ liệu JSON, trong khi LayoutXLM chỉ dùng mẫu có hộp bao. Vì vậy phép so sánh phản ánh artifact hiện có hơn là so sánh kiến trúc trong điều kiện dữ liệu hoàn toàn đồng nhất.
   \item \textbf{Rò rỉ store/template:} Quy trình chia dữ liệu đã loại trùng ảnh theo hash, nhưng chưa chứng minh loại bỏ hoàn toàn rò rỉ theo cửa hàng hoặc template bố cục tương tự giữa train/test.
+  \item \textbf{Sai lệch tọa độ ảnh/OCR:} Báo cáo đã thừa nhận tồn tại bốn mẫu có sai lệch hệ tọa độ ảnh/OCR. Đây không nên chỉ xem là sensitivity check mà cần được theo dõi như một bug dữ liệu/pipeline tiềm tàng. Cần audit toàn bộ đường đi của bbox từ OCR cache đến LayoutXLM dataset/inference để xác nhận scale được áp dụng nhất quán.
   \item \textbf{Tiêu chí checkpoint lịch sử:} Mã huấn luyện hiện tại đã đổi sang chọn checkpoint theo entity-level F1 và chỉ cho fallback metric khi có \code{--allow\_metric\_fallback}. Vì không rerun training trong đợt chốt này, bảng kết quả phải được diễn giải theo artifact đã đóng băng; nếu checkpoint lịch sử được chọn theo loss thì đây là hạn chế lịch sử của artifact.
   \item \textbf{Giới hạn chuỗi LayoutXLM:} Cấu hình có \code{doc\_stride}, nhưng dataset và inference hiện chưa triển khai sliding window thật; chuỗi dài vẫn bị cắt ở 512 token.
   \item \textbf{Latency chưa end-to-end cho pipeline OCR-based:} Baseline và LayoutXLM chỉ đo từ OCR cache, chưa cộng thời gian PaddleOCR + VietOCR từ ảnh thô. Donut được đo trực tiếp từ ảnh nên phạm vi không hoàn toàn đồng nhất.
