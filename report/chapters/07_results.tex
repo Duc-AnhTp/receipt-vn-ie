@@ -10,7 +10,7 @@ Kết quả dưới đây được tính lại trực tiếp từ các predictio
 
 \Cref{tab:all-results} phản ánh hành vi của các artifact trên toàn bộ test set, bao gồm trường hợp trường thông tin không có nhãn. \Cref{tab:present-results} loại các ground-truth rỗng theo từng trường và được dùng làm cơ sở chính để đánh giá khả năng trích xuất. \Cref{tab:coverage-results} bổ sung tỷ lệ prediction khác rỗng để phân biệt chất lượng với xu hướng trả về rỗng.
 
-Trên chế độ present-only, \model{LayoutXLM} đạt Macro EM 42,96\% và Macro NES 63,89\%, cao hơn Baseline tương ứng 40,41\% và 55,47\%. Khoảng cách Macro EM chỉ là 2,55 điểm phần trăm, nên kết luận phù hợp không phải LayoutXLM áp đảo Baseline, mà là LayoutXLM cải thiện ổn định hơn ở các trường cần ngữ cảnh/bố cục như tổng tiền và địa chỉ. Nếu mục tiêu là triển khai thực tế với tài nguyên hạn chế, mức tăng Macro EM 2,55 điểm cần được cân nhắc cùng chi phí vận hành của pipeline \model{LayoutXLM}, gồm GPU, OCR cache, xử lý bbox và bảo trì checkpoint. \model{Donut} đạt Macro EM 0,00\% trong thiết lập hiện tại, phản ánh model collapse của checkpoint này thay vì kết luận phủ định toàn bộ hướng OCR-free.
+Trên chế độ present-only, \model{LayoutXLM} đạt Macro EM 42,96\% và Macro NES 63,89\%, cao hơn Baseline tương ứng 40,41\% và 55,47\%. Khoảng cách Macro EM chỉ là 2,55 điểm phần trăm, nên kết luận phù hợp không phải LayoutXLM áp đảo Baseline, mà là LayoutXLM cải thiện ổn định hơn ở các trường cần ngữ cảnh/bố cục như tổng tiền và địa chỉ. Cần lưu ý rằng LayoutXLM chỉ được huấn luyện trên 784 mẫu (ít hơn 28\% so với Donut), nên đây là so sánh artifact trong điều kiện đồ án chứ không phải so sánh kiến trúc thuần túy. Nếu mục tiêu là triển khai thực tế với tài nguyên hạn chế, mức tăng Macro EM 2,55 điểm cần được cân nhắc cùng chi phí vận hành của pipeline \model{LayoutXLM}, gồm GPU, OCR cache, xử lý bbox và bảo trì checkpoint. \model{Donut} đạt Macro EM 0,00\% và CER lên đến 334\% (all-samples) hay 1.037\% (present-only) trong thiết lập hiện tại. Các giá trị CER vượt quá 100\% là hợp lệ về mặt toán học: CER được tính bằng khoảng cách Levenshtein chia cho độ dài chuỗi ground-truth, nên khi mô hình sinh chuỗi lặp dài gấp nhiều lần so với nhãn gốc, số phép chèn (insertion) vượt xa số ký tự đích. Kết quả này phản ánh model collapse của checkpoint hiện tại thay vì kết luận phủ định toàn bộ hướng OCR-free.
 
 \input{generated/analysis_tables}
 
@@ -40,14 +40,21 @@ Những nhận xét trên dựa trên kết quả thực tế đo được, chư
 
 \input{generated/latency_table}
 
-\Cref{tab:latency-comparison} cho thấy Baseline và LayoutXLM có thể so sánh trực tiếp ở phạm vi sau OCR cache; Donut được đặt cùng bảng như phép đo trực tiếp từ ảnh để người đọc thấy chi phí suy luận của checkpoint hiện có. Không thể suy ra latency sản xuất từ ảnh thô cho pipeline OCR-based khi thiếu phép đo PaddleOCR + VietOCR cùng điều kiện phần cứng.
+\Cref{tab:latency-post-ocr} trình bày latency của Baseline và LayoutXLM trong phạm vi sau OCR cache — hai phương pháp này có thể so sánh trực tiếp với nhau vì cùng phạm vi đo. \Cref{tab:latency-e2e} trình bày riêng latency của Donut, đo trực tiếp từ ảnh đầu vào; phạm vi đo này hoàn toàn khác nên hai bảng không so sánh ngang hàng được. Không thể suy ra latency sản xuất từ ảnh thô cho pipeline OCR-based khi thiếu phép đo PaddleOCR + VietOCR cùng điều kiện phần cứng.
 
 \subsection{Phân tích hiệu năng Donut và hiện tượng suy sụp}
 \label{subsec:donut_performance}
 
 \input{generated/diagnostic_tables}
 
-Dù lượt prediction Donut truyền explicit \code{generation\_max\_length=768}, Macro EM present-only vẫn ở mức 0,00\%. Khi kiểm tra chuỗi sinh thô, mô hình có biểu hiện lặp từ liên tục và không sinh ra cấu trúc thẻ XML hợp lệ. Do đó, kết quả này được đánh giá là một ca thất bại thực nghiệm (negative result) do hiện tượng sụp đổ mô hình (model collapse). Nguyên nhân có thể đến từ việc tập dữ liệu huấn luyện (1.091 mẫu) quá nhỏ đối với một mô hình sinh end-to-end tự hồi quy, hoặc cấu hình huấn luyện chưa đủ giúp mô hình hội tụ. Điểm số của Donut ở đây tuyệt đối không được dùng để đưa ra kết luận rằng kiến trúc OCR-free kém hơn kiến trúc dựa trên OCR.
+Dù lượt prediction Donut truyền explicit \code{generation\_max\_length=768}, Macro EM present-only vẫn ở mức 0,00\%. Khi kiểm tra chuỗi sinh thô, mô hình có biểu hiện lặp từ liên tục và không sinh ra cấu trúc thẻ XML hợp lệ. Do đó, kết quả này được đánh giá là một ca thất bại thực nghiệm (negative result) do hiện tượng sụp đổ mô hình (model collapse). Cần lưu ý rằng paper gốc của Donut fine-tune thành công trên tập CORD chỉ khoảng 800 mẫu, nên 1.091 mẫu không quá nhỏ về mặt lý thuyết. Các nguyên nhân kỹ thuật có thể bao gồm:
+\begin{enumerate}
+  \item \textbf{Thiếu \code{repetition\_penalty}}: Cấu hình sinh (\code{generation}) trong \code{donut.yaml} chỉ có \code{num\_beams=2} và \code{early\_stopping=true}, không thiết lập \code{repetition\_penalty}. Đây là nguyên nhân trực tiếp nhất dẫn đến vòng lặp sinh vô tận.
+  \item \textbf{Effective batch size nhỏ}: Batch size hiệu dụng chỉ là $2 \times 8 = 16$ mẫu/step, kết hợp với cosine scheduler chạy 150 epoch, dễ gây gradient nhiễu và khó hội tụ ổn định.
+  \item \textbf{Bug \code{max\_length} mặc định}: Checkpoint không lưu \code{max\_length} vào \code{generation\_config.json}, khiến validation loop khi chọn checkpoint có thể bị giới hạn ở 20 token (chỉ đủ cho 3--4 trường). Nếu checkpoint tốt nhất được chọn dựa trên output 20 token bị cắt, mô hình đã bị ``dạy sai'' mục tiêu từ sớm.
+  \item \textbf{\code{gradient\_checkpointing}}: Cấu hình bật \code{gradient\_checkpointing: true}. Không phải mọi kiến trúc đều hỗ trợ ổn định tính năng này; cần kiểm tra xem nó có gây mất ổn định huấn luyện cho Donut hay không.
+\end{enumerate}
+Điểm số của Donut ở đây tuyệt đối không được dùng để đưa ra kết luận rằng kiến trúc OCR-free kém hơn kiến trúc dựa trên OCR.
 
 \subsection{Phân tích lỗi có thể tái lập}
 \label{subsec:error_analysis}
@@ -86,7 +93,11 @@ RQ3 yêu cầu đo mức ảnh hưởng của OCR lên LayoutXLM. Thí nghiệm 
 
 Trên subset 168 mẫu này, \model{LayoutXLM} (Oracle OCR) đạt Macro EM/NES/CER present-only lần lượt là 95,55\% / 98,20\% / 2,02\%, so với 49,72\% / 76,26\% / 26,09\% khi dùng OCR thực tế. Theo từng trường, EM tăng từ 37,97\% lên 91,14\% ở \field{store\_name}, từ 63,58\% lên 100,00\% ở \field{date}, từ 80,79\% lên 99,34\% ở \field{total}, và từ 16,56\% lên 91,72\% ở \field{address}. Chênh lệch lớn nhất nằm ở \field{address} và \field{store\_name}, hai trường phụ thuộc mạnh vào nhận dạng chuỗi tiếng Việt dài và nhiễu bố cục.
 
-Kết quả này cho thấy OCR là nút thắt cổ chai lớn của pipeline LayoutXLM trên phần dữ liệu có oracle. Tuy nhiên, kết luận định lượng về mức tăng 49,72\% $\rightarrow$ 95,55\% chỉ áp dụng trực tiếp cho subset MC-OCR 168 mẫu, không phải toàn bộ 234 mẫu test.
+Kết quả này cho thấy OCR là nút thắt cổ chai lớn của pipeline LayoutXLM trên phần dữ liệu có oracle.
+
+\begin{warnbox}[Giới hạn phạm vi thí nghiệm Oracle OCR]
+Kết quả 49,72\% $\rightarrow$ 95,55\% chỉ đo trên 168/234 mẫu test (72\%), toàn bộ thuộc nguồn MC-OCR 2021. 66 mẫu tự thu thập (\code{self\_collected}) bị loại hoàn toàn vì không có ground-truth OCR. Phân phối lỗi OCR trên ảnh tự thu thập — vốn có chất lượng ảnh, font chữ và bố cục khác biệt so với MC-OCR — có thể làm thay đổi đáng kể mức tăng khi áp dụng Oracle. Do đó, kết luận định lượng $+45{,}83$ điểm Macro EM \textbf{không generalizable} sang toàn bộ 234 mẫu test.
+\end{warnbox}
 
 \subsection{Demo ứng dụng}
 \label{subsec:demo}

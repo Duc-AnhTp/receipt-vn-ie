@@ -2,7 +2,7 @@
 model:
   name: "microsoft/layoutxlm-base"
   max_length: 512
-  doc_stride: 128
+  doc_stride: 128  # NOT IMPLEMENTED — sliding window chưa triển khai, chuỗi bị cắt ở max_length
   labels:
     - "O"
     - "B-STORE_NAME"

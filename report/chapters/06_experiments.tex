@@ -56,7 +56,7 @@ Các giá trị trong \cref{tab:hyperparams} lấy từ file cấu hình hiện 
   \end{tabular}
 \end{table}
 
-Donut chỉ cần ảnh và nhãn JSON nên dùng được cả hai nguồn dữ liệu. LayoutXLM cần hộp bao trường để sinh nhãn BIO, do đó chỉ huấn luyện trên các mẫu \code{json\_and\_boxes}. Cả ba phương pháp đều chấm trên cùng 234 ID test, tuy nhiên điều kiện huấn luyện khác nhau là yếu tố nhiễu cần lưu ý khi diễn giải kết quả.
+Donut chỉ cần ảnh và nhãn JSON nên dùng được cả hai nguồn dữ liệu. LayoutXLM cần hộp bao trường để sinh nhãn BIO, do đó chỉ huấn luyện trên các mẫu \code{json\_and\_boxes}, mất 307 mẫu (28\% tập train) so với Donut. Cả ba phương pháp đều chấm trên cùng 234 ID test. Tuy nhiên, với Macro EM chênh lệch chỉ 2,55 điểm giữa LayoutXLM và Baseline, mức chênh dữ liệu huấn luyện 28\% này đủ sức làm đảo chiều kết quả. Do đó, mọi phép đối chiếu trong báo cáo là \textbf{so sánh giữa các artifact trong điều kiện đồ án}, không phải so sánh kiến trúc thuần túy trong điều kiện dữ liệu đồng nhất.
 
 \subsection{Quy trình suy luận và đánh giá}
 \label{subsec:evaluation_protocol}
@@ -92,6 +92,10 @@ Các thực nghiệm chạy lại trên Kaggle đã ghi nhận đầy đủ tệ
   \item \textbf{LayoutXLM (oracle\_ocr):} Chạy đầy đủ 80 bước (20 epochs) trên tập dữ liệu MC-OCR rút gọn có ground-truth OCR (256 mẫu train).
 \end{itemize}
 Các log huấn luyện chi tiết này hiện được lưu trong thư mục \code{outputs/training\_logs/} làm bằng chứng kiểm chứng và tái lập kết quả.
+
+\begin{warnbox}[Thiếu đường cong huấn luyện]
+Do cấu hình \code{eval\_steps=200} và \code{logging\_steps=20}, tệp \code{trainer\_state.json} của LayoutXLM chỉ ghi 10 điểm training loss (mỗi 20 bước) và duy nhất 1 lần đánh giá trên tập validation tại bước 200. Training loss giảm đều từ 1,29 (epoch 1,6) xuống 0,07 (epoch 15,4), cho thấy tín hiệu hội tụ trên tập train. Tuy nhiên, chỉ có 1 điểm eval F1 = 83,65\% nên không thể vẽ đường cong validation hoàn chỉnh hay đánh giá liệu mô hình có overfit trong các epoch cuối. Đây là hạn chế do \code{eval\_steps} quá thưa so với tổng 260 bước huấn luyện; các lần chạy sau cần giảm \code{eval\_steps} để thu thập nhiều điểm đánh giá hơn.
+\end{warnbox}
 
 \begin{notebox}[Tiêu chí checkpoint và artifact đã đóng băng]
 Mã huấn luyện \model{LayoutXLM} hiện tại đã được chỉnh để các lần huấn luyện sau chọn checkpoint tốt nhất theo entity-level F1 từ \code{seqeval}; fallback token-accuracy chỉ được phép bật bằng \code{--allow\_metric\_fallback} cho smoke test. Tuy nhiên, các bảng định lượng trong báo cáo vẫn lấy từ prediction artifact đã đóng băng và không rerun training trong đợt chốt này. Nếu artifact lịch sử được sinh từ checkpoint chọn theo loss, kết quả cần được diễn giải theo checkpoint/setting lịch sử đó thay vì ngầm hiểu là đã được sinh từ checkpoint chọn theo F1.

@@ -10,8 +10,8 @@ image:
     max_side: 1600
     rectify: false
     binarize: false
-    denoise: true
-    clahe: true
+    denoise: true  # NOT IMPLEMENTED — pipeline không đọc flag này
+    clahe: true  # NOT IMPLEMENTED — pipeline không đọc flag này
 
 augmentation:
   rotate:
