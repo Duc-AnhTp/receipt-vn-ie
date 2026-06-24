@@ -12,13 +12,13 @@ Toàn bộ kết quả dưới đây được tính trực tiếp từ các pred
 
 \input{generated/results_tables}
 
-\Cref{tab:all-results} cho thấy hành vi của cả ba phương pháp trên toàn bộ test set, kể cả khi trường thông tin không có nhãn. \Cref{tab:present-results} loại bỏ các ground-truth rỗng theo từng trường, và đây là cơ sở chính để đánh giá khả năng trích xuất. \Cref{tab:coverage-results} bổ sung tỷ lệ prediction khác rỗng, giúp phân biệt giữa chất lượng thực sự và xu hướng trả về rỗng.
+\Cref{tab:all-results} cho thấy hành vi của cả ba phương pháp trên toàn bộ test set, kể cả khi trường thông tin không có nhãn. \Cref{tab:present-results} loại bỏ các ground-truth rỗng theo từng trường, và đây là cơ sở chính để đánh giá khả năng trích xuất. \Cref{tab:coverage-results} bổ sung tỷ lệ prediction khác rỗng, giúp phân biệt giữa chất lượng thực sự và xu hướng trả về rỗng. \Cref{fig:present-only-em} minh họa kết quả Exact Match present-only theo từng trường.
 
 Ở chế độ present-only, \model{LayoutXLM} đạt kết quả tốt nhất với Macro EM 42,96\% và Macro NES 63,89\%, cao hơn Baseline (40,41\% và 55,47\%) và tốt hơn nhiều so với Donut (Macro EM 0,00\%, Macro NES 0,08\%). Dù Donut đã được cấp đủ 768 token giới hạn sinh, mô hình vẫn rơi vào trạng thái suy sụp (model collapse), sinh lặp từ liên tục, dẫn đến chất lượng rất kém khi huấn luyện trên tập biên lai nhỏ.
 
 \input{generated/analysis_tables}
 
-Paired bootstrap trên chính 234 mẫu cho thấy chênh lệch LayoutXLM trừ Baseline có khoảng 95\% dương với cả Macro EM và Macro NES. Tuy nhiên, đây chỉ là bất định lấy mẫu trên test set đóng băng — nó không loại được sai lệch do cấu hình, dữ liệu huấn luyện hoặc annotation khác nhau. Sau khi loại bốn mẫu có sai lệch hệ tọa độ, thứ tự tổng thể vẫn giữ nguyên: LayoutXLM có Macro EM/NES present-only cao hơn Baseline. Kết quả sensitivity không thay thế bảng 234 mẫu mà chỉ để kiểm tra xem nhận định có bền hay không.
+Kiểm tra bootstrap trên 234 mẫu cho thấy chênh lệch giữa LayoutXLM và Baseline đạt khoảng tin cậy 95\% dương với cả Macro EM và Macro NES. Tuy nhiên, kết quả này chưa loại trừ hoàn toàn các yếu tố nhiễu từ cấu hình, dữ liệu huấn luyện và cách gán nhãn khác nhau. Khi loại bỏ bốn mẫu bị sai lệch tọa độ, thứ tự hiệu năng của các mô hình vẫn không đổi: LayoutXLM đạt kết quả cao nhất, tiếp theo là Baseline và Donut. Phân tích này nhằm kiểm tra tính ổn định của nhận định, không thay thế cho kết quả đo chính thức trên toàn bộ test set.
 
 \begin{figure}[htbp]
   \centering
@@ -38,7 +38,7 @@ Paired bootstrap trên chính 234 mẫu cho thấy chênh lệch LayoutXLM trừ
   \item \field{address}: Cả Baseline lẫn LayoutXLM đều yếu về exact match; LayoutXLM đạt 11,66\%, Baseline đạt 1,79\%. Tuy nhiên NES của LayoutXLM đạt 60,14\%, phản ánh khá nhiều trường hợp lấy được một phần địa chỉ.
 \end{itemize}
 
-Những nhận xét trên dừng ở mức mô tả kết quả, chưa phải chứng minh cơ chế nhân quả. Chẳng hạn, chênh lệch ở \field{total} có thể liên quan đến bố cục, nhưng báo cáo chưa có ablation tách riêng text, layout và visual features.
+Những nhận xét trên dựa trên kết quả thực tế đo được, chưa đi sâu phân tích nguyên nhân. Để hiểu rõ hơn cơ chế đóng góp của từng thành phần, đồ án sẽ cần thực hiện các thí nghiệm ablation nhằm tách biệt tầm ảnh hưởng của văn bản, bố cục và đặc trưng hình ảnh.
 
 % ============================================================================
 \subsection{Latency của các thành phần đã ghi nhận}
@@ -60,11 +60,11 @@ Dù Donut đã được suy luận với \code{generation\_max\_length=768}, Mac
 \subsection{Phân tích lỗi có thể tái lập}
 \label{subsec:error_analysis}
 
-Phân tích lỗi tự động dựa trên taxonomy trong \cref{tab:error-taxonomy-repro}. Mỗi prediction sai được gán đúng một nhóm theo thứ tự quy tắc trong mã nguồn. Đây là công cụ chẩn đoán nhất quán, không phải nhãn nguyên nhân hoàn hảo.
+Phân tích lỗi tự động dựa trên phân loại lỗi trong \cref{tab:error-taxonomy-repro}. Mỗi kết quả dự đoán sai được gán vào một nhóm lỗi dựa theo bộ quy tắc định sẵn trong mã nguồn. Đây là công cụ thống kê nhất quán nhằm hỗ trợ phân tích định lượng.
 
 \begin{table}[htbp]
   \centering
-  \caption{Taxonomy lỗi được sinh tự động từ prediction artifact.}
+  \caption{Phân loại lỗi được sinh tự động từ tệp kết quả dự đoán.}
   \label{tab:error-taxonomy-repro}
   \begin{tabular}{lp{10cm}}
     \toprule
@@ -81,9 +81,9 @@ Phân tích lỗi tự động dựa trên taxonomy trong \cref{tab:error-taxono
   \end{tabular}
 \end{table}
 
-Với LayoutXLM, \code{EMPTY\_PRED}, \code{OCR\_MISS} và \code{MODEL\_BAD} đều xuất hiện — điều này phù hợp với nhận định rằng pipeline phụ thuộc vào OCR, nhưng taxonomy tự động chưa đủ để tính chính xác phần hao hụt do OCR gây ra. CSV Donut vẫn cho thấy nhiều prediction rỗng, nhưng phân bố này chủ yếu phản ánh hiện tượng sinh lặp và thiếu thẻ hợp lệ của checkpoint, nên chỉ có ý nghĩa chẩn đoán artifact.
+Với LayoutXLM, các lỗi \code{EMPTY\_PRED}, \code{OCR\_MISS} và \code{MODEL\_BAD} đều xuất hiện, củng cố nhận định rằng pipeline phụ thuộc nhiều vào chất lượng OCR. Tệp kết quả dự đoán của Donut có nhiều trường rỗng, phản ánh tình trạng lặp từ và thiếu thẻ đóng/mở của checkpoint.
 
-Các khái niệm như hallucination hoặc lỗi BIO phân mảnh chỉ được dùng trong phân tích ví dụ định tính nếu có đối chiếu ảnh, chuỗi sinh và token labels. Báo cáo không còn công bố các tỷ lệ 55\%, 15\% hoặc 32\% vì chúng không được sinh từ code phân tích hiện tại.
+Các khái niệm hallucination và lỗi BIO phân mảnh chỉ dùng khi có đối chiếu cụ thể với ảnh, chuỗi sinh và token labels.
 
 % ============================================================================
 \subsection{Định lượng ảnh hưởng của OCR qua thí nghiệm Oracle OCR}

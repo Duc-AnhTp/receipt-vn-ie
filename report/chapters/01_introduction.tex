@@ -90,9 +90,11 @@ Hiệu năng các phương pháp được đo trên cùng tập kiểm thử đ�
 \begin{enumerate}
   \item \textbf{Xây dựng bộ dữ liệu nhãn sạch:} Hợp nhất và gán nhãn chuẩn hóa tập dữ liệu gồm 1.559 mẫu biên lai tiếng Việt từ cuộc thi MC-OCR 2021 và dữ liệu tự chụp thực tế.
   \item \textbf{Đánh giá có kiểm soát bằng chứng:} So sánh Baseline, \model{LayoutXLM} và \model{Donut} trên cùng tập kiểm thử, đồng thời diễn giải riêng kết quả \model{Donut} như một ca chẩn đoán model collapse thay vì bằng chứng khẳng định ưu/nhược tuyệt đối của kiến trúc OCR-free.
-  \item \textbf{Phân loại và phân tích lỗi:} Xây dựng taxonomy bảy nhóm lỗi có thể sinh lại tự động từ prediction, ground-truth và OCR cache.
+  \item \textbf{Phân loại và phân tích lỗi:} Phân loại bảy nhóm lỗi có thể sinh lại tự động từ tệp kết quả dự đoán, nhãn gốc ground-truth và OCR cache.
   \item \textbf{Demo ứng dụng tương tác:} Triển khai giao diện demo bằng Gradio chạy thời gian thực phục vụ mục đích kiểm thử trực quan.
 \end{enumerate}
+
+Để phục vụ việc kiểm chứng và phát triển tiếp theo, toàn bộ mã nguồn của đồ án được phát triển và lưu trữ công khai tại địa chỉ GitHub: \url{https://github.com/Duc-AnhTp/receipt-vn-ie}.
 
 % ----------------------------------------------------------------------------
 \subsection{Cấu trúc báo cáo}

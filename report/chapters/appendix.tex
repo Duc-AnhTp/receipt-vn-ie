@@ -54,7 +54,7 @@ Các trường chính trong mỗi bản ghi:
 \section{Cấu trúc mã nguồn}
 \label{appendix:source-code}
 
-Cây thư mục dưới đây mô tả tổng quan cấu trúc mã nguồn của dự án. Mã nguồn chính nằm trong thư mục \code{src/receipt\_ie/}, được tổ chức theo chức năng.
+Toàn bộ mã nguồn, cấu hình huấn luyện và tệp kết quả dự đoán của đồ án được quản lý tại kho lưu trữ GitHub: \url{https://github.com/Duc-AnhTp/receipt-vn-ie}. Cây thư mục dưới đây mô tả tổng quan cấu trúc mã nguồn của dự án. Mã nguồn chính nằm trong thư mục \code{src/receipt\_ie/}, được tổ chức theo chức năng.
 
 \begin{lstlisting}[caption={Cấu trúc thư mục dự án}, label={lst:project-tree}]
 receipt-vn-ie/
@@ -264,7 +264,7 @@ Các hàng Donut được giữ để minh họa hiện tượng model collapse 
 
 Giao diện ứng dụng Demo Gradio cung cấp một công cụ trực quan hóa giúp nhanh chóng thử nghiệm khả năng nhận dạng và trích xuất của ba phương pháp đối với ảnh biên lai tải lên từ thiết bị cá nhân.
 
-Giao diện demo được xây dựng bằng Gradio, hỗ trợ tải ảnh biên lai, lựa chọn chế độ OCR và hiển thị trực tiếp kết quả so sánh theo từng trường thông tin của Baseline, \model{Donut} và VietOCR~+~\model{LayoutXLM}. Hình~\ref{fig:gradio-demo} là ảnh chụp từ một lượt chạy thực tế trên máy cục bộ.
+Giao diện demo được xây dựng bằng Gradio, hỗ trợ tải ảnh biên lai, lựa chọn chế độ OCR và hiển thị trực tiếp kết quả so sánh theo từng trường thông tin của Baseline, \model{Donut} và VietOCR~+~\model{LayoutXLM}. \Cref{fig:gradio-demo} là ảnh chụp từ một lượt chạy thực tế trên máy cục bộ.
 
 \begin{figure}[htbp]
     \centering

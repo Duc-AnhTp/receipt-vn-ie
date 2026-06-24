@@ -5,7 +5,7 @@
 \section{Tiền xử lý dữ liệu}
 \label{sec:preprocessing}
 
-Trước khi đưa dữ liệu vào các mô hình, cần thực hiện một số bước xử lý ảnh và văn bản. Phần này mô tả các bước đang được cài đặt trong hệ thống theo mã nguồn hiện tại. Báo cáo không coi đây là cấu hình tối ưu nếu chưa có thí nghiệm ablation đủ bằng chứng tái lập.
+Trước khi đưa dữ liệu vào các mô hình, cần thực hiện một số bước xử lý ảnh và văn bản. Phần này mô tả các bước đang được cài đặt trong hệ thống theo mã nguồn hiện tại. Các cấu hình tiền xử lý này được giữ làm mặc định và chưa được tối ưu hóa sâu qua các thí nghiệm ablation. Đây đều ảnh hưởng lớn đến kết quả của tác vụ học máy phía sau.
 
 % ============================================================================
 \subsection{Tiền xử lý ảnh (Image Preprocessing)}
@@ -90,7 +90,7 @@ Chuẩn hóa văn bản là bước bắt buộc để đồng nhất định d�
 \subsection{Xây dựng OCR Cache}
 \label{subsec:ocr-cache}
 
-Việc chạy OCR (PaddleOCR kết hợp VietOCR) tốn khá nhiều tài nguyên và thời gian. Để không phải chạy lại OCR mỗi lần thí nghiệm, hệ thống xây dựng OCR cache — lưu lại kết quả nhận dạng của từng ảnh để dùng lại ngay trong các lượt huấn luyện và thử nghiệm khác nhau.
+Việc chạy OCR (PaddleOCR kết hợp VietOCR) tốn khá nhiều tài nguyên và thời gian. Để không phải chạy lại OCR mỗi lần thí nghiệm, hệ thống xây dựng OCR cache — lưu lại kết quả nhận dạng của từng ảnh để dùng lại ngay trong các tác vụ học máy tiếp theo.
 
 OCR cache chứa danh sách từ, bounding box, kích thước ảnh sau tiền xử lý và metadata phiên bản OCR. Cache này dùng chung cho cả Baseline và LayoutXLM, tránh phải chạy lại OCR khi huấn luyện, suy luận hay phân tích lỗi. Báo cáo không công bố thời gian OCR CPU/GPU vì artifact hiện tại không có log đo đầy đủ để xác minh.
 

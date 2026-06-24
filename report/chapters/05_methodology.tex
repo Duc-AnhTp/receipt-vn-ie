@@ -96,16 +96,16 @@ Hệ thống được thiết kế theo dạng module hóa, cho phép kiểm th�
       },
       % Group boxes
       group_p1/.style={
-        rectangle, draw=teal!20, fill=teal!5,
-        rounded corners=8pt, inner sep=10pt
+        rectangle, draw=teal!30, fill=teal!3,
+        rounded corners=8pt, inner sep=12pt
       },
       group_p2/.style={
-        rectangle, draw=orange!20, fill=orange!5,
-        rounded corners=8pt, inner sep=10pt
+        rectangle, draw=orange!30, fill=orange!3,
+        rounded corners=8pt, inner sep=12pt
       },
       group_p3/.style={
-        rectangle, draw=green!20, fill=green!5,
-        rounded corners=8pt, inner sep=10pt
+        rectangle, draw=green!30, fill=green!3,
+        rounded corners=8pt, inner sep=12pt
       }
     ]
 
@@ -115,21 +115,21 @@ Hệ thống được thiết kế theo dạng module hóa, cho phép kiểm th�
 
       % Nhánh 2 (Donut - nằm ở giữa theo chiều dọc)
       \node[p2_style, right=2.0cm of input] (d1) {Swin Transformer\\Encoder};
-      \node[p2_dec, right=0.8cm of d1] (d2) {mBART\\Decoder};
+      \node[p2_dec, right=1.2cm of d1] (d2) {mBART\\Decoder};
 
       % Nhánh 1 (Baseline - nằm phía trên)
-      \node[p1_style, above=1.5cm of d1.west, anchor=west] (b1) {OCR\\(PaddleOCR\\+ VietOCR)};
-      \node[p1_sub, right=0.8cm of b1] (b2) {Văn bản thô};
-      \node[p1_final, right=0.8cm of b2] (b3) {Trích xuất\\bằng Regex};
+      \node[p1_style, above=2.5cm of d1.west, anchor=west] (b1) {OCR\\(PaddleOCR\\+ VietOCR)};
+      \node[p1_sub, right=1.0cm of b1] (b2) {Văn bản thô};
+      \node[p1_final, right=1.0cm of b2] (b3) {Trích xuất\\bằng Regex};
 
       % Nhánh 3 (LayoutXLM - nằm phía dưới)
-      \node[p3_style, below=1.5cm of d1.west, anchor=west] (l1) {OCR\\(PaddleOCR\\+ VietOCR)};
-      \node[p3_emb, right=0.5cm of l1] (l2) {Nhúng đa\\phương thức\\(Text+Layout+Vis)};
-      \node[p3_enc, right=0.5cm of l2] (l3) {LayoutXLM\\Encoder};
-      \node[p3_clf, right=0.5cm of l3] (l4) {Phân loại Token\\(BIO labels)};
+      \node[p3_style, below=2.5cm of d1.west, anchor=west] (l1) {OCR\\(PaddleOCR\\+ VietOCR)};
+      \node[p3_emb, right=0.6cm of l1] (l2) {Nhúng đa\\phương thức\\(Text+Layout+Vis)};
+      \node[p3_enc, right=0.6cm of l2] (l3) {LayoutXLM\\Encoder};
+      \node[p3_clf, right=0.6cm of l3] (l4) {Phân loại Token\\(BIO labels)};
 
       % Output (bên phải)
-      \node[output_style, right=6.8cm of d2.west, anchor=west] (output) {
+      \node[output_style, right=7.8cm of d2.west, anchor=west] (output) {
         \textbf{Chuỗi JSON}\\
         \textbf{có cấu trúc:}\\
         \ \ $\bullet$\ \field{store\_name}\\
@@ -140,9 +140,9 @@ Hệ thống được thiết kế theo dạng module hóa, cho phép kiểm th�
 
       % --- Background Groups ---
       \begin{scope}[on background layer]
-        \node[group_p1, fit=(b1) (b3)] (g1) {};
-        \node[group_p2, fit=(d1) (d2)] (g2) {};
-        \node[group_p3, fit=(l1) (l4)] (g3) {};
+        \node[group_p1, fit=(b1) (b3), label={[font=\small\bfseries, text=teal!80!black]above:Pipeline 1: Baseline (OCR-based, Rule-based)}] (g1) {};
+        \node[group_p2, fit=(d1) (d2), label={[font=\small\bfseries, text=orange!80!black]above:Pipeline 2: Donut (OCR-free, End-to-End)}] (g2) {};
+        \node[group_p3, fit=(l1) (l4), label={[font=\small\bfseries, text=green!80!black]below:Pipeline 3: LayoutXLM (OCR-based, Multimodal)}] (g3) {};
       \end{scope}
 
       % --- Connections (Arrows) ---
@@ -304,7 +304,7 @@ Ví dụ chuỗi đích cho một biên lai:
 \subsubsection{Cấu hình huấn luyện}
 \label{subsubsec:donut_training}
 
-Các siêu tham số được cấu hình cho GPU Tesla T4 16GB. Batch size thô là 2, kết hợp tích lũy gradient 8 bước để đạt batch hiệu dụng 16. Đây là cấu hình chạy được lưu trong repository, không phải kết quả của quá trình tối ưu siêu tham số có kiểm soát.
+Các siêu tham số được cấu hình để phù hợp với GPU Tesla T4 16GB. Cụ thể, batch size thực tế là 2, kết hợp với tích lũy gradient 8 bước để đạt batch size hiệu dụng bằng 16. Cấu hình này được chọn dựa trên tài nguyên phần cứng sẵn có và chưa được tối ưu hóa siêu tham số sâu hơn.
 \Cref{tab:donut_config} liệt kê cấu hình huấn luyện của mô hình
 \model{Donut}.
 

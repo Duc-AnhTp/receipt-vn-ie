@@ -4,14 +4,14 @@
 \section{Thiết lập thực nghiệm}
 \label{sec:experiments}
 
-Phần này đi vào cấu hình lưu trong repository, phạm vi dữ liệu mỗi mô hình dùng, và cách tạo các artifact phục vụ đánh giá. Những thông tin không còn log gốc để kiểm chứng (thời gian huấn luyện, epoch dừng thực tế) sẽ không được đưa ra như kết quả đo.
+Phần này trình bày cấu hình lưu trong repository, phạm vi dữ liệu sử dụng của mỗi mô hình, và cách tạo các tệp kết quả dự đoán phục vụ đánh giá. Những thông tin không có log huấn luyện gốc (như thời gian huấn luyện thực tế, epoch dừng thực tế) sẽ không được trình bày trong báo cáo.
 
-\subsection{Trạng thái prediction artifact}
+\subsection{Trạng thái tệp kết quả dự đoán}
 \label{subsec:artifact-validity}
 
 \input{generated/artifact_validity_table}
 
-Cả ba phương pháp Baseline, LayoutXLM và Donut đều có đủ 234 bản ghi dự đoán trên tập test, không có bản ghi nào bị lỗi (\code{status=error}), và đều được đưa vào bảng kết quả để người đọc thấy cùng một protocol đánh giá. Riêng LayoutXLM, báo cáo có thêm sensitivity check loại bốn ID bị sai lệch tọa độ ảnh. Với Donut, metadata của prediction ghi nhận tham số sinh \code{generation\_max\_length=768}; tuy nhiên đầu ra vẫn lặp mạnh và rất ít cặp thẻ hợp lệ, nên kết quả Donut được diễn giải như chẩn đoán checkpoint hiện có hơn là kết luận tổng quát về toàn bộ hướng OCR-free. SHA-256 trong bảng khóa đúng nội dung các artifact được phân tích.
+Cả ba phương pháp Baseline, LayoutXLM và Donut đều có đủ 234 bản ghi dự đoán trên tập test, không có bản ghi nào bị lỗi (\code{status=error}), và đều được đưa vào bảng kết quả để đảm bảo tính nhất quán khi đánh giá. Riêng LayoutXLM, đồ án bổ sung phân tích độ nhạy (sensitivity check) bằng cách loại bỏ bốn mẫu bị sai lệch tọa độ ảnh. Với Donut, metadata của tệp kết quả dự đoán ghi nhận tham số sinh \code{generation\_max\_length=768}; tuy nhiên đầu ra vẫn lặp từ mạnh và rất ít cặp thẻ đóng/mở hợp lệ, nên kết quả Donut được xem như một ca khảo sát checkpoint hiện có hơn là kết luận tổng quát về toàn bộ hướng tiếp cận OCR-free. Mã hash SHA-256 trong bảng giúp khóa và đối chiếu chính xác nội dung các tệp kết quả dự đoán được phân tích.
 
 % ============================================================================
 \subsection{Môi trường và cấu hình}
