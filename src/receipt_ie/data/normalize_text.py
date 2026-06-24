@@ -2,6 +2,15 @@ import re
 import unicodedata
 from datetime import datetime
 
+VALID_YEAR_RANGE = (1990, 2040)
+PHONE_RE = re.compile(r"^0[3-9]\d{8}$")
+TAX_RE = re.compile(r"^\d{10}(\d{3})?$")
+TOTAL_KEYWORD_RE = re.compile(
+    r"(tổng thanh toán|tong thanh toan|tổng cộng|tong cong|thanh toán|"
+    r"thanh toan|total|amount|phải trả|phai tra|thành tiền|thanh tien)",
+    flags=re.IGNORECASE,
+)
+
 def normalize_vietnamese_text(s: str) -> str:
     """
     Chuẩn hóa văn bản tiếng Việt về Unicode NFC, loại bỏ khoảng trắng thừa
@@ -74,7 +83,7 @@ def normalize_date(s: str) -> str:
                     year += 2000
             
             # Giới hạn dải năm giao dịch hợp lệ
-            if 2010 <= year <= 2030:
+            if VALID_YEAR_RANGE[0] <= year <= VALID_YEAR_RANGE[1]:
                 # Trả về chuỗi ngày chuẩn hóa nếu ngày tháng năm hợp lệ
                 return datetime(year, month, day).strftime("%Y-%m-%d")
         except ValueError:
@@ -83,31 +92,39 @@ def normalize_date(s: str) -> str:
             
     return ""
 
+def _is_noise_number(num: str) -> bool:
+    return bool(PHONE_RE.fullmatch(num) or TAX_RE.fullmatch(num))
+
+
 def normalize_money(s: str) -> str:
     """
     Chuẩn hóa chuỗi số tiền về dạng chuỗi chỉ chứa chữ số nguyên.
     Nếu không hợp lệ, trả về chuỗi rỗng.
     """
     s = normalize_vietnamese_text(s).lower()
-    
-    # Loại bỏ các đơn vị tiền tệ và các từ khóa liên quan
+    has_total_keyword = bool(TOTAL_KEYWORD_RE.search(s))
+
+    # Loại bỏ các đơn vị tiền tệ và các từ khóa liên quan.
     s = re.sub(r"(vnđ|vnd|đồng|dong|đ)", "", s)
-    s = re.sub(r"(tổng thanh toán|tong thanh toan|tổng cộng|tong cong|total|amount)", "", s)
-    
-    # Lấy các cụm ký tự số và các dấu phân tách
+    s = TOTAL_KEYWORD_RE.sub("", s)
+
     nums = re.findall(r"\d[\d\.,\s]*", s)
-    if not nums:
+    candidates = []
+    for raw_num in nums:
+        num = re.sub(r"[^\d]", "", raw_num).lstrip("0")
+        if not num:
+            if "0" in raw_num:
+                candidates.append("0")
+            continue
+        candidates.append(num)
+
+    if not candidates:
         return ""
-    
-    # Chọn cụm số có độ dài lớn nhất (tránh lấy các số phụ nhỏ lẻ khác)
-    num = max(nums, key=len)
-    
-    # Loại bỏ tất cả ký tự không phải chữ số (dấu chấm, dấu phẩy, khoảng trắng...)
-    num = re.sub(r"[^\d]", "", num)
-    
-    # Loại bỏ số 0 vô nghĩa ở đầu
-    num = num.lstrip("0")
-    if not num:
-        return "0" if "0" in s else ""
-        
-    return num
+
+    non_noise = [num for num in candidates if not _is_noise_number(num)]
+    if non_noise:
+        candidates = non_noise
+    elif not has_total_keyword:
+        return ""
+
+    return max(candidates, key=lambda num: (len(num), int(num)))

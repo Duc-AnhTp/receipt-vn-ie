@@ -217,7 +217,7 @@ Quy trình suy luận:
 \end{enumerate}
 
 \begin{warnbox}[Trạng thái artifact Donut]
-Cấu hình và mã suy luận hiện tại đặt \code{max\_length=768}. Tuy nhiên, prediction artifact dùng trong báo cáo được tạo trước khi tham số này được truyền tường minh và đã kế thừa mặc định 20 token của Transformers. Có 225/234 chuỗi đích dài hơn giới hạn này và 173/234 output chạm giới hạn sinh. Vì vậy artifact được giữ để chẩn đoán lỗi cấu hình, không dùng trong bảng xếp hạng chất lượng hoặc latency chính.
+Checkpoint Donut hiện tại không lưu \code{max\_length} trong \code{generation\_config.json}; vì vậy manifest chỉ ghi fallback metadata là 20 token trong trường hợp không override. Lượt prediction được dùng trong báo cáo hiện tại có sidecar/code cho thấy đã truyền explicit \code{generation\_max\_length=768} vào \code{generate()}. Do đó, kết quả Donut phản ánh hiện tượng sinh lặp và thiếu cặp thẻ hợp lệ của checkpoint hiện có, thay vì được diễn giải như bằng chứng rằng inference thực tế bị giới hạn ở 20 token.
 \end{warnbox}
 
 

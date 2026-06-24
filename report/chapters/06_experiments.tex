@@ -11,7 +11,7 @@ Chương này mô tả cấu hình được lưu trong repository, phạm vi d�
 
 \input{generated/artifact_validity_table}
 
-Baseline và LayoutXLM có đủ 234 prediction, không có bản ghi \code{status=error} và được dùng trong so sánh chính. Với LayoutXLM, bốn prediction cũ dùng hộp OCR trên ảnh resize nhưng chuẩn hóa tọa độ theo kích thước ảnh thô; báo cáo giữ nguyên artifact và bổ sung sensitivity check loại bốn ID này. Donut có đủ số bản ghi nhưng lượt sinh bị cắt ở 20 token, nên chỉ được dùng cho chẩn đoán. SHA-256 trong bảng khóa đúng nội dung các artifact được phân tích.
+Baseline, LayoutXLM và Donut đều có đủ 234 prediction, không có bản ghi \code{status=error} và được đưa vào bảng định lượng chính. Với LayoutXLM, bốn prediction cũ dùng hộp OCR trên ảnh resize nhưng chuẩn hóa tọa độ theo kích thước ảnh thô; báo cáo giữ nguyên artifact và bổ sung sensitivity check loại bốn ID này. Với Donut, checkpoint config không lưu \code{max\_length}, nên manifest ghi fallback metadata 20 token nếu không override; lượt prediction hiện tại truyền explicit \code{generation\_max\_length=768} vào \code{generate()}. SHA-256 trong bảng khóa đúng nội dung các artifact được phân tích.
 
 % ============================================================================
 \subsection{Môi trường và cấu hình}
@@ -85,7 +85,7 @@ Artifact prediction chỉ cho phép kết luận về thành phần thời gian 
 \begin{itemize}
   \item Baseline: thời gian áp dụng luật và hậu xử lý trên OCR cache.
   \item LayoutXLM: thời gian suy luận mô hình từ OCR cache.
-  \item Donut: artifact có thời gian suy luận trực tiếp từ ảnh, nhưng phép đo bị ảnh hưởng bởi việc dừng sinh ở 20 token và chỉ được trình bày trong bảng chẩn đoán.
+  \item Donut: thời gian suy luận trực tiếp từ ảnh; phép đo bị ảnh hưởng bởi sinh tự hồi quy dài/lặp của checkpoint hiện tại.
 \end{itemize}
 
 Thời gian chạy PaddleOCR và VietOCR từ ảnh thô không được ghi đồng nhất trong các prediction hiện có. Vì vậy bảng latency chính chỉ đặt Baseline và LayoutXLM cạnh nhau vì cùng bắt đầu từ OCR cache; báo cáo không cộng một hằng số OCR giả định và không gọi đây là latency end-to-end từ ảnh thô.

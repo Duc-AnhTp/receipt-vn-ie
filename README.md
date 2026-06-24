@@ -35,6 +35,8 @@ receipt-vn-ie/
 
 ## Cài đặt
 
+Yêu cầu Python >= 3.10 để khớp cấu hình trong `pyproject.toml`.
+
 ```bash
 # 1. Clone repo
 git clone <repo-url>

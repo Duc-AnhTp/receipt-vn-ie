@@ -4,6 +4,8 @@ from typing import Iterable
 from receipt_ie.data.normalize_text import normalize_address, normalize_date
 from receipt_ie.postprocess.total_extractor import normalize_for_match
 
+MAX_CONTINUATION_LINES = 3
+
 ADDRESS_KEYWORDS = [
     "địa chỉ",
     "dia chi",
@@ -51,15 +53,22 @@ def _blocked(text: str) -> bool:
 
 
 def extract_address_from_lines(lines: Iterable[str]) -> str:
-    line_list = [re.sub(r"\s+", " ", str(line or "")).strip() for line in lines if str(line or "").strip()]
+    line_list = [
+        re.sub(r"\s+", " ", str(line or "")).strip()
+        for line in lines
+        if str(line or "").strip()
+    ]
     for idx, line in enumerate(line_list):
         if not _has_address_keyword(line) or _blocked(line):
             continue
         parts = [line]
-        if idx + 1 < len(line_list) and not _blocked(line_list[idx + 1]):
-            next_line = line_list[idx + 1]
-            if len(next_line) > 5 and not normalize_for_match(next_line).startswith(("ngay", "date")):
-                parts.append(next_line)
+        for next_line in line_list[idx + 1: idx + 1 + MAX_CONTINUATION_LINES]:
+            if _blocked(next_line):
+                break
+            next_norm = normalize_for_match(next_line)
+            if len(next_line) <= 5 or next_norm.startswith(("ngay", "date")):
+                break
+            parts.append(next_line)
         return normalize_address(" ".join(parts))
 
     for line in line_list:

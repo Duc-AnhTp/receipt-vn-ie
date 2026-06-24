@@ -19,20 +19,46 @@ from receipt_ie.models.layoutxlm_model import setup_layoutxlm_model_and_tokenize
 from receipt_ie.models.layoutxlm_dataset import LayoutXLMDataset, layoutxlm_collate_fn
 from receipt_ie.data.schemas import ID2LABEL
 
-# Load metric seqeval thông qua thư viện evaluate
+# Load metric seqeval thông qua thư viện evaluate.
 try:
     metric = evaluate.load("seqeval")
 except Exception:
-    # Fallback nếu không có mạng để tải online, tự load local hoặc import trực tiếp từ seqeval
     metric = None
+
+ALLOW_METRIC_FALLBACK = False
+_METRIC_FALLBACK_WARNED = False
+
+
+def _fallback_token_metrics(true_predictions, true_labels):
+    global _METRIC_FALLBACK_WARNED
+    if not ALLOW_METRIC_FALLBACK:
+        raise RuntimeError(
+            "seqeval metric is required for official LayoutXLM training. "
+            "Install evaluate/seqeval or run with --allow_metric_fallback "
+            "only for smoke tests."
+        )
+    if not _METRIC_FALLBACK_WARNED:
+        print(
+            "WARNING: seqeval unavailable. Using token accuracy only for a "
+            "smoke test. This F1 is not valid for reporting."
+        )
+        _METRIC_FALLBACK_WARNED = True
+    flat_preds = [p for sublist in true_predictions for p in sublist]
+    flat_labels = [l for sublist in true_labels for l in sublist]
+    if not flat_labels:
+        return {"precision": 0.0, "recall": 0.0, "accuracy": 0.0, "f1": 0.0}
+    correct = sum(1 for p, l in zip(flat_preds, flat_labels) if p == l)
+    acc = correct / len(flat_labels)
+    return {"precision": acc, "recall": acc, "accuracy": acc, "f1": acc}
+
 
 def compute_metrics(p):
     predictions, labels = p
     predictions = np.argmax(predictions, axis=2)
-    
+
     true_predictions = []
     true_labels = []
-    
+
     for prediction, label in zip(predictions, labels):
         pred_list = []
         label_list = []
@@ -42,28 +68,23 @@ def compute_metrics(p):
                 label_list.append(ID2LABEL.get(l_val, "O"))
         true_predictions.append(pred_list)
         true_labels.append(label_list)
-        
-    if metric is not None:
-        try:
-            results = metric.compute(predictions=true_predictions, references=true_labels)
-            return {
-                "precision": results["overall_precision"],
-                "recall": results["overall_recall"],
-                "f1": results["overall_f1"],
-                "accuracy": results["overall_accuracy"],
-            }
-        except Exception as e:
-            print(f"Lỗi tính toán seqeval metric: {e}")
-            
-    # Fallback thủ công nếu seqeval lỗi hoặc không khả dụng
-    # Tính accuracy đơn giản ở cấp độ token
-    flat_preds = [p for sublist in true_predictions for p in sublist]
-    flat_labels = [l for sublist in true_labels for l in sublist]
-    if not flat_labels:
-        return {"accuracy": 0.0, "f1": 0.0}
-    correct = sum(1 for p, l in zip(flat_preds, flat_labels) if p == l)
-    acc = correct / len(flat_labels)
-    return {"accuracy": acc, "f1": acc} # Trả về acc làm F1 tượng trưng khi offline
+
+    if metric is None:
+        return _fallback_token_metrics(true_predictions, true_labels)
+
+    try:
+        results = metric.compute(predictions=true_predictions, references=true_labels)
+    except Exception as exc:
+        if not ALLOW_METRIC_FALLBACK:
+            raise RuntimeError("Failed to compute seqeval metric.") from exc
+        return _fallback_token_metrics(true_predictions, true_labels)
+
+    return {
+        "precision": results["overall_precision"],
+        "recall": results["overall_recall"],
+        "f1": results["overall_f1"],
+        "accuracy": results["overall_accuracy"],
+    }
 
 def load_yaml(path: str) -> Dict[str, Any]:
     with open(path, "r", encoding="utf-8") as f:
@@ -83,7 +104,15 @@ def main():
     )
     parser.add_argument("--epochs", type=int, default=None, help="Ghi đè số epochs từ config file")
     parser.add_argument("--max_steps", type=int, default=None, help="Ghi đè số steps huấn luyện tối đa")
+    parser.add_argument(
+        "--allow_metric_fallback",
+        action="store_true",
+        help="Chỉ dùng cho smoke test: fallback token accuracy nếu seqeval không khả dụng.",
+    )
     args = parser.parse_args()
+
+    global ALLOW_METRIC_FALLBACK
+    ALLOW_METRIC_FALLBACK = args.allow_metric_fallback
     
     layout_cfg = load_yaml(args.layout_config)
     data_cfg = load_yaml(args.data_config)
@@ -156,8 +185,8 @@ def main():
         save_steps=t_cfg["save_steps"],
         save_total_limit=t_cfg["save_total_limit"],
         load_best_model_at_end=True,
-        metric_for_best_model="loss",
-        greater_is_better=False,
+        metric_for_best_model="f1",
+        greater_is_better=True,
         logging_dir=os.path.join(output_dir, "runs"),
         remove_unused_columns=False, # Quan trọng: Giữ lại các cột đầu vào của LayoutLMv2
         dataloader_pin_memory=torch.cuda.is_available(),

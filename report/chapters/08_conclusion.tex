@@ -7,14 +7,14 @@
 \subsection{Trả lời câu hỏi nghiên cứu}
 \label{subsec:conclusion}
 
-\paragraph{RQ1: Các artifact hợp lệ cho thấy điều gì về độ chính xác?}
-Trên 234 mẫu test, LayoutXLM đạt Macro EM 42,73\% và Macro NES 62,02\% ở chế độ present-only, cao hơn Baseline tương ứng 40,41\% và 55,47\%. Baseline vẫn tốt hơn ở trường ngày, còn LayoutXLM tốt hơn rõ nhất ở tổng tiền và địa chỉ. Paired bootstrap và sensitivity check loại bốn mẫu lệch tọa độ không làm đảo chiều nhận định tổng thể. Artifact Donut bị cắt ở 20 token nên không đủ điều kiện trả lời phần so sánh OCR-free với OCR-based; Macro EM 0\% của artifact này chỉ được xem là tín hiệu chẩn đoán.
+\paragraph{RQ1: Các artifact được báo cáo cho thấy điều gì về độ chính xác?}
+Trên 234 mẫu test, \model{LayoutXLM} đạt Macro EM 42,96\% và Macro NES 63,89\% ở chế độ present-only, cao hơn Baseline (40,41\% và 55,47\%). Baseline vẫn tốt hơn ở trường ngày, còn LayoutXLM tốt hơn rõ nhất ở tổng tiền và địa chỉ. \model{Donut} được suy luận với giới hạn explicit 768 token nhưng cho kết quả rất thấp với Macro EM 0,00\% và Macro NES 0,08\%, phản ánh model collapse trong checkpoint/thiết lập hiện tại.
 
 \paragraph{RQ2: Sự khác biệt về latency và khả năng triển khai là gì?}
-Artifact hợp lệ cho thấy hậu xử lý Baseline từ OCR cache trung bình khoảng 1,08 ms/ảnh, còn suy luận và hậu xử lý LayoutXLM từ OCR cache khoảng 851,19 ms/ảnh. Do thiếu thời gian OCR được đo đồng nhất, báo cáo không so sánh end-to-end từ ảnh thô và không kết luận về latency sản xuất của toàn pipeline. Latency Donut cũ được giữ trong bảng chẩn đoán nhưng không dùng so sánh vì chuỗi sinh bị dừng ở 20 token.
+Hậu xử lý Baseline từ OCR cache trung bình khoảng 1,08 ms/ảnh, còn suy luận và hậu xử lý LayoutXLM từ OCR cache khoảng 87,11 ms/ảnh. Con số này chấp nhận được trong phạm vi sau OCR cache, nhưng chưa bao gồm thời gian chạy PaddleOCR + VietOCR từ ảnh thô. Donut suy luận trực tiếp từ ảnh mất trung bình 5.411,17 ms/ảnh; chi phí này cao do sinh tự hồi quy dài/lặp trên GPU.
 
 \paragraph{RQ3: OCR làm giảm hiệu năng LayoutXLM bao nhiêu?}
-Câu hỏi này chưa được trả lời định lượng. Error analysis cho thấy nhiều prediction sai có liên quan đến việc gold không xuất hiện chính xác trong OCR cache, nhưng taxonomy heuristic không thể tách hoàn toàn lỗi OCR khỏi lỗi gán nhãn và mô hình. Cần thực nghiệm Oracle OCR cùng protocol để đo khoảng cách hiệu năng.
+Thí nghiệm Oracle OCR được đo trên 168 mẫu MC-OCR có ground-truth OCR. Trên subset này, LayoutXLM tăng Macro EM present-only từ 49,72\% khi dùng VietOCR thực tế lên 95,55\% khi dùng OCR hoàn hảo (+45,83 điểm \%). Các trường bị ảnh hưởng nặng nhất là \field{address} (16,56\% $\rightarrow$ 91,72\%, +75,16 điểm \%) và \field{store\_name} (37,97\% $\rightarrow$ 91,14\%, +53,17 điểm \%). Điều này cho thấy chất lượng nhận dạng OCR là nút thắt cổ chai lớn nhất của pipeline LayoutXLM, nhưng kết luận định lượng này chỉ áp dụng trực tiếp cho phần test có \code{oracle\_ocr}.
 
 \subsection{Đe dọa tính hợp lệ}
 \label{subsec:validity-threats}
@@ -22,26 +22,26 @@ Câu hỏi này chưa được trả lời định lượng. Error analysis cho 
 \begin{enumerate}
   \item \textbf{Nhãn rỗng:} Khi cả prediction và ground-truth rỗng, all-samples EM/NES được tính đúng. Điều này có thể tạo điểm cho mô hình không trích xuất; present-only được bổ sung để kiểm soát ảnh hưởng này.
   \item \textbf{Khác biệt annotation:} Donut dùng toàn bộ dữ liệu JSON, trong khi LayoutXLM chỉ dùng mẫu có hộp bao. Đây là yếu tố nhiễu khi so sánh kiến trúc.
-  \item \textbf{Artifact Donut bị cắt:} Lượt suy luận cũ kế thừa giới hạn 20 token thay vì 768, làm mất tính hợp lệ của cả chất lượng và latency Donut cho so sánh chính.
+  \item \textbf{Donut collapse trong thiết lập hiện tại:} Lượt suy luận hiện tại truyền explicit 768 token; fallback metadata 20 chỉ phản ánh checkpoint config nếu không override. Kết quả thấp không phủ định toàn bộ hướng OCR-free.
   \item \textbf{Sai lệch tọa độ cục bộ:} Bốn prediction LayoutXLM cũ dùng kích thước ảnh thô với hộp OCR trên ảnh resize. Sensitivity check cho thấy kết luận tổng thể không đảo chiều, nhưng artifact chính vẫn được giữ nguyên để bảo toàn kết quả thực nghiệm.
   \item \textbf{Giới hạn token:} LayoutXLM cắt chuỗi ở 512 token và chưa triển khai sliding window dù cấu hình có \code{doc\_stride}; trường cuối biên lai có thể bị mất.
   \item \textbf{Thiếu log huấn luyện:} Checkpoint còn tồn tại nhưng không có log đầy đủ để xác minh thời gian huấn luyện, epoch tốt nhất và đường cong hội tụ.
   \item \textbf{Phân tích lỗi heuristic:} Taxonomy tự động hỗ trợ thống kê nhất quán nhưng không chứng minh nguyên nhân. Các lỗi phức tạp cần rà soát ảnh và token-level output thủ công.
-  \item \textbf{Thiếu Oracle OCR và ablation hợp lệ:} Chưa có bằng chứng định lượng để tách ảnh hưởng OCR, visual embedding hoặc profile tiền xử lý.
+  \item \textbf{Phạm vi Oracle OCR:} Oracle OCR đã định lượng được trên subset 168 mẫu MC-OCR có \code{oracle\_ocr}, nhưng không bao phủ 66 mẫu tự thu thập thiếu OCR hoàn hảo. Báo cáo vẫn chưa có ablation hợp lệ để tách riêng visual embedding hoặc profile tiền xử lý.
 \end{enumerate}
 
 \subsection{Đóng góp và hạn chế}
 \label{subsec:limitations}
 
-Đồ án cung cấp pipeline dữ liệu thống nhất, ba phương pháp trích xuất, prediction artifact trên cùng test set, evaluator có xử lý rõ giá trị rỗng, manifest khóa bằng checksum và taxonomy lỗi tái lập. Hạn chế chính là quy mô dữ liệu nhỏ, annotation không đồng nhất, artifact Donut không hoàn chỉnh, bốn mẫu LayoutXLM có sai lệch tọa độ và bằng chứng huấn luyện chưa được lưu trữ đầy đủ.
+Đồ án cung cấp pipeline dữ liệu thống nhất, ba phương pháp trích xuất, prediction artifact trên cùng test set, evaluator có xử lý rõ giá trị rỗng, manifest khóa bằng checksum, taxonomy lỗi tái lập và thí nghiệm Oracle OCR trên subset có ground-truth OCR. Hạn chế chính là quy mô dữ liệu nhỏ, annotation không đồng nhất, Donut collapse trong thiết lập hiện tại, bốn mẫu LayoutXLM có sai lệch tọa độ và bằng chứng huấn luyện chưa được lưu trữ đầy đủ.
 
 \subsection{Hướng phát triển}
 \label{subsec:future_work}
 
 \begin{enumerate}
-  \item Chạy Oracle OCR để đo cận trên của LayoutXLM và trả lời RQ3.
+  \item Mở rộng Oracle OCR hoặc đánh giá bổ sung cho 66 mẫu tự thu thập chưa có ground-truth OCR hoàn hảo.
   \item Tạo sliding windows cho tài liệu dài, gộp prediction giữa các cửa sổ và kiểm tra tác động lên \field{total}/\field{address}.
-  \item Chạy lại inference Donut với giới hạn sinh 768 token đã khóa trong sidecar, sau đó mới đánh giá lại; nếu huấn luyện lại, cần lưu log đầy đủ và kiểm tra target sequence, tokenizer, cấu hình ảnh cùng nhánh pre-finetuning CORD.
+  \item Chạy lại Donut với warm-up/pretraining tốt hơn, repetition penalty và log huấn luyện đầy đủ để kiểm tra liệu model collapse có giảm hay không.
   \item Chạy lại ablation tiền xử lý trên danh sách validation cố định, báo cáo độ phủ cache và confidence interval.
   \item Lưu model card cho từng checkpoint gồm commit, môi trường, seed, dữ liệu, thời gian và checkpoint selection criterion.
 \end{enumerate}
