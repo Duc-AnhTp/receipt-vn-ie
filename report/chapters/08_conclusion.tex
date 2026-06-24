@@ -1,6 +1,3 @@
-% ============================================================================
-%  Section 8: Kết luận và hướng phát triển
-% ============================================================================
 \section{Kết luận và hướng phát triển}
 \label{sec:conclusion}
 
@@ -19,7 +16,7 @@ Thí nghiệm Oracle OCR được đo trên 168 mẫu MC-OCR có ground-truth OC
 \paragraph{RQ4: Latency khác nhau ra sao trong phạm vi đo hiện tại?}
 Baseline mất trung bình khoảng 1,08 ms/ảnh từ OCR cache, còn LayoutXLM mất khoảng 87,11 ms/ảnh từ OCR cache. Hai con số này chấp nhận được trong phạm vi sau OCR cache, nhưng chưa bao gồm thời gian chạy PaddleOCR + VietOCR từ ảnh thô. Donut suy luận trực tiếp từ ảnh mất trung bình 5.411,17 ms/ảnh; chi phí này cao do sinh tự hồi quy dài/lặp trên GPU.
 
-\subsection{Threats to Validity}
+\subsection{Các yếu tố ảnh hưởng đến độ tin cậy của kết quả}
 \label{subsec:limitations-and-threats}
 
 \begin{enumerate}

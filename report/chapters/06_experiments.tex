@@ -1,6 +1,3 @@
-% ============================================================================
-%  Section 6: Thực nghiệm và huấn luyện mô hình
-% ============================================================================
 \section{Thiết lập thực nghiệm}
 \label{sec:experiments}
 
@@ -13,7 +10,6 @@ Chương này thống kê các cấu hình đã lưu trong repository, phạm vi
 
 Baseline, LayoutXLM và Donut đều có đủ 234 prediction, không có bản ghi \code{status=error} và được đưa vào bảng định lượng chính. Với LayoutXLM, bốn prediction cũ dùng hộp OCR trên ảnh resize nhưng chuẩn hóa tọa độ theo kích thước ảnh thô; báo cáo giữ nguyên artifact và bổ sung sensitivity check loại bốn ID này. Với Donut, checkpoint config không lưu \code{max\_length}, nên manifest ghi fallback metadata 20 token nếu không override; lượt prediction hiện tại truyền explicit \code{generation\_max\_length=768} vào \code{generate()}. Kết quả Donut trong đồ án được xem là một ca thất bại thực nghiệm của checkpoint hiện tại. Nhóm không dùng kết quả này để kết luận rằng hướng OCR-free kém hơn OCR-based trong mọi điều kiện. SHA-256 trong bảng khóa đúng nội dung các artifact được phân tích.
 
-% ============================================================================
 \subsection{Môi trường và cấu hình}
 \label{subsec:exp_env}
 
@@ -42,7 +38,6 @@ Các checkpoint được huấn luyện trên GPU NVIDIA Tesla T4. Về phần m
 
 Các giá trị trong \cref{tab:hyperparams} lấy từ file cấu hình hiện tại. Chúng không cho biết số epoch thực chạy, checkpoint tốt nhất hay thời gian huấn luyện.
 
-% ============================================================================
 \subsection{Phạm vi dữ liệu của từng pipeline}
 \label{subsec:training_data_scope}
 
@@ -63,7 +58,6 @@ Các giá trị trong \cref{tab:hyperparams} lấy từ file cấu hình hiện 
 
 Donut chỉ cần ảnh và nhãn JSON nên dùng được cả hai nguồn dữ liệu. LayoutXLM cần hộp bao trường để sinh nhãn BIO, do đó chỉ huấn luyện trên các mẫu \code{json\_and\_boxes}. Cả ba phương pháp đều chấm trên cùng 234 ID test, tuy nhiên điều kiện huấn luyện khác nhau là yếu tố nhiễu cần lưu ý khi diễn giải kết quả.
 
-% ============================================================================
 \subsection{Quy trình suy luận và đánh giá}
 \label{subsec:evaluation_protocol}
 
@@ -77,7 +71,6 @@ Kết quả được báo cáo theo hai chế độ:
 
 Các tệp JSON metrics, CSV phân tích lỗi, biểu đồ và bảng LaTeX đều được sinh lại từ predictions hiện có. Bảng trong chương kết quả được nạp từ thư mục \code{report/generated} để tránh sao chép số liệu bằng tay.
 
-% ============================================================================
 \subsection{Phạm vi phép đo latency}
 \label{subsec:latency_protocol}
 
@@ -90,7 +83,6 @@ Artifact prediction chỉ cho phép rút ra kết luận về thành phần th�
 
 Thời gian chạy PaddleOCR và VietOCR từ ảnh thô không được ghi đồng nhất trong các prediction hiện có. Vì vậy, Baseline và LayoutXLM có thể so sánh trực tiếp với nhau ở phạm vi sau OCR cache, còn Donut được báo cáo riêng trong cùng bảng như thời gian suy luận trực tiếp từ ảnh. Báo cáo không cộng thêm một hằng số OCR giả định và không gọi các phép đo này là so sánh end-to-end đồng nhất từ ảnh thô.
 
-% ============================================================================
 \subsection{Trạng thái bằng chứng huấn luyện}
 \label{subsec:training_evidence}
 

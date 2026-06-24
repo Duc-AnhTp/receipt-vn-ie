@@ -1,12 +1,8 @@
-% ============================================================================
-%  SECTION 5 — Phương pháp thực hiện
-% ============================================================================
 \section{Phương pháp thực hiện}
 \label{sec:methodology}
 
 Báo cáo sử dụng ba hướng tiếp cận (pipeline) khác nhau cho bài toán trích xuất thông tin biên lai tiếng Việt: phương pháp Baseline dựa trên biểu thức chính quy, mô hình sinh End-to-End Donut, và mô hình phân loại chuỗi LayoutXLM kết hợp với VietOCR. Phần này đi vào thiết kế và cách hoạt động cụ thể của từng pipeline.
 
-% ============================================================================
 \subsection{Tổng quan kiến trúc hệ thống}
 \label{subsec:system_overview}
 
@@ -30,12 +26,10 @@ Hệ thống được thiết kế theo dạng module hóa, cho phép kiểm th�
 
 \begin{figure}[htbp]
   \centering
-  % Sơ đồ kiến trúc 3 pipeline vẽ bằng TikZ
   \resizebox{\textwidth}{!}{
     \begin{tikzpicture}[
       >=stealth,
       node distance=0.6cm and 0.8cm,
-      % Styles
       input_style/.style={
         rectangle, draw=gray!60, fill=white, double,
         minimum width=2.2cm, minimum height=1.5cm, align=center,
@@ -46,7 +40,6 @@ Hệ thống được thiết kế theo dạng module hóa, cho phép kiểm th�
         minimum width=2.5cm, minimum height=2.2cm, align=left,
         font=\small, rounded corners=6pt, line width=1pt
       },
-      % Pipeline 1: Baseline
       p1_style/.style={
         rectangle, draw=teal!60!black, fill=teal!10, text=teal!90!black,
         minimum width=2.4cm, minimum height=1.1cm, align=center,
@@ -62,7 +55,6 @@ Hệ thống được thiết kế theo dạng module hóa, cho phép kiểm th�
         minimum width=2.2cm, minimum height=1.1cm, align=center,
         font=\small\bfseries, rounded corners=4pt
       },
-      % Pipeline 2: Donut
       p2_style/.style={
         rectangle, draw=orange!80!black, fill=orange!50, text=white,
         minimum width=2.8cm, minimum height=1.1cm, align=center,
@@ -73,7 +65,6 @@ Hệ thống được thiết kế theo dạng module hóa, cho phép kiểm th�
         minimum width=2.8cm, minimum height=1.1cm, align=center,
         font=\small\bfseries, rounded corners=4pt
       },
-      % Pipeline 3: LayoutXLM
       p3_style/.style={
         rectangle, draw=green!60!black, fill=green!10, text=green!80!black,
         minimum width=2.4cm, minimum height=1.1cm, align=center,
@@ -94,7 +85,6 @@ Hệ thống được thiết kế theo dạng module hóa, cho phép kiểm th�
         minimum width=2.4cm, minimum height=1.1cm, align=center,
         font=\small\bfseries, rounded corners=4pt
       },
-      % Group boxes
       group_p1/.style={
         rectangle, draw=teal!30, fill=teal!3,
         rounded corners=8pt, inner sep=12pt
@@ -109,26 +99,20 @@ Hệ thống được thiết kế theo dạng module hóa, cho phép kiểm th�
       }
     ]
 
-      % --- Nodes ---
-      % Input (bên trái)
       \node[input_style] (input) at (0,0) {Ảnh biên lai\\đầu vào};
 
-      % Nhánh 2 (Donut - nằm ở giữa theo chiều dọc)
       \node[p2_style, right=2.0cm of input] (d1) {Swin Transformer\\Encoder};
       \node[p2_dec, right=1.2cm of d1] (d2) {mBART\\Decoder};
 
-      % Nhánh 1 (Baseline - nằm phía trên)
       \node[p1_style, above=2.5cm of d1.west, anchor=west] (b1) {OCR\\(PaddleOCR\\+ VietOCR)};
       \node[p1_sub, right=1.0cm of b1] (b2) {Văn bản thô};
       \node[p1_final, right=1.0cm of b2] (b3) {Trích xuất\\bằng Regex};
 
-      % Nhánh 3 (LayoutXLM - nằm phía dưới)
       \node[p3_style, below=2.5cm of d1.west, anchor=west] (l1) {OCR\\(PaddleOCR\\+ VietOCR)};
       \node[p3_emb, right=0.6cm of l1] (l2) {Nhúng đa\\phương thức\\(Text+Layout+Vis)};
       \node[p3_enc, right=0.6cm of l2] (l3) {LayoutXLM\\Encoder};
       \node[p3_clf, right=0.6cm of l3] (l4) {Phân loại Token\\(BIO labels)};
 
-      % Output (bên phải)
       \node[output_style, right=7.8cm of d2.west, anchor=west] (output) {
         \textbf{Chuỗi JSON}\\
         \textbf{có cấu trúc:}\\
@@ -138,32 +122,25 @@ Hệ thống được thiết kế theo dạng module hóa, cho phép kiểm th�
         \ \ $\bullet$\ \field{address}
       };
 
-      % --- Background Groups ---
       \begin{scope}[on background layer]
         \node[group_p1, fit=(b1) (b3), label={[font=\small\bfseries, text=teal!80!black]above:Pipeline 1: Baseline (OCR-based, Rule-based)}] (g1) {};
         \node[group_p2, fit=(d1) (d2), label={[font=\small\bfseries, text=orange!80!black]above:Pipeline 2: Donut (OCR-free, End-to-End)}] (g2) {};
         \node[group_p3, fit=(l1) (l4), label={[font=\small\bfseries, text=green!80!black]below:Pipeline 3: LayoutXLM (OCR-based, Multimodal)}] (g3) {};
       \end{scope}
 
-      % --- Connections (Arrows) ---
-      % Từ Input rẽ ra 3 nhánh
       \draw[->, thick, draw=huce-blue] (input.east) -- ++(0.5,0) |- (b1.west);
       \draw[->, thick, draw=huce-blue] (input.east) -- (d1.west);
       \draw[->, thick, draw=huce-blue] (input.east) -- ++(0.5,0) |- (l1.west);
 
-      % Nhánh 1 nối tiếp
       \draw[->, thick] (b1) -- (b2);
       \draw[->, thick] (b2) -- (b3);
 
-      % Nhánh 2 nối tiếp
       \draw[->, thick] (d1) -- (d2);
 
-      % Nhánh 3 nối tiếp
       \draw[->, thick] (l1) -- (l2);
       \draw[->, thick] (l2) -- (l3);
       \draw[->, thick] (l3) -- (l4);
 
-      % Cả 3 nhánh tụ về Output
       \draw[->, thick, draw=huce-blue] (b3.east) -| ([xshift=-0.5cm]output.west) |- ([yshift=0.4cm]output.west);
       \draw[->, thick, draw=huce-blue] (d2.east) -- (output.west);
       \draw[->, thick, draw=huce-blue] (l4.east) -| ([xshift=-0.5cm]output.west) |- ([yshift=-0.4cm]output.west);
@@ -175,7 +152,6 @@ Hệ thống được thiết kế theo dạng module hóa, cho phép kiểm th�
 \end{figure}
 
 
-% ============================================================================
 \subsection{Baseline: OCR + Trích xuất dựa trên luật (Rule-based)}
 \label{subsec:baseline}
 
@@ -186,7 +162,6 @@ kết quả \gls{ocr}. Đây là phương pháp đơn giản nhất, không cầ
 mô hình học sâu, nhưng phụ thuộc nhiều vào chất lượng \gls{ocr} và sự nhất
 quán của bố cục biên lai.
 
-% ----------------------------------------------------------------------------
 \subsubsection{Pipeline tổng quan}
 \label{subsubsec:baseline_pipeline}
 
@@ -202,7 +177,6 @@ Quy trình xử lý gồm hai bước chính:
     riêng cho từng trường thông tin để trích xuất giá trị từ danh sách văn bản.
 \end{enumerate}
 
-% ----------------------------------------------------------------------------
 \subsubsection{Quy tắc trích xuất cụ thể}
 \label{subsubsec:baseline_rules}
 
@@ -267,7 +241,6 @@ TOTAL_SEARCH_RANGE = 1              # dong keyword va mot dong ke tiep
 \end{lstlisting}
 
 
-% ============================================================================
 \subsection{Donut: End-to-End OCR-free}
 \label{subsec:donut_methodology}
 
@@ -275,7 +248,6 @@ TOTAL_SEARCH_RANGE = 1              # dong keyword va mot dong ke tiep
 Donut được chọn để kiểm tra xem liệu một mạng nơ-ron có thể tự học cách ``đọc'' và ``hiểu'' bố cục biên lai trực tiếp từ pixel, không cần bước OCR riêng. Nếu làm được, hệ thống sẽ không còn phụ thuộc vào chất lượng bộ OCR ngoài. Chi tiết kiến trúc Swin Encoder + mBART Decoder đã được trình bày ở \cref{subsec:donut}.
 
 
-% ----------------------------------------------------------------------------
 \subsubsection{Chuẩn bị dữ liệu}
 \label{subsubsec:donut_data}
 
@@ -300,7 +272,6 @@ Ví dụ chuỗi đích cho một biên lai:
 </s_receipt_ie>
 \end{lstlisting}
 
-% ----------------------------------------------------------------------------
 \subsubsection{Cấu hình huấn luyện}
 \label{subsubsec:donut_training}
 
@@ -331,7 +302,6 @@ Các siêu tham số được cấu hình để phù hợp với GPU Tesla T4 16
   \end{tabular}
 \end{table}
 
-% ----------------------------------------------------------------------------
 \subsubsection{Suy luận (Inference)}
 \label{subsubsec:donut_inference}
 
@@ -356,7 +326,6 @@ Checkpoint Donut hiện tại không lưu \code{max\_length} trong \code{generat
 \end{warnbox}
 
 
-% ============================================================================
 \subsection{VietOCR + LayoutXLM: OCR-based Layout-aware}
 \label{subsec:layoutxlm_methodology}
 
@@ -364,7 +333,6 @@ Checkpoint Donut hiện tại không lưu \code{max\_length} trong \code{generat
 Hướng tiếp cận này kết hợp VietOCR và \model{LayoutXLM}: VietOCR nhận dạng chữ viết tiếng Việt có dấu, LayoutXLM tích hợp văn bản với thông tin không gian (tọa độ bounding box) và ảnh để phân loại thực thể theo lược đồ \gls{bio}. Chi tiết kiến trúc đa phương thức của LayoutXLM đã được trình bày ở \cref{subsec:layoutxlm}.
 
 
-% ----------------------------------------------------------------------------
 \subsubsection{Chuẩn bị dữ liệu}
 \label{subsubsec:layoutxlm_data}
 
@@ -403,7 +371,6 @@ cho từng từ (word-level).
   \end{tabular}
 \end{table}
 
-% ----------------------------------------------------------------------------
 \subsubsection{Cấu hình huấn luyện}
 \label{subsubsec:layoutxlm_training}
 
@@ -439,7 +406,6 @@ Hệ thống nhãn \gls{bio} gồm 9 nhãn được mô tả chi tiết trong \c
 
 Tập train LayoutXLM có 784 mẫu và validation có 168 mẫu có hộp bao. Các mẫu \code{json\_only} không tham gia được vào huấn luyện token classification. Trong khi đó, Donut không cần hộp bao nên dùng toàn bộ 1.091 mẫu train và 234 mẫu validation.
 
-% ----------------------------------------------------------------------------
 \subsubsection{Suy luận và hậu xử lý (Inference \& Post-processing)}
 \label{subsubsec:layoutxlm_inference}
 
@@ -459,7 +425,6 @@ Quy trình suy luận của pipeline \model{LayoutXLM}:
 \end{enumerate}
 
 
-% ============================================================================
 \subsection{Hậu xử lý chung (Post-processing)}
 \label{subsec:postprocessing}
 

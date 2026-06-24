@@ -1,18 +1,9 @@
-% ============================================================================
-%  MAIN.TEX — Báo cáo Đồ án Thị Giác Máy Tính
-%  Đề tài: Trích xuất thông tin biên lai tiếng Việt
-%  Compiler: XeLaTeX | Overleaf: Menu → Compiler → XeLaTeX
-% ============================================================================
 \documentclass[12pt,a4paper]{article}
 \input{preamble}
 
 \begin{document}
 
-% ============================================================================
-%  TRANG BÌA
-% ============================================================================
 \begin{titlepage}
-  % --- Khung viền trang trí ---
   \begin{tikzpicture}[remember picture, overlay]
     \draw[huce-blue, line width=2pt]
       ([shift={(12mm,-12mm)}]current page.north west)
@@ -24,7 +15,6 @@
       ([shift={(-15mm,15mm)}]current page.south east);
   \end{tikzpicture}
   \begin{center}
-    % --- Logo và tên trường ---
     \includegraphics[width=3cm]{huce_logo.jpg}\\[0.3cm]
     {\large\textbf{BỘ GIÁO DỤC VÀ ĐÀO TẠO}}\\[0.1cm]
     {\Large\textbf{TRƯỜNG ĐẠI HỌC XÂY DỰNG HÀ NỘI}}\\[0.1cm]
@@ -32,11 +22,9 @@
     
     \rule{\textwidth}{1pt}\\[0.3cm]
     
-    % --- Loại đồ án ---
     {\large ĐỒ ÁN MÔN HỌC}\\[0.2cm]
     {\large\textbf{THỊ GIÁC MÁY TÍNH}}\\[0.8cm]
     
-    % --- Tên đề tài ---
     {\LARGE\bfseries\color{huce-blue}
       TRÍCH XUẤT THÔNG TIN \\[0.3cm]
       BIÊN LAI TIẾNG VIỆT \\[0.3cm]
@@ -48,7 +36,6 @@
     
     \rule{\textwidth}{1pt}\\[0.8cm]
     
-    % --- Thông tin sinh viên & GVHD ---
     \begin{minipage}[t]{0.45\textwidth}
       \begin{flushleft}
         \textbf{Giảng viên hướng dẫn:}\\[0.2cm]
@@ -71,14 +58,10 @@
     
     \vfill
     
-    % --- Nơi và năm ---
     {\large Hà Nội, \the\year}
   \end{center}
 \end{titlepage}
 
-% ============================================================================
-%  LỜI CẢM ƠN (tuỳ chọn)
-% ============================================================================
 \newpage
 \section*{Lời cảm ơn}
 \addcontentsline{toc}{section}{Lời cảm ơn}
@@ -96,9 +79,6 @@ Chúng em xin chân thành cảm ơn!
 
 \newpage
 
-% ============================================================================
-%  MỤC LỤC, DANH MỤC HÌNH, DANH MỤC BẢNG
-% ============================================================================
 \tableofcontents
 \newpage
 \listoffigures
@@ -108,16 +88,10 @@ Chúng em xin chân thành cảm ơn!
 \addcontentsline{toc}{section}{Danh mục bảng biểu}
 \newpage
 
-% ============================================================================
-%  DANH MỤC TỪ VIẾT TẮT
-% ============================================================================
 \printglossary[type=\acronymtype, title={Danh mục từ viết tắt}]
 \addcontentsline{toc}{section}{Danh mục từ viết tắt}
 \newpage
 
-% ============================================================================
-%  NỘI DUNG CHÍNH
-% ============================================================================
 \input{chapters/00_abstract}
 \newpage
 \input{chapters/01_introduction}
@@ -136,9 +110,6 @@ Chúng em xin chân thành cảm ơn!
 \newpage
 \input{chapters/08_conclusion}
 
-% ============================================================================
-%  TÀI LIỆU THAM KHẢO
-% ============================================================================
 \newpage
 \begingroup
 \sloppy
@@ -146,9 +117,6 @@ Chúng em xin chân thành cảm ơn!
 \endgroup
 \addcontentsline{toc}{section}{Tài liệu tham khảo}
 
-% ============================================================================
-%  PHỤ LỤC
-% ============================================================================
 \newpage
 \input{chapters/appendix}
 

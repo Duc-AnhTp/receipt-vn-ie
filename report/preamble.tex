@@ -1,39 +1,31 @@
-% ============================================================================
-%  PREAMBLE — Báo cáo đồ án Thị Giác Máy Tính
-%  Compiler: XeLaTeX (Overleaf: Menu → Compiler → XeLaTeX)
-% ============================================================================
 
-% --- Font & Ngôn ngữ tiếng Việt ---
 \usepackage{fontspec}
 \defaultfontfeatures{Ligatures=TeX}
-\setmainfont{Times New Roman}        % Font chính — hỗ trợ tốt tiếng Việt
-\setsansfont{Arial}                  % Font sans-serif
-\setmonofont{Courier New}            % Font code
+\setmainfont{Times New Roman}       
+\setsansfont{Arial}                 
+\setmonofont{Courier New}           
 \usepackage[english,vietnamese]{babel}
 \selectlanguage{vietnamese}
 
-% Định nghĩa lại các tiêu đề tự động bằng tiếng Việt
 \renewcommand{\contentsname}{Mục lục}
 \renewcommand{\listfigurename}{Danh mục hình ảnh}
 \renewcommand{\listtablename}{Danh mục bảng biểu}
 \renewcommand{\figurename}{Hình}
 \renewcommand{\tablename}{Bảng}
 
-% --- Trang & Layout ---
 \usepackage[
   a4paper,
   top=25mm,
   bottom=25mm,
-  left=30mm,    % Lề trái rộng hơn (đóng gáy)
+  left=30mm,   
   right=20mm,
   headheight=15pt
 ]{geometry}
 
 \usepackage{setspace}
-\onehalfspacing                      % Giãn dòng 1.5
-\setlength{\emergencystretch}{2em}   % Cho phép giãn nhẹ để tránh tràn dòng
+\onehalfspacing                     
+\setlength{\emergencystretch}{2em}  
 
-% --- Header / Footer ---
 \usepackage{fancyhdr}
 \pagestyle{fancy}
 \fancyhf{}
@@ -43,14 +35,12 @@
 \renewcommand{\headrulewidth}{0.4pt}
 \renewcommand{\footrulewidth}{0pt}
 
-% Trang đầu mỗi chương dùng plain style
 \fancypagestyle{plain}{
   \fancyhf{}
   \fancyfoot[C]{\thepage}
   \renewcommand{\headrulewidth}{0pt}
 }
 
-% --- Heading style ---
 \usepackage{titlesec}
 \titleformat{\section}
   {\Large\bfseries}{\thesection.}{0.5em}{}
@@ -59,29 +49,25 @@
 \titleformat{\subsubsection}
   {\normalsize\bfseries}{\thesubsubsection.}{0.5em}{}
 
-% --- Toán học ---
 \usepackage{amsmath, amssymb, amsfonts}
 \usepackage{mathtools}
 
-% --- Hình ảnh ---
 \usepackage{graphicx}
-\graphicspath{{figures/}}            % Thư mục hình mặc định
+\graphicspath{{figures/}}           
 \usepackage{float}
 \usepackage{subcaption}
 \usepackage{wrapfig}
 \usepackage{tikz}
 \usetikzlibrary{positioning, calc, arrows.meta, fit, backgrounds}
 
-% --- Bảng biểu ---
-\usepackage{booktabs}                % \toprule, \midrule, \bottomrule
+\usepackage{booktabs}               
 \usepackage{tabularx}
 \usepackage{multirow}
-\usepackage{makecell}                % Xuống dòng trong ô bảng
+\usepackage{makecell}               
 \usepackage{array}
-\newcolumntype{C}[1]{>{\centering\arraybackslash}m{#1}}  % Cột căn giữa
-\newcolumntype{L}[1]{>{\raggedright\arraybackslash}m{#1}} % Cột căn trái
+\newcolumntype{C}[1]{>{\centering\arraybackslash}m{#1}} 
+\newcolumntype{L}[1]{>{\raggedright\arraybackslash}m{#1}}
 
-% --- Caption ---
 \usepackage[
   font=small,
   labelfont=bf,
@@ -89,14 +75,12 @@
   justification=centering
 ]{caption}
 
-% --- Màu sắc ---
 \usepackage[dvipsnames,svgnames,x11names]{xcolor}
-\definecolor{huce-blue}{RGB}{0, 51, 102}     % Xanh HUCE
-\definecolor{huce-gold}{RGB}{204, 153, 0}    % Vàng HUCE
-\definecolor{code-bg}{RGB}{245, 245, 245}    % Nền code
-\definecolor{link-blue}{RGB}{0, 102, 204}    % Link
+\definecolor{huce-blue}{RGB}{0, 51, 102}    
+\definecolor{huce-gold}{RGB}{204, 153, 0}   
+\definecolor{code-bg}{RGB}{245, 245, 245}   
+\definecolor{link-blue}{RGB}{0, 102, 204}   
 
-% --- Code listing ---
 \usepackage{listings}
 \renewcommand{\lstlistingname}{Đoạn mã}
 \renewcommand{\lstlistlistingname}{Danh mục đoạn mã}
@@ -147,11 +131,9 @@
   commentstyle=\color{green!50!black}\itshape,
 }
 
-% --- Thuật toán ---
 \usepackage[ruled,vlined,linesnumbered]{algorithm2e}
 \SetAlgorithmName{Thuật toán}{Thuật toán}{Danh sách thuật toán}
 
-% --- Highlight box ---
 \usepackage[most]{tcolorbox}
 \newtcolorbox{notebox}[1][]{
   colback=blue!5!white,
@@ -170,11 +152,9 @@
   boxrule=0.5pt
 }
 
-% --- Danh sách ---
 \usepackage{enumitem}
-\setlist{nosep, leftmargin=*}        % Compact lists
+\setlist{nosep, leftmargin=*}       
 
-% --- Tham chiếu chéo ---
 \usepackage[
   colorlinks=true,
   linkcolor=huce-blue,
@@ -185,7 +165,6 @@
 ]{hyperref}
 \usepackage[nameinlink,noabbrev]{cleveref}
 
-% Tên tiếng Việt cho cleveref
 \crefname{figure}{Hình}{Hình}
 \crefname{table}{Bảng}{Bảng}
 \crefname{equation}{Công thức}{Công thức}
@@ -195,7 +174,6 @@
 \crefname{appendix}{Phụ lục}{Phụ lục}
 \crefname{listing}{Đoạn mã}{Đoạn mã}
 
-% --- Tài liệu tham khảo ---
 \usepackage[
   backend=biber,
   style=ieee,
@@ -204,11 +182,9 @@
 ]{biblatex}
 \addbibresource{references.bib}
 
-% --- Glossary / Danh mục từ viết tắt ---
 \usepackage[acronym]{glossaries}
 \makeglossaries
 
-% Định nghĩa từ viết tắt
 \newacronym{ocr}{OCR}{Optical Character Recognition — Nhận dạng ký tự quang học}
 \newacronym{ie}{IE}{Information Extraction — Trích xuất thông tin}
 \newacronym{ner}{NER}{Named Entity Recognition — Nhận dạng thực thể có tên}
@@ -228,18 +204,15 @@
 \newacronym{roi}{RoI}{Region of Interest — Vùng quan tâm}
 \newacronym{fpn}{FPN}{Feature Pyramid Network — Mạng kim tự tháp đặc trưng}
 
-% --- Custom commands ---
-\newcommand{\field}[1]{\texttt{\textbf{#1}}}         % Tên trường: \field{store\_name}
-\newcommand{\model}[1]{\textsc{#1}}                  % Tên model: \model{Donut}
-\newcommand{\metric}[1]{\textit{#1}}                 % Tên metric: \metric{EM}
-\newcommand{\token}[1]{\texttt{<#1>}}                % Token: \token{s\_receipt\_ie}
-\newcommand{\code}[1]{\texttt{#1}}                   % Inline code
+\newcommand{\field}[1]{\texttt{\textbf{#1}}}        
+\newcommand{\model}[1]{\textsc{#1}}                 
+\newcommand{\metric}[1]{\textit{#1}}                
+\newcommand{\token}[1]{\texttt{<#1>}}               
+\newcommand{\code}[1]{\texttt{#1}}                  
 
-% --- Đánh số hình/bảng theo section ---
 \numberwithin{figure}{section}
 \numberwithin{table}{section}
 \numberwithin{equation}{section}
 
-% --- Depth of TOC ---
 \setcounter{tocdepth}{3}
 \setcounter{secnumdepth}{3}

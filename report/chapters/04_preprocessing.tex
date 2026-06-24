@@ -1,13 +1,9 @@
-% ============================================================================
-%  CHƯƠNG 4 — Tiền xử lý dữ liệu
-% ============================================================================
 
 \section{Tiền xử lý dữ liệu}
 \label{sec:preprocessing}
 
 Trước khi đưa dữ liệu vào các mô hình, cần thực hiện một số bước xử lý ảnh và văn bản. Phần này mô tả các bước đang được cài đặt trong hệ thống theo mã nguồn hiện tại. Các cấu hình tiền xử lý này được giữ làm mặc định và chưa được tối ưu hóa sâu qua các thí nghiệm ablation. Đây đều ảnh hưởng lớn đến kết quả của tác vụ học máy phía sau.
 
-% ============================================================================
 \subsection{Tiền xử lý ảnh (Image Preprocessing)}
 \label{subsec:image-preprocessing}
 
@@ -26,7 +22,6 @@ Tệp cấu hình có chứa cờ \code{denoise=true} và \code{clahe=true}, nh�
   \item \textbf{Nắn thẳng ảnh (Rectify):} Tìm contour bốn góc và dùng perspective transform; nếu không tìm được contour hợp lệ thì giữ nguyên ảnh gốc.
 \end{itemize}
 
-% ============================================================================
 \subsection{Tăng cường dữ liệu (Data Augmentation)}
 \label{subsec:augmentation}
 
@@ -46,7 +41,6 @@ Augmentation được áp dụng trực tuyến, chỉ trên tập train. Hai m�
   \end{tabularx}
 \end{table}
 
-% ============================================================================
 \subsection{Chuẩn hoá văn bản (Text Normalization)}
 \label{subsec:text-normalization}
 
@@ -86,7 +80,6 @@ Chuẩn hóa văn bản là bước bắt buộc để đồng nhất định d�
   \end{tabularx}
 \end{table}
 
-% ============================================================================
 \subsection{Xây dựng OCR Cache}
 \label{subsec:ocr-cache}
 
@@ -94,7 +87,6 @@ Việc chạy OCR (PaddleOCR kết hợp VietOCR) tốn khá nhiều tài nguyê
 
 OCR cache chứa danh sách từ, bounding box, kích thước ảnh sau tiền xử lý và metadata phiên bản OCR. Cache này dùng chung cho cả Baseline và LayoutXLM, tránh phải chạy lại OCR khi huấn luyện, suy luận hay phân tích lỗi. Báo cáo không công bố thời gian OCR CPU/GPU vì artifact hiện tại không có log đo đầy đủ để xác minh.
 
-% ============================================================================
 \subsection{Trạng thái khảo sát tiền xử lý OCR}
 \label{subsec:ocr-ablation}
 

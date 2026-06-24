@@ -1,12 +1,8 @@
-% ============================================================================
-%  Section 7: Kết quả thực nghiệm và đánh giá
-% ============================================================================
 \section{Kết quả thực nghiệm và đánh giá}
 \label{sec:results}
 
 Chương này trình bày kết quả được tính lại trực tiếp từ các prediction artifact đóng băng trên 234 mẫu test. Các bảng metrics và latency được sinh tự động bởi script \path{scripts/generate_report_artifacts.py}; vì vậy số liệu trong báo cáo và artifact JSON có cùng nguồn. Cả ba phương pháp Baseline, \model{LayoutXLM} và \model{Donut} đều có mặt trong bảng định lượng; riêng Donut được diễn giải như một ca chẩn đoán model collapse của checkpoint hiện có.
 
-% ============================================================================
 \subsection{Kết quả trên toàn bộ mẫu và trên trường có mặt}
 \label{subsec:main_results}
 
@@ -27,7 +23,6 @@ Paired bootstrap 50.000 lần trên 234 mẫu cho thấy LayoutXLM hơn Baseline
   \label{fig:present-only-em}
 \end{figure}
 
-% ============================================================================
 \subsection{Phân tích theo trường}
 \label{subsec:model_analysis}
 
@@ -40,7 +35,6 @@ Paired bootstrap 50.000 lần trên 234 mẫu cho thấy LayoutXLM hơn Baseline
 
 Những nhận xét trên dựa trên kết quả thực tế đo được, chưa đi sâu phân tích nguyên nhân. Để hiểu rõ hơn cơ chế đóng góp của từng thành phần, đồ án sẽ cần thực hiện các thí nghiệm ablation nhằm tách biệt tầm ảnh hưởng của văn bản, bố cục và đặc trưng hình ảnh.
 
-% ============================================================================
 \subsection{Latency của các thành phần đã ghi nhận}
 \label{subsec:latency_evaluation}
 
@@ -48,7 +42,6 @@ Những nhận xét trên dựa trên kết quả thực tế đo được, chư
 
 \Cref{tab:latency-comparison} cho thấy Baseline và LayoutXLM có thể so sánh trực tiếp ở phạm vi sau OCR cache; Donut được đặt cùng bảng như phép đo trực tiếp từ ảnh để người đọc thấy chi phí suy luận của checkpoint hiện có. Không thể suy ra latency sản xuất từ ảnh thô cho pipeline OCR-based khi thiếu phép đo PaddleOCR + VietOCR cùng điều kiện phần cứng.
 
-% ============================================================================
 \subsection{Phân tích hiệu năng Donut và hiện tượng suy sụp}
 \label{subsec:donut_performance}
 
@@ -56,7 +49,6 @@ Những nhận xét trên dựa trên kết quả thực tế đo được, chư
 
 Dù lượt prediction Donut truyền explicit \code{generation\_max\_length=768}, Macro EM present-only vẫn ở mức 0,00\%. Checkpoint config không lưu \code{max\_length}, nên bảng chẩn đoán chỉ ghi fallback metadata 20 token nếu không override; đây không phải giới hạn inference thực tế của artifact hiện tại. Khi xem chuỗi sinh thô, mô hình lặp từ và thiếu cấu trúc thẻ cần thiết, vì vậy kết quả này nên được hiểu là model collapse của checkpoint/thiết lập hiện tại. Điểm số của Donut ở đây chỉ có ý nghĩa như một thực nghiệm thất bại, không phải benchmark ngang hàng công bằng hay đại diện cho hướng tiếp cận OCR-free nói chung.
 
-% ============================================================================
 \subsection{Phân tích lỗi có thể tái lập}
 \label{subsec:error_analysis}
 
@@ -85,7 +77,6 @@ Với LayoutXLM, \code{EMPTY\_PRED}, \code{OCR\_MISS} và \code{MODEL\_BAD} đ�
 
 Các khái niệm hallucination và lỗi BIO phân mảnh chỉ dùng khi có đối chiếu cụ thể với ảnh, chuỗi sinh và token labels.
 
-% ============================================================================
 \subsection{Oracle OCR và câu hỏi về ảnh hưởng của OCR}
 \label{subsec:oracle_ocr_results}
 
@@ -97,7 +88,6 @@ Trên subset 168 mẫu này, \model{LayoutXLM} (Oracle OCR) đạt Macro EM/NES/
 
 Kết quả này cho thấy OCR là nút thắt cổ chai lớn của pipeline LayoutXLM trên phần dữ liệu có oracle. Tuy nhiên, kết luận định lượng về mức tăng 49,72\% $\rightarrow$ 95,55\% chỉ áp dụng trực tiếp cho subset MC-OCR 168 mẫu, không phải toàn bộ 234 mẫu test.
 
-% ============================================================================
 \subsection{Demo ứng dụng}
 \label{subsec:demo}
 

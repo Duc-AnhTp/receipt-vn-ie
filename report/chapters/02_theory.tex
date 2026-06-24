@@ -1,12 +1,8 @@
-% ============================================================================
-%  CHAPTER 2 — Cơ sở lý thuyết
-% ============================================================================
 \section{Cơ sở lý thuyết}
 \label{sec:theory}
 
 Để giải thích vì sao đồ án chọn Baseline, Donut và LayoutXLM, chương này tóm tắt các khái niệm cần dùng: OCR, KIE/DIE, mô hình OCR-free, mô hình OCR-based và các thước đo đánh giá chuỗi.
 
-% ============================================================================
 \subsection{Bài toán trích xuất thông tin tài liệu}
 \label{subsec:kie_problem}
 
@@ -14,11 +10,10 @@ Trích xuất thông tin tài liệu (Document Information Extraction - DIE) hay
 
 Đầu vào là một ảnh biên lai $I \in \mathbb{R}^{H \times W \times C}$. Đầu ra mong muốn là một tập thực thể: $Y = \{(K_1, V_1), (K_2, V_2), \dots, (K_M, V_M)\}$, trong đó $K_j$ tương ứng với một trường thông tin đích (ví dụ: \field{store\_name}, \field{date}, \field{total}, \field{address}) và $V_j$ là văn bản chuẩn hóa được trích xuất. Mô hình cần vừa nhận diện được ký tự, vừa hiểu được quan hệ không gian và ngữ nghĩa giữa các vùng chữ để liên kết chúng đúng.
 
-% ============================================================================
 \subsection{Các công trình nghiên cứu liên quan}
 \label{subsec:related_work}
 
-Bài toán trích xuất thông tin tài liệu đã có nhiều tiến bộ nhờ sự phát triển của kiến trúc Transformer và mô hình đa phương thức. \cref{tab:method-comparison} so sánh ba hướng tiếp cận được khảo sát trong đồ án cùng giả thuyết thực nghiệm.
+Với biên lai, chỉ nhận dạng được chữ là chưa đủ. Mô hình còn phải biết dòng nào là tổng tiền, dòng nào là địa chỉ và khi nào một thực thể bị tách qua nhiều dòng. \cref{tab:method-comparison} so sánh ba hướng tiếp cận được khảo sát trong đồ án cùng giả thuyết thực nghiệm.
 
 \begin{table}[htbp]
   \centering
@@ -55,7 +50,6 @@ Các nghiên cứu và công trình liên quan trực tiếp đến đồ án g�
   \item \textbf{TrOCR:} Mô hình nhận dạng chữ viết (Text Recognition) dựa hoàn toàn trên kiến trúc Transformer Encoder-Decoder~\cite{li2023trocr}. TrOCR nhận đầu vào là ảnh dòng chữ được cắt từ bộ phát hiện chữ và giải mã thành văn bản, đạt hiệu năng cao nhờ cơ chế tự chú ý.
 \end{itemize}
 
-% ============================================================================
 \subsection{Nhận dạng ký tự quang học (OCR)}
 \label{subsec:ocr}
 
@@ -84,7 +78,6 @@ Tại bước giải mã thứ $t$, mô hình dự đoán ký tự tiếp theo d
 \end{equation}
 Do đó VietOCR trong đồ án không dùng hàm mất mát CTC. Điểm này quan trọng khi phân tích lỗi: kết quả nhận dạng phụ thuộc vào giải mã tuần tự chứ không chỉ vào căn chỉnh đơn điệu giữa đặc trưng ảnh và ký tự.
 
-% ============================================================================
 \subsection{Mô hình Donut (OCR-free)}
 \label{subsec:donut}
 
@@ -116,10 +109,8 @@ Donut gồm hai thành phần chính, minh họa trong \cref{fig:donut_arch}:
       output_style/.style={rectangle, draw=huce-blue!80!black, fill=huce-blue!5, minimum width=2.2cm, minimum height=1.8cm, align=left, font=\small, rounded corners=6pt, line width=1pt},
       group_box/.style={rectangle, draw=orange!30, fill=orange!5, rounded corners=8pt, inner sep=8pt}
     ]
-      % Nodes
       \node[input_style] (input) at (0,0) {Ảnh biên lai\\đầu vào\\($H \times W \times C$)};
       
-      % Swin Encoder Group
       \node[encoder_block, right=1.2cm of input, yshift=0.9cm] (stage1) {Stage 1};
       \node[encoder_block, below=0.2cm of stage1] (stage2) {Stage 2};
       \node[encoder_block, below=0.2cm of stage2] (stage3) {Stage 3};
@@ -127,10 +118,8 @@ Donut gồm hai thành phần chính, minh họa trong \cref{fig:donut_arch}:
       
       \node[block, right=1.2cm of stage2.south east, anchor=west, minimum height=1.5cm] (features) {Visual Token\\Embeddings\\$\mathbf{z}$};
       
-      % mBART Decoder Group
       \node[decoder_block, right=1.2cm of features] (decoder) {mBART Decoder\\(Autoregressive)};
       
-      % Output
       \node[output_style, right=1.2cm of decoder] (output) {
         \textbf{Structured JSON}\\
         \texttt{\{} \\
@@ -141,32 +130,24 @@ Donut gồm hai thành phần chính, minh họa trong \cref{fig:donut_arch}:
         \texttt{\}}
       };
       
-      % Feedback loop for autoregressive generation
       \node[draw=orange!80!black, fill=orange!5, rounded corners=3pt, below=0.8cm of decoder, font=\scriptsize, align=center] (feedback) {Token đã sinh trước đó\\$y_{<i}$};
 
-      % Background group for Swin Encoder
       \begin{scope}[on background layer]
         \node[group_box, fit=(stage1) (stage4), label={[font=\small\bfseries, text=orange!80!black]above:Swin Transformer Encoder}] (encoder_group) {};
       \end{scope}
 
-      % Arrows
       \draw[->, thick, draw=huce-blue] (input.east) -- (encoder_group.west);
       
-      % Connect encoder stages (conceptually they are sequential)
       \draw[->, draw=gray, dashed] (stage1.south) -- (stage2.north);
       \draw[->, draw=gray, dashed] (stage2.south) -- (stage3.north);
       \draw[->, draw=gray, dashed] (stage3.south) -- (stage4.north);
       
-      % Connection from encoder group to z
       \draw[->, thick, draw=huce-blue] (encoder_group.east) -- (features.west);
       
-      % Connection from z to decoder
       \draw[->, thick, draw=huce-blue] (features.east) -- (decoder.west);
       
-      % Connection from decoder to output
       \draw[->, thick, draw=huce-blue] (decoder.east) -- (output.west);
       
-      % Feedback arrows
       \draw[->, thick, draw=orange!80!black] (decoder.south) -- ++(0,-0.3) -| (feedback.east);
       \draw[->, thick, draw=orange!80!black] (feedback.west) -| ([xshift=-0.4cm]decoder.west) |- ([yshift=-0.2cm]decoder.west);
 
@@ -185,7 +166,6 @@ Khi huấn luyện Donut, cần phân biệt rõ hai khái niệm ``warm-up'' d�
   \item \textbf{Pre-training/Warm-up mô hình trên tập CORD:} Đây là một nhánh pre-finetuning tùy chọn, trong đó mô hình có thể được huấn luyện thêm trên dữ liệu biên lai CORD trước khi fine-tune tiếng Việt. Nhánh này có trong mã nguồn nhưng không được dùng cho các kết quả chính của báo cáo.
 \end{itemize}
 
-% ============================================================================
 \subsection{Mô hình LayoutXLM (OCR-based)}
 \label{subsec:layoutxlm}
 
@@ -237,7 +217,6 @@ Bài toán trích xuất thông tin được đưa về dạng phân loại toke
   \end{tabular}
 \end{table}
 
-% ============================================================================
 \subsection{Các độ đo đánh giá và quy ước xử lý rỗng}
 \label{subsec:metrics}
 
