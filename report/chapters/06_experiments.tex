@@ -4,14 +4,14 @@
 \section{Thiết lập thực nghiệm}
 \label{sec:experiments}
 
-Phần này trình bày cấu hình lưu trong repository, phạm vi dữ liệu sử dụng của mỗi mô hình, và cách tạo các tệp kết quả dự đoán phục vụ đánh giá. Những thông tin không có log huấn luyện gốc (như thời gian huấn luyện thực tế, epoch dừng thực tế) sẽ không được trình bày trong báo cáo.
+Chương này thống kê các cấu hình đã lưu trong repository, phạm vi dữ liệu sử dụng của từng mô hình, và quá trình tạo các tệp kết quả dự đoán. Nhóm cũng giới hạn: những thông tin không có log huấn luyện gốc (như thời gian huấn luyện thực tế, epoch dừng thực tế) sẽ không được đề cập để đảm bảo tính khách quan.
 
 \subsection{Trạng thái tệp kết quả dự đoán}
 \label{subsec:artifact-validity}
 
 \input{generated/artifact_validity_table}
 
-Baseline, LayoutXLM và Donut đều có đủ 234 prediction, không có bản ghi \code{status=error} và được đưa vào bảng định lượng chính. Với LayoutXLM, bốn prediction cũ dùng hộp OCR trên ảnh resize nhưng chuẩn hóa tọa độ theo kích thước ảnh thô; báo cáo giữ nguyên artifact và bổ sung sensitivity check loại bốn ID này. Với Donut, checkpoint config không lưu \code{max\_length}, nên manifest ghi fallback metadata 20 token nếu không override; lượt prediction hiện tại truyền explicit \code{generation\_max\_length=768} vào \code{generate()}. Cần nhấn mạnh, Donut trong dự án này là một thử nghiệm chưa hội tụ và không ổn định do giới hạn tài nguyên huấn luyện, không phải đại diện công bằng cho toàn bộ hướng tiếp cận OCR-free. SHA-256 trong bảng khóa đúng nội dung các artifact được phân tích.
+Baseline, LayoutXLM và Donut đều có đủ 234 prediction, không có bản ghi \code{status=error} và được đưa vào bảng định lượng chính. Với LayoutXLM, bốn prediction cũ dùng hộp OCR trên ảnh resize nhưng chuẩn hóa tọa độ theo kích thước ảnh thô; báo cáo giữ nguyên artifact và bổ sung sensitivity check loại bốn ID này. Với Donut, checkpoint config không lưu \code{max\_length}, nên manifest ghi fallback metadata 20 token nếu không override; lượt prediction hiện tại truyền explicit \code{generation\_max\_length=768} vào \code{generate()}. Kết quả Donut trong đồ án được xem là một ca thất bại thực nghiệm của checkpoint hiện tại. Nhóm không dùng kết quả này để kết luận rằng hướng OCR-free kém hơn OCR-based trong mọi điều kiện. SHA-256 trong bảng khóa đúng nội dung các artifact được phân tích.
 
 % ============================================================================
 \subsection{Môi trường và cấu hình}

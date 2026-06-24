@@ -8,28 +8,21 @@
 Chương này giới thiệu bối cảnh của đề tài, lý do chọn bài toán tự động xử lý biên lai tiếng Việt, các câu hỏi nghiên cứu, mục tiêu đo lường, phạm vi hệ thống và những đóng góp thực tiễn đạt được.
 
 % ----------------------------------------------------------------------------
-\subsection{Đặt vấn đề (Problem Statement)}
+\subsection{Đặt vấn đề}
 \label{subsec:problem-statement}
 
-Trong bối cảnh số hóa và phát triển kinh tế số tại Việt Nam, nhu cầu tự động nhập liệu tài liệu tài chính như biên lai, hóa đơn bán lẻ ngày càng lớn ở các hệ thống siêu thị, cửa hàng tiện lợi và doanh nghiệp dịch vụ. Nhập liệu và đối soát bằng tay không chỉ tốn thời gian, tăng chi phí vận hành mà còn dễ gây sai sót. Vì vậy, việc tự động hóa quy trình này bằng nhận dạng ký tự quang học (\gls{ocr}) kết hợp trích xuất thông tin (Key Information Extraction - KIE) là rất cần thiết.
-
-Tuy nhiên, bài toán trích xuất thông tin biên lai tiếng Việt ngoài thực tế gặp nhiều khó khăn:
-\begin{enumerate}
-  \item \textbf{Chất lượng ảnh không đồng đều:} Ảnh biên lai chụp bằng thiết bị di động cá nhân thường bị mờ, nghiêng, thiếu sáng, bị lóa phản quang, hoặc nhàu nát.
-  \item \textbf{Cấu trúc bố cục tự do:} Không có tiêu chuẩn chung về cách trình bày thông tin trên biên lai bán lẻ. Cấu trúc dòng chữ, bảng biểu biến động mạnh giữa các cửa hàng.
-  \item \textbf{Đặc trưng tiếng Việt có dấu:} Tiếng Việt có hệ thống dấu thanh và ký tự phức tạp. Chỉ cần sai một dấu nhỏ khi nhận dạng là có thể làm sai nghĩa cả từ (ví dụ nhầm tên cửa hàng hoặc địa chỉ).
-\end{enumerate}
+Biên lai tiếng Việt là loại tài liệu khó xử lý tự động vì ảnh thường được chụp bằng điện thoại, chất lượng không ổn định, bố cục thay đổi theo từng cửa hàng và văn bản có dấu tiếng Việt dễ bị OCR nhận sai. Trong đồ án này, nhóm tập trung vào bốn trường thông tin thường cần nhập liệu lại: tên cửa hàng, ngày giao dịch, tổng tiền và địa chỉ.
 
 Hiện tại có hai hướng tiếp cận chính cho bài toán này:
 \begin{itemize}
-  \item \textbf{OCR-based pipeline} (như kết hợp PaddleOCR/VietOCR với mô hình ngôn ngữ hiểu bố cục \model{LayoutXLM}~\cite{xu2021layoutxlm}): Tách riêng giai đoạn nhận dạng chữ và giai đoạn phân loại thực thể cấp token.
-  \item \textbf{OCR-free pipeline} (như mô hình sinh end-to-end \model{Donut}~\cite{kim2022donut}): Dùng mạng Transformer sinh trực tiếp chuỗi có cấu trúc từ ảnh đầu vào, không cần module nhận dạng văn bản trung gian.
+  \item \textbf{Pipeline dựa trên OCR} (như kết hợp PaddleOCR/VietOCR với mô hình ngôn ngữ hiểu bố cục \model{LayoutXLM}~\cite{xu2021layoutxlm}): Tách riêng giai đoạn nhận dạng chữ và giai đoạn phân loại thực thể cấp token.
+  \item \textbf{Pipeline không dùng OCR trung gian} (như mô hình sinh end-to-end \model{Donut}~\cite{kim2022donut}): Dùng mạng Transformer sinh trực tiếp chuỗi có cấu trúc từ ảnh đầu vào, không cần module nhận dạng văn bản trung gian.
 \end{itemize}
 
 So sánh hai hướng tiếp cận này trên cùng tập kiểm thử sẽ cho thấy ưu nhược điểm của từng checkpoint. Dù vậy, một phép so sánh kiến trúc hoàn toàn công bằng còn cần kiểm soát cả lượng dữ liệu và mức annotation giống nhau.
 
 % ----------------------------------------------------------------------------
-\subsection{Câu hỏi nghiên cứu (Research Questions)}
+\subsection{Câu hỏi nghiên cứu}
 \label{subsec:research-questions}
 
 Đồ án đặt ra bốn câu hỏi nghiên cứu chính để định hướng thực nghiệm và đánh giá:
@@ -87,13 +80,7 @@ Hiệu năng các phương pháp được đo trên cùng tập kiểm thử đ�
 \subsection{Đóng góp thực tiễn}
 \label{subsec:contributions}
 
-Đồ án có các đóng góp thực tiễn sau cho bài toán trích xuất tài liệu tiếng Việt:
-\begin{enumerate}
-  \item \textbf{Xây dựng bộ dữ liệu nhãn sạch:} Hợp nhất và gán nhãn chuẩn hóa tập dữ liệu gồm 1.559 mẫu biên lai tiếng Việt từ cuộc thi MC-OCR 2021 và dữ liệu tự chụp thực tế.
-  \item \textbf{Đánh giá có kiểm soát bằng chứng:} So sánh Baseline, \model{LayoutXLM} và \model{Donut} trên cùng tập kiểm thử, đồng thời diễn giải riêng kết quả \model{Donut} như một ca chẩn đoán model collapse thay vì bằng chứng khẳng định ưu/nhược tuyệt đối của kiến trúc OCR-free.
-  \item \textbf{Phân loại và phân tích lỗi:} Phân loại bảy nhóm lỗi có thể sinh lại tự động từ tệp kết quả dự đoán, nhãn gốc ground-truth và OCR cache.
-  \item \textbf{Demo ứng dụng tương tác:} Triển khai giao diện demo bằng Gradio chạy thời gian thực phục vụ mục đích kiểm thử trực quan.
-\end{enumerate}
+Đóng góp chính của đồ án là một pipeline có thể chạy lại được ở mức artifact: dữ liệu được chuẩn hóa về JSONL, ba hướng trích xuất cùng xuất ra một schema, bộ evaluator chấm EM/NES/CER thống nhất, và các bảng trong báo cáo được sinh từ prediction artifact thay vì nhập tay.
 
 Để phục vụ việc kiểm chứng và phát triển tiếp theo, toàn bộ mã nguồn của đồ án được phát triển và lưu trữ công khai tại địa chỉ GitHub: \url{https://github.com/Duc-AnhTp/receipt-vn-ie}.
 

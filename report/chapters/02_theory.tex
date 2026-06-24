@@ -4,7 +4,7 @@
 \section{Cơ sở lý thuyết}
 \label{sec:theory}
 
-Phần này trình bày nền tảng lý thuyết phục vụ cho đồ án: bài toán trích xuất thông tin tài liệu (DIE), các công trình liên quan, cơ chế hoạt động của nhận dạng ký tự quang học (\gls{ocr}), và hai kiến trúc mô hình được sử dụng --- \model{Donut} (OCR-free) và \model{LayoutXLM} (OCR-based). Cuối chương định nghĩa các độ đo đánh giá cùng quy ước xử lý giá trị rỗng.
+Để giải thích vì sao đồ án chọn Baseline, Donut và LayoutXLM, chương này tóm tắt các khái niệm cần dùng: OCR, KIE/DIE, mô hình OCR-free, mô hình OCR-based và các thước đo đánh giá chuỗi.
 
 % ============================================================================
 \subsection{Bài toán trích xuất thông tin tài liệu}
@@ -79,7 +79,7 @@ trong đó $P_{i,j}$ là bản đồ xác suất chứa ký tự, $T_{i,j}$ là 
 Tại bước giải mã thứ $t$, mô hình dự đoán ký tự tiếp theo dựa trên đặc trưng ảnh $\mathbf{x}$ và các ký tự đích trước đó. Hàm mất mát là cross-entropy theo chuỗi, có label smoothing khi huấn luyện:
 \begin{equation}
   \mathcal{L}_{\text{VietOCR}}
-  = -\sum_{t=1}^{T}\log P(y_t \mid y_{<t}, \mathbf{x}).
+  = -\sum_{t=1}^{T}\log P(y_t \mid y_{< t}, \mathbf{x}).
   \label{eq:vietocr_loss}
 \end{equation}
 Do đó VietOCR trong đồ án không dùng hàm mất mát CTC. Điểm này quan trọng khi phân tích lỗi: kết quả nhận dạng phụ thuộc vào giải mã tuần tự chứ không chỉ vào căn chỉnh đơn điệu giữa đặc trưng ảnh và ký tự.
@@ -98,7 +98,7 @@ Donut gồm hai thành phần chính, minh họa trong \cref{fig:donut_arch}:
   \item \textbf{Vision Encoder (Swin Transformer):} Mã hóa ảnh biên lai thành chuỗi biểu diễn đặc trưng thị giác phân cấp $\mathbf{z} = \{z_1, z_2, \ldots, z_n\}$. Swin Transformer~\cite{liu2021swin} dùng cơ chế cửa sổ tự chú ý trượt (Shifted Window MSA) để giảm độ phức tạp từ bậc hai xuống tuyến tính theo kích thước ảnh, đồng thời giữ được tính liên tục ngữ cảnh.
   \item \textbf{Text Decoder (mBART):} Checkpoint \code{donut-base} dùng decoder họ mBART, một biến thể đa ngôn ngữ của BART~\cite{lewis2020bart}. Tại mỗi bước $i$, decoder kết hợp tự chú ý trên các token đã sinh và cross-attention lên biểu diễn thị giác $\mathbf{z}$ để dự đoán token tiếp theo:
   \begin{equation}
-    \mathcal{L}_{\text{Donut}} = -\sum_{i=1}^{T} \log P(y_i \mid y_{<i}^*, \mathbf{z})
+    \mathcal{L}_{\text{Donut}} = -\sum_{i=1}^{T} \log P(y_i \mid y_{< i}^*, \mathbf{z})
     \label{eq:donut_loss}
   \end{equation}
 \end{enumerate}
