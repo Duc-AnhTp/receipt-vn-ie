@@ -321,8 +321,8 @@ Quy trình suy luận:
   \item Kết quả được ghi vào tệp JSON.
 \end{enumerate}
 
-\begin{warnbox}[Trạng thái artifact Donut]
-Checkpoint Donut hiện tại không lưu \code{max\_length} trong \code{generation\_config.json}; vì vậy manifest chỉ ghi fallback metadata là 20 token trong trường hợp không override. Lượt prediction được dùng trong báo cáo hiện tại có sidecar/code cho thấy đã truyền explicit \code{generation\_max\_length=768} vào \code{generate()}. Do đó, kết quả Donut phản ánh hiện tượng sinh lặp và thiếu cặp thẻ hợp lệ của checkpoint hiện có, thay vì được diễn giải như bằng chứng rằng inference thực tế bị giới hạn ở 20 token.
+\begin{warnbox}[Trạng thái artifact Donut: Model Collapse]
+Lượt prediction được dùng trong báo cáo hiện tại truyền \code{generation\_max\_length=768} vào hàm \code{generate()}, khắc phục lỗi giới hạn 20 token mặc định. Tuy nhiên, kết quả dự đoán của Donut (Macro EM 0\%) cho thấy hiện tượng sụp đổ mô hình (model collapse): mô hình liên tục sinh lặp từ hoặc sinh ra các cặp thẻ XML không hợp lệ. Do đó, kết quả này được báo cáo như một ca thất bại thực nghiệm (negative result) của checkpoint hiện tại, chứ không phải là đại diện tiêu chuẩn để đánh giá hiệu năng của kiến trúc OCR-free.
 \end{warnbox}
 
 

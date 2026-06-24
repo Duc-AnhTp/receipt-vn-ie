@@ -112,6 +112,14 @@ bash scripts/06_error_analysis.sh     # Trích xuất và xuất file phân tíc
 
 Kết quả chi tiết được sinh tự động trong `report/generated/results_tables.tex` và trình bày trong báo cáo PDF.
 
+## 📝 Reproducibility Checklist
+
+Để đảm bảo tính tái lập (reproducibility) của các thí nghiệm, dự án cung cấp thông tin môi trường và cấu hình chi tiết:
+- **Môi trường huấn luyện**: Kaggle Notebook (GPU T4 x2)
+- **Cấu hình thư viện cốt lõi**: Python >= 3.10, PyTorch, Transformers < 5.0, PaddlePaddle-GPU
+- **Khóa môi trường (Environment Lock)**: Khuyến nghị cài đặt các thư viện thông qua file `requirements-freeze-kaggle.txt` để đảm bảo sử dụng chính xác phiên bản đã dùng trong huấn luyện.
+- **Tính nhất quán của kết quả (Artifact Hash)**: Các dự đoán và metrics được đóng băng và lưu trữ. Mã băm SHA-256 được đối chiếu tự động trong file `report/generated/artifact_validity.yaml`.
+
 ## 🌐 Chạy Web Demo (Gradio)
 
 Dự án đi kèm một giao diện Gradio dễ sử dụng để chạy dự đoán trực tiếp:

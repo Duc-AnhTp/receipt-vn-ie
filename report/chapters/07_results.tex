@@ -47,7 +47,7 @@ Những nhận xét trên dựa trên kết quả thực tế đo được, chư
 
 \input{generated/diagnostic_tables}
 
-Dù lượt prediction Donut truyền explicit \code{generation\_max\_length=768}, Macro EM present-only vẫn ở mức 0,00\%. Checkpoint config không lưu \code{max\_length}, nên bảng chẩn đoán chỉ ghi fallback metadata 20 token nếu không override; đây không phải giới hạn inference thực tế của artifact hiện tại. Khi xem chuỗi sinh thô, mô hình lặp từ và thiếu cấu trúc thẻ cần thiết, vì vậy kết quả này nên được hiểu là model collapse của checkpoint/thiết lập hiện tại. Điểm số của Donut ở đây chỉ có ý nghĩa như một thực nghiệm thất bại, không phải benchmark ngang hàng công bằng hay đại diện cho hướng tiếp cận OCR-free nói chung.
+Dù lượt prediction Donut truyền explicit \code{generation\_max\_length=768}, Macro EM present-only vẫn ở mức 0,00\%. Khi kiểm tra chuỗi sinh thô, mô hình có biểu hiện lặp từ liên tục và không sinh ra cấu trúc thẻ XML hợp lệ. Do đó, kết quả này được đánh giá là một ca thất bại thực nghiệm (negative result) do hiện tượng sụp đổ mô hình (model collapse). Nguyên nhân có thể đến từ việc tập dữ liệu huấn luyện (1.091 mẫu) quá nhỏ đối với một mô hình sinh end-to-end tự hồi quy, hoặc cấu hình huấn luyện chưa đủ giúp mô hình hội tụ. Điểm số của Donut ở đây tuyệt đối không được dùng để đưa ra kết luận rằng kiến trúc OCR-free kém hơn kiến trúc dựa trên OCR.
 
 \subsection{Phân tích lỗi có thể tái lập}
 \label{subsec:error_analysis}
