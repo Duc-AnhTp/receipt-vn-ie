@@ -54,7 +54,7 @@ Các trường chính trong mỗi bản ghi:
 \section{Cấu trúc mã nguồn}
 \label{appendix:source-code}
 
-Cây thư mục dưới đây mô tả tổng quan cấu trúc mã nguồn của dự án. Mã nguồn chính nằm trong thư mục \code{src/receipt\_ie/}, được tổ chức theo chức năng.
+Toàn bộ mã nguồn, cấu hình huấn luyện và tệp kết quả dự đoán của đồ án được quản lý tại kho lưu trữ GitHub: \url{https://github.com/Duc-AnhTp/receipt-vn-ie}. Cây thư mục dưới đây mô tả tổng quan cấu trúc mã nguồn của dự án. Mã nguồn chính nằm trong thư mục \code{src/receipt\_ie/}, được tổ chức theo chức năng.
 
 \begin{lstlisting}[caption={Cấu trúc thư mục dự án}, label={lst:project-tree}]
 receipt-vn-ie/
@@ -84,7 +84,7 @@ receipt-vn-ie/
 \section{Cấu hình huấn luyện đầy đủ}
 \label{appendix:configs}
 
-Phần này trình bày đầy đủ các tệp cấu hình YAML được sử dụng trong quá trình huấn luyện và đánh giá ba phương pháp. Tất cả cấu hình được lưu trong thư mục \code{configs/}.
+Phần này trình bày các tệp cấu hình YAML quan trọng được lưu trong thư mục \code{configs/}. Với Donut và LayoutXLM, đây là cấu hình huấn luyện/suy luận được đối chiếu trong báo cáo. Với Baseline, tệp YAML ghi lại luật heuristic trong repo; artifact đánh giá hiện tại vẫn lấy một số mặc định trực tiếp từ mã nguồn, được ghi chú riêng ở cuối mục.
 
 \subsection{Cấu hình \model{Donut} (\code{donut.yaml})}
 \label{appendix:config-donut}
@@ -214,6 +214,9 @@ heuristics:
       - "tp"
 \end{lstlisting}
 
+\begin{notebox}[Ghi chú về cấu hình Baseline]
+Trong artifact Baseline đã chấm điểm, \code{infer\_baseline.py} gọi trực tiếp \code{extract\_store\_name\_from\_lines} và dùng mặc định \code{max\_lines=5} của hàm này. Vì vậy, mô tả ở chương phương pháp lấy theo đường chạy thực tế của artifact; \code{baseline.yaml} được giữ trong phụ lục như cấu hình luật lưu trong repo, không phải nguồn tham số duy nhất của lượt suy luận đã báo cáo.
+\end{notebox}
 
 % ============================================================================
 %  PHỤ LỤC D — Mẫu kết quả trích xuất thực tế
@@ -223,7 +226,11 @@ heuristics:
 \label{appendix:extraction-examples}
 
 \cref{tab:extraction-examples} trình bày các kết quả được đọc trực tiếp từ prediction artifact hiện có.
+<<<<<<< HEAD
 Các hàng Donut được giữ để minh họa artifact chẩn đoán model collapse trong thiết lập hiện tại, không phải kết luận phủ định toàn bộ hướng OCR-free.
+=======
+Các hàng Donut được giữ để minh họa hiện tượng model collapse trong lượt suy luận 768-token: mô hình sinh lặp hoặc thiếu cặp thẻ hợp lệ, nên nhiều trường sau parse bị rỗng.
+>>>>>>> ec28b02a0beeba1ef96bcb97c0583d324ca87f46
 
 \begin{table}[htbp]
   \centering
@@ -261,7 +268,7 @@ Các hàng Donut được giữ để minh họa artifact chẩn đoán model co
 
 Giao diện ứng dụng Demo Gradio cung cấp một công cụ trực quan hóa giúp nhanh chóng thử nghiệm khả năng nhận dạng và trích xuất của ba phương pháp đối với ảnh biên lai tải lên từ thiết bị cá nhân.
 
-Giao diện demo được xây dựng bằng Gradio, hỗ trợ tải ảnh biên lai, lựa chọn chế độ OCR và hiển thị trực tiếp kết quả so sánh theo từng trường thông tin của Baseline, \model{Donut} và VietOCR~+~\model{LayoutXLM}. Hình~\ref{fig:gradio-demo} là ảnh chụp từ một lượt chạy thực tế trên máy cục bộ.
+Giao diện demo được xây dựng bằng Gradio, hỗ trợ tải ảnh biên lai, lựa chọn chế độ OCR và hiển thị trực tiếp kết quả so sánh theo từng trường thông tin của Baseline, \model{Donut} và VietOCR~+~\model{LayoutXLM}. \Cref{fig:gradio-demo} là ảnh chụp từ một lượt chạy thực tế trên máy cục bộ.
 
 \begin{figure}[htbp]
     \centering

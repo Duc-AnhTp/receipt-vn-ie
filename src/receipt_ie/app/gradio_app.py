@@ -201,7 +201,10 @@ def handle_demo_run(image: Image.Image, model_name: str, ocr_mode: str) -> Tuple
     elif model_name == "VietOCR + LayoutXLM" and hasattr(extractor, "predict_from_ocr") and not MOCK_FLAGS.get("layoutxlm", False):
         ocr_res = run_or_get_cached_ocr(image, ocr_mode)
         layout_image = ocr_res.get("ocr_image", image)
-        res = extractor.predict_from_ocr(layout_image, ocr_res.get("words", []), latency_ocr_ms=0.0)
+        ocr_words = ocr_res.get("words", [])
+        texts = [w["text"] for w in ocr_words]
+        boxes = [w["bbox"] for w in ocr_words]
+        res = extractor.predict_from_ocr(layout_image, texts, boxes)
     else:
         res = extractor.predict(image)
     e2e_time = (time.time() - start_time) * 1000
@@ -254,7 +257,10 @@ def handle_compare_run(image: Image.Image, ocr_mode: str) -> Tuple[Image.Image, 
     res_donut = donut_extractor.predict(image)
     if hasattr(layoutxlm_extractor, "predict_from_ocr") and not MOCK_FLAGS.get("layoutxlm", False):
         layout_image = res_base.get("ocr_image", image)
-        res_layout = layoutxlm_extractor.predict_from_ocr(layout_image, res_base.get("words", []), latency_ocr_ms=0.0)
+        ocr_words = res_base.get("words", [])
+        texts = [w["text"] for w in ocr_words]
+        boxes = [w["bbox"] for w in ocr_words]
+        res_layout = layoutxlm_extractor.predict_from_ocr(layout_image, texts, boxes)
     else:
         res_layout = layoutxlm_extractor.predict(image)
     

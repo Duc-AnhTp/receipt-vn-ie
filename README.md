@@ -1,132 +1,142 @@
-# Receipt VN IE — Trích xuất thông tin biên lai tiếng Việt
+<h1 align="center">Receipt VN IE — Trích Xuất Thông Tin Biên Lai Tiếng Việt</h1>
 
-So sánh hai kiến trúc **Donut** (End-to-End OCR-free) và **VietOCR + LayoutXLM** (OCR-based layout-aware) để trích xuất 4 trường thông tin từ biên lai tiếng Việt.
+<p align="center">
+  <img alt="Python" src="https://img.shields.io/badge/python-3.10%2B-blue">
+  <img alt="PyTorch" src="https://img.shields.io/badge/PyTorch-%23EE4C2C.svg?logo=PyTorch&logoColor=white">
+  <img alt="License" src="https://img.shields.io/badge/license-MIT-green">
+</p>
 
-## Trường thông tin trích xuất
+Dự án này thực hiện việc nhận dạng và trích xuất thông tin (Information Extraction) từ ảnh biên lai, hóa đơn tiếng Việt. Hệ thống tiến hành so sánh hai kiến trúc học sâu phổ biến hiện nay:
+- **Donut**: Mô hình End-to-End OCR-free.
+- **VietOCR + LayoutXLM**: Hệ thống pipeline đa mô-đun kết hợp OCR và hiểu biết bố cục (layout-aware).
 
-| Trường | Định dạng | Ví dụ |
+## ✨ Tính Năng Chính
+- **Trích xuất 4 trường thông tin thiết yếu**: Tên cửa hàng (`store_name`), Ngày (`date`), Tổng tiền (`total`), và Địa chỉ (`address`).
+- **So sánh mô hình chuyên sâu**: Cung cấp pipeline hoàn chỉnh để huấn luyện, đánh giá và chẩn đoán độ trễ (latency), hiện tượng model collapse.
+- **Metric đánh giá tự động**: Tích hợp các thang đo Exact Match (EM), Normalized Edit Similarity (NES), và Character Error Rate (CER).
+- **Giao diện Web thân thiện**: Tích hợp Gradio App để upload ảnh và chạy thử inference trực tiếp.
+
+## 🎯 Trường Thông Tin Trích Xuất
+
+| Trường | Định dạng | Ví dụ thực tế |
 |---|---|---|
 | `store_name` | Chuỗi Unicode NFC | MINIMART ANAN |
-| `date` | YYYY-MM-DD | 2020-08-09 |
+| `date` | `YYYY-MM-DD` | 2020-08-09 |
 | `total` | Chuỗi số nguyên | 115000 |
 | `address` | Chuỗi Unicode NFC | Chợ Sủi Phú Thị Gia Lâm |
 
-## Cấu trúc dự án
+## 📂 Cấu Trúc Dự Án
 
 ```
 receipt-vn-ie/
-├── configs/          # YAML configs cho data, OCR, model, app
-├── data/             # Raw → Interim → Processed data pipeline
-├── docs/             # Scope, annotation guideline, normalization rules
-├── src/receipt_ie/   # Source code chính
-│   ├── data/         # Convert, normalize, validate, split
-│   ├── ocr/          # PaddleOCR detect + VietOCR recognize
-│   ├── baseline/     # Rule-based extractor
-│   ├── models/       # Donut & LayoutXLM model wrappers
-│   ├── training/     # Training scripts
-│   ├── inference/    # Inference pipelines
-│   ├── metrics/      # EM, NES, CER, latency
-│   ├── visualization/# Bounding box drawing, comparison
-│   └── app/          # Gradio web demo
-├── tests/            # Unit tests
-├── notebooks/        # EDA, OCR quality check, error analysis
-└── scripts/          # Shell scripts cho pipeline automation
+├── configs/          # YAML configs cho dataset, OCR, model, web app
+├── data/             # Thư mục lưu trữ dữ liệu (Raw → Interim → Processed)
+├── docs/             # Tài liệu chuẩn hóa và dataset card
+├── src/receipt_ie/   # Source code chính của hệ thống
+│   ├── app/          # Giao diện Gradio Web Demo
+│   ├── baseline/     # Rule-based extractor (luật)
+│   ├── data/         # Xử lý, chuẩn hóa, chia split dataset
+│   ├── inference/    # Pipeline inference tổng hợp
+│   ├── metrics/      # Code tính điểm EM, NES, CER, Error Taxonomy
+│   ├── models/       # Wrappers cho LayoutXLM và Donut
+│   ├── ocr/          # Tích hợp PaddleOCR (detect) + VietOCR (recognize)
+│   ├── postprocess/  # Hậu xử lý kết quả
+│   ├── preprocessing/# Tiền xử lý tọa độ, ảnh
+│   ├── training/     # Training loop cho mô hình
+│   └── visualization/# Vẽ Bounding box đối chiếu
+├── tests/            # Bộ Unit tests (Pytest)
+└── scripts/          # Bash/Python scripts để chạy pipeline tự động
 ```
 
-## Cài đặt
+## 🚀 Cài Đặt và Khởi Chạy
 
+<<<<<<< HEAD
 Yêu cầu Python >= 3.10 để khớp cấu hình trong `pyproject.toml`.
 
+=======
+### 1. Chuẩn bị môi trường
+Khuyến nghị sử dụng môi trường ảo (Virtual Environment) hoặc Conda:
+>>>>>>> ec28b02a0beeba1ef96bcb97c0583d324ca87f46
 ```bash
-# 1. Clone repo
-git clone <repo-url>
+git clone https://github.com/Duc-AnhTp/receipt-vn-ie.git
 cd receipt-vn-ie
 
-# 2. Cài đặt dependencies cơ bản
+# Tạo và kích hoạt môi trường ảo (Python >= 3.10)
+python -m venv venv
+# Windows:
+venv\Scripts\activate
+# Linux/macOS:
+source venv/bin/activate
+```
+
+### 2. Cài đặt Dependencies
+```bash
+# Cài đặt code base
 pip install -e .
 
-# 3. Cài đặt OCR engines
+# Cài đặt thư viện OCR
 pip install -r requirements/ocr.txt
-pip install -r requirements/paddle-cpu.txt   # hoặc paddle-gpu.txt
+pip install -r requirements/paddle-cpu.txt   # Sử dụng paddle-gpu.txt nếu có GPU
 
-# 4. Cài đặt Gradio (cho web demo)
+# Cài đặt thư viện Web App
 pip install -r requirements/app.txt
 ```
 
-## Dữ liệu
-
-### MC-OCR 2021
-Đặt dữ liệu vào `data/raw/mc_ocr_2021/`:
-- `mcocr_train_df.csv` — file CSV chứa annotation
-- `train_images/` — thư mục chứa ảnh biên lai
-
-### Tự thu thập
-Đặt dữ liệu vào `data/raw/self_collected/`:
-- `label_studio.json` — export từ Label Studio
-- `images/` — thư mục chứa ảnh biên lai
-
-### CORD v2 (Optional / Future Work)
-CORD v2 chỉ được giữ như nhánh tham khảo cho thí nghiệm warm-up trong tương lai.
-Luồng chính và kết quả báo cáo hiện tại **không dùng CORD v2**.
-
-## Pipeline chạy thử
-
+### 3. Dữ Liệu
+Sử dụng dữ liệu **MC-OCR 2021** hoặc dữ liệu tự thu thập:
+- Đặt file `mcocr_train_df.csv` và thư mục ảnh vào `data/raw/mc_ocr_2021/`
+- Chạy pipeline chuẩn bị dữ liệu:
 ```bash
-# 1. Convert dữ liệu sang unified JSONL
+# Convert dữ liệu sang cấu trúc unified JSONL
 python -m receipt_ie.data.convert_mcocr
 python -m receipt_ie.data.convert_labelstudio
 
-# 2. Chia train/val/test
+# Chia tập train/val/test
 python -m receipt_ie.data.split_data
 
-# 3. Validate dữ liệu
+# Kiểm tra tính hợp lệ của dữ liệu
 python -m receipt_ie.data.validate_dataset --jsonl_path data/processed/train.jsonl
 ```
 
-## GitHub → Kaggle T4x2
+## 🖥️ Pipeline Tự Động (Scripts)
 
-Repo GitHub chỉ lưu code, docs, configs, requirements, tests và scripts. Không commit
-`data/`, `checkpoints/`, `outputs/` hoặc các file `*.zip`.
-
-Trên Kaggle, dùng 2 Dataset riêng:
-- `receipt-vn-ie-data`: chứa `receipt_dataset.zip`
-- `receipt-vn-ie-checkpoints`: chứa checkpoint Donut/LayoutXLM nếu cần demo, evaluate hoặc resume
-
-Bootstrap trên Kaggle:
-
+Dự án cung cấp sẵn các script tự động hóa toàn bộ quá trình thực nghiệm:
 ```bash
-git clone <repo-url> /kaggle/working/receipt-vn-ie
-cd /kaggle/working/receipt-vn-ie
-bash scripts/kaggle_bootstrap.sh
+bash scripts/01_validate_data.sh      # Kiểm tra và xác thực dữ liệu
+bash scripts/02_build_ocr_cache.sh    # Chạy OCR trước và lưu cache
+bash scripts/03_train_layoutxlm.sh    # Huấn luyện mô hình LayoutXLM
+bash scripts/04_train_donut.sh        # Huấn luyện mô hình Donut
+bash scripts/05_evaluate_all.sh       # Đánh giá toàn bộ trên tập Test
+bash scripts/06_error_analysis.sh     # Trích xuất và xuất file phân tích lỗi (CSV)
 ```
 
-Pipeline chuẩn:
+## 📊 Kết Quả Đánh Giá (Evaluation)
 
-```bash
-bash scripts/01_validate_data.sh
-bash scripts/02_build_ocr_cache.sh
-bash scripts/03_train_layoutxlm.sh
-bash scripts/04_train_donut.sh
-bash scripts/05_evaluate_all.sh
-bash scripts/06_error_analysis.sh
-```
+Đánh giá trên tập test **234 mẫu**, phân chia theo tỷ lệ 70/15/15. Seed = 42.
 
-## Đánh giá
+### 1. Kết quả Present-Only (Chỉ tính trên các trường tồn tại thực tế)
+*Đây là thang đo phản ánh chính xác nhất năng lực trích xuất khi trường thông tin có mặt trên hóa đơn.*
 
 | Phương pháp | Store EM | Date EM | Total EM | Address EM | Macro EM | Macro NES | Macro CER |
-|---|---:|---:|---:|---:|---:|---:|---:|
-| Baseline (Rule-based) | 25.21 | 74.79 | 54.27 | 4.70 | 39.74 | 54.00 | 57.71 |
-| Donut | 3.85 | 7.69 | 7.26 | 4.70 | 5.88 | 6.94 | 105.23 |
-| VietOCR + LayoutXLM | 29.06 | 60.68 | 69.66 | 14.53 | 43.48 | 61.86 | 39.64 |
+|:---|---:|---:|---:|---:|---:|---:|---:|
+| **Baseline (Rule-based)** | 26.34 | 75.46 | 58.06 | 1.79 | **40.41** | 55.47 | 56.81 |
+| **Donut** | 0.00 | 0.00 | 0.00 | 0.00 | **0.00** | 0.08 | 334.39 |
+| **VietOCR + LayoutXLM** | 28.12 | 60.19 | 71.89 | 11.66 | **42.96** | 63.89 | 38.79 |
 
-Kết quả được đánh giá trên tập test 234 mẫu, split 70/15/15, seed = 42. Môi trường huấn luyện: Kaggle T4×2.
+### 2. Kết quả All-Samples (Tính trên toàn bộ mẫu, bao gồm cả trường rỗng)
+| Phương pháp | Store EM | Date EM | Total EM | Address EM | Macro EM | Macro NES | Macro CER |
+|:---|---:|---:|---:|---:|---:|---:|---:|
+| **Baseline (Rule-based)** | 25.21 | 74.79 | 54.27 | 4.70 | **39.74** | 54.00 | 57.71 |
+| **Donut** | 4.27 | 7.69 | 7.26 | 4.70 | **5.98** | 6.05 | 318.39 |
+| **VietOCR + LayoutXLM** | 29.06 | 61.11 | 71.37 | 13.68 | **43.80** | 63.74 | 38.82 |
 
-## Tests
+*(Đơn vị: %. Chênh lệch của Donut do mô hình gặp hiện tượng model collapse).*
 
+## 🌐 Chạy Web Demo (Gradio)
+
+Dự án đi kèm một giao diện Gradio dễ sử dụng để chạy dự đoán trực tiếp:
 ```bash
-pytest tests/
+python src/receipt_ie/app/gradio_app.py
 ```
+Sau khi khởi chạy thành công, truy cập trình duyệt tại địa chỉ: `http://localhost:7860`.
 
-## License
-
-MIT

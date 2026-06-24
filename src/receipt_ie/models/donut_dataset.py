@@ -50,7 +50,7 @@ class DonutDataset(Dataset):
                 if line.strip():
                     self.samples.append(json.loads(line))
         
-        print(f"Đã load {len(self.samples)} mẫu dữ liệu Donut từ {jsonl_path} (is_train={self.is_train})")
+        print(f"Loaded {len(self.samples)} Donut data samples from {jsonl_path} (is_train={self.is_train})")
 
     def __len__(self) -> int:
         return len(self.samples)

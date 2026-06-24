@@ -16,7 +16,7 @@ FIELD_LABELS = ["STORE", "DATE", "TOTAL", "ADDRESS", "MACRO"]
 METHOD_LABELS = {
     "baseline": "Baseline",
     "layoutxlm": "LayoutXLM",
-    "donut": "Donut (diagnostic)",
+    "donut": "Donut",
 }
 ERROR_TYPES = [
     "EMPTY_PRED",

@@ -34,19 +34,18 @@ report/
 │   ├── 07_results.tex     ← Chương quan trọng nhất
 │   ├── 08_conclusion.tex
 │   └── appendix.tex
+├── generated/             ← Bảng kết quả LaTeX đã chốt cho báo cáo
 └── figures/
-    ├── huce_logo.png
-    ├── donut_loss.png
-    ├── em_comparison.png
-    ├── nes_comparison.png
-    ├── baseline_error_distribution.png
-    ├── donut_error_distribution.png
-    └── layoutxlm_error_distribution.png
+    ├── huce_logo.jpg
+    ├── donut_architecture.jpg
+    ├── pipeline_overview.png
+    ├── em_present_only_comparison.png
+    └── gradio_demo.png
 ```
 
 ## Trạng thái hiện tại
 
-Toàn bộ nội dung 10 chương đã được viết hoàn chỉnh. Không còn marker `% TODO` hay `% BẢN NHÁP` nào trong file `.tex`.
+Toàn bộ nội dung 10 chương đã được rà soát, thống nhất lại với artifact thực nghiệm và sẵn sàng biên dịch bằng XeLaTeX.
 
 ### Nội dung đã hoàn thiện
 
@@ -56,16 +55,14 @@ Toàn bộ nội dung 10 chương đã được viết hoàn chỉnh. Không cò
 - [x] **Chương 1-8**: Nội dung đầy đủ
 - [x] **Phụ lục**: Cấu hình YAML, ví dụ kết quả
 
-### Hình ảnh cần thay thế (placeholder)
+### Hình ảnh đang dùng trong PDF
 
-Các file sau đang là **ảnh placeholder** cần thay bằng ảnh thực tế:
+Bản PDF hiện tại chỉ nạp các hình cần thiết cho nội dung chính:
 
-- [ ] `pipeline_overview.png` — Sơ đồ 3 pipeline (dùng draw.io hoặc Mermaid)
-- [ ] `donut_architecture.png` — Kiến trúc Donut (từ paper hoặc tự vẽ)
-- [ ] `layoutxlm_architecture.png` — Kiến trúc LayoutXLM
-- [ ] `bio_tagging_example.png` — Ví dụ BIO tagging
-- [ ] `sample_receipts.png` — Mẫu ảnh biên lai + annotation
-- [ ] `layoutxlm_loss.png` — Đường cong loss (từ TensorBoard/WandB)
+- [x] `huce_logo.jpg` — Logo trường trên trang bìa
+- [x] `donut_architecture.jpg` — Minh họa kiến trúc Donut
+- [x] `pipeline_overview.png` — Sơ đồ ba pipeline
+- [x] `em_present_only_comparison.png` — Biểu đồ EM present-only sinh từ metrics JSON
 - [x] `gradio_demo.png` — Ảnh chụp giao diện demo từ lượt chạy thực tế
 
 ## Custom Commands

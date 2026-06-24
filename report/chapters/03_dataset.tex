@@ -4,7 +4,7 @@
 \section{Tập dữ liệu}
 \label{sec:dataset}
 
-Chương này mô tả dữ liệu processed thực tế được dùng trong báo cáo. Các thống kê được đọc từ ba tệp \code{train.jsonl}, \code{val.jsonl} và \code{test.jsonl}; các số liệu về ảnh thô hoặc mẫu từng bị loại không được công bố khi không có artifact kiểm chứng đi kèm.
+Phần này đi vào chi tiết về dữ liệu processed thực tế được sử dụng trong báo cáo. Toàn bộ thống kê được lấy trực tiếp từ ba tệp \code{train.jsonl}, \code{val.jsonl} và \code{test.jsonl}; những số liệu liên quan đến ảnh thô hoặc các mẫu đã bị loại sẽ không được đề cập vì không có artifact kiểm chứng đi kèm.
 
 \subsection{Nguồn dữ liệu}
 \label{subsec:data-source}
@@ -15,7 +15,7 @@ Dữ liệu gồm hai nguồn:
   \item \textbf{Dữ liệu tự thu thập}: gồm ảnh biên lai tiếng Việt và nhãn JSON bốn trường. Trong processed dataset hiện tại, các mẫu này có \code{annotation\_level=json\_only}, không có hộp bao dùng được cho LayoutXLM.
 \end{itemize}
 
-Tổng dữ liệu processed gồm 1.559 mẫu: 1.120 mẫu MC-OCR và 439 mẫu tự thu thập.
+Sau khi xử lý, tổng cộng có 1.559 mẫu: 1.120 mẫu từ MC-OCR và 439 mẫu tự thu thập.
 
 \subsection{Schema JSONL thống nhất}
 \label{subsec:unified-schema}
@@ -41,12 +41,12 @@ Tổng dữ liệu processed gồm 1.559 mẫu: 1.120 mẫu MC-OCR và 439 mẫu
   \end{tabularx}
 \end{table}
 
-Các trường đích được chuẩn hóa như sau: \field{date} về \code{YYYY-MM-DD}, \field{total} thành chuỗi chữ số, còn \field{store\_name} và \field{address} được chuẩn hóa Unicode NFC, khoảng trắng và tiền tố trường.
+Về chuẩn hóa các trường đích: \field{date} được đưa về dạng \code{YYYY-MM-DD}, \field{total} thành chuỗi chữ số thuần, còn \field{store\_name} và \field{address} thì chuẩn hóa Unicode NFC, xử lý khoảng trắng và loại bỏ tiền tố trường.
 
 \subsection{Chia dữ liệu và chống rò rỉ}
 \label{subsec:data-split}
 
-Tập dữ liệu được chia theo tỷ lệ gần 70/15/15 với seed 42. Script chia dữ liệu nhóm theo \field{group\_id}, phân tầng theo nguồn và có bước kiểm tra hash ảnh để giảm nguy cơ cùng một nội dung xuất hiện ở nhiều split.
+Dữ liệu được chia theo tỷ lệ gần 70/15/15 với seed 42. Script chia sẽ nhóm theo \field{group\_id}, phân tầng theo nguồn, đồng thời kiểm tra hash ảnh để hạn chế việc cùng một nội dung xuất hiện ở nhiều split.
 
 \begin{table}[htbp]
   \centering
@@ -65,7 +65,7 @@ Tập dữ liệu được chia theo tỷ lệ gần 70/15/15 với seed 42. Scr
   \end{tabular}
 \end{table}
 
-Ba tệp JSONL hiện tại là nguồn sự thật cho mọi thống kê train/validation/test trong báo cáo.
+Ba tệp JSONL này là nguồn sự thật duy nhất cho mọi thống kê train/validation/test trong toàn bộ báo cáo.
 
 \subsection{Mức annotation và dữ liệu huấn luyện}
 \label{subsec:annotation-level}
@@ -85,7 +85,7 @@ Ba tệp JSONL hiện tại là nguồn sự thật cho mọi thống kê train/
   \end{tabular}
 \end{table}
 
-Donut sử dụng toàn bộ train/validation. LayoutXLM lọc \code{json\_and\_boxes}, nên chỉ sử dụng 784 mẫu train và 168 mẫu validation. Cả ba phương pháp được chấm trên toàn bộ 234 mẫu test; các mẫu \code{json\_only} vẫn có nhãn trường để đánh giá đầu ra JSON.
+Donut dùng toàn bộ train/validation vì không cần hộp bao. LayoutXLM chỉ lọc các mẫu \code{json\_and\_boxes}, nên thực tế chỉ dùng 784 mẫu train và 168 mẫu validation. Khi đánh giá, cả ba phương pháp đều chấm trên toàn bộ 234 mẫu test; những mẫu \code{json\_only} vẫn có nhãn trường nên vẫn đánh giá được đầu ra JSON.
 
 \subsection{Giá trị ground-truth rỗng trên test}
 \label{subsec:missing-labels}
@@ -106,9 +106,9 @@ Donut sử dụng toàn bộ train/validation. LayoutXLM lọc \code{json\_and\_
   \end{tabular}
 \end{table}
 
-Tỷ lệ này giải thích vì sao cần báo cáo present-only. Nếu mô hình luôn trả về rỗng, nó vẫn nhận EM all-samples đúng bằng tỷ lệ ground-truth rỗng của trường đó.
+Đây là lý do cần phải báo cáo present-only. Nếu mô hình cứ trả về rỗng cho mọi mẫu, nó vẫn đạt EM all-samples đúng bằng tỷ lệ ground-truth rỗng của trường đó — tức là con số EM sẽ bị phóng đại.
 
 \subsection{Kiểm tra hợp lệ}
 \label{subsec:data-validation}
 
-Các báo cáo validation hiện có ghi nhận 0 lỗi schema, 0 ngày sai định dạng và 0 tổng tiền sai định dạng trong cả ba split. Kết quả này chỉ xác nhận tính hợp lệ cú pháp của dữ liệu processed, không chứng minh nhãn đúng hoàn toàn về mặt nội dung.
+Các báo cáo validation hiện có cho thấy 0 lỗi schema, 0 ngày sai định dạng và 0 tổng tiền sai định dạng trên cả ba split. Tuy nhiên, kết quả này chỉ xác nhận dữ liệu processed hợp lệ về mặt cú pháp, chứ không đảm bảo nhãn đúng hoàn toàn về nội dung.

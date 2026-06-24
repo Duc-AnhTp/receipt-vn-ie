@@ -8,7 +8,6 @@ from receipt_ie.inference.infer_donut import checkpoint_generation_max_length
 class TestDonutDataConversion(unittest.TestCase):
     def setUp(self):
         self.task_token = "<s_receipt_ie>"
-        self.cord_task_token = "<s_cord_receipt_parse>"
         self.sample_target = {
             "store_name": "MINIMART ANAN",
             "date": "2020-08-09",
@@ -26,12 +25,6 @@ class TestDonutDataConversion(unittest.TestCase):
             "<s_address>Chợ Sủi Phú Thị Gia Lâm</s_address>"
             "</s_receipt_ie>"
         )
-        self.assertEqual(seq, expected)
-
-    def test_target_to_donut_sequence_cord(self):
-        # CORD warm-up chỉ trích xuất total
-        seq = target_to_donut_sequence(self.sample_target, self.cord_task_token)
-        expected = "<s_cord_receipt_parse><s_total>115000</s_total></s_cord_receipt_parse>"
         self.assertEqual(seq, expected)
 
     def test_donut_sequence_to_target_perfect(self):

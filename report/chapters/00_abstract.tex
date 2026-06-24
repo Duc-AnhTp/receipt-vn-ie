@@ -1,13 +1,17 @@
-﻿% ============================================================================
+% ============================================================================
 %  CHƯƠNG 0: TÓM TẮT
 % ============================================================================
 
 \section*{Tóm tắt}
 \addcontentsline{toc}{section}{Tóm tắt}
 
-Đồ án xây dựng hệ thống trích xuất tên cửa hàng, ngày giao dịch, tổng tiền và địa chỉ từ ảnh biên lai tiếng Việt. Ba phương pháp được triển khai gồm Baseline dùng OCR và luật, \model{Donut} sinh chuỗi trực tiếp từ ảnh, và \model{LayoutXLM} phân loại token từ văn bản, bố cục và ảnh. Bộ dữ liệu processed gồm 1.559 mẫu; Donut có thể sử dụng toàn bộ 1.091 mẫu train, còn LayoutXLM sử dụng 784 mẫu train có hộp bao. Các prediction artifact đều bao phủ cùng 234 ID test.
+Đồ án xây dựng hệ thống trích xuất tên cửa hàng, ngày giao dịch, tổng tiền và địa chỉ từ ảnh biên lai tiếng Việt. Ba phương pháp được triển khai: Baseline dùng OCR kết hợp luật, \model{Donut} sinh chuỗi trực tiếp từ ảnh, và \model{LayoutXLM} phân loại token dựa trên văn bản, bố cục và ảnh. Bộ dữ liệu có 1.559 mẫu; Donut dùng toàn bộ 1.091 mẫu train, còn LayoutXLM dùng 784 mẫu train có hộp bao. Cả ba phương pháp đều được đánh giá trên cùng 234 mẫu test.
 
+<<<<<<< HEAD
 Để tránh điểm số bị ảnh hưởng bởi nhãn rỗng, báo cáo trình bày cả kết quả trên toàn bộ mẫu và kết quả present-only, chỉ xét các mẫu có ground-truth khác rỗng của từng trường. Trên present-only, \model{LayoutXLM} đạt kết quả tốt nhất với Macro EM 42,96\% và Macro NES 63,89\%; Baseline đạt 40,41\% và 55,47\%; còn \model{Donut} cho hiệu năng rất thấp (Macro EM 0,00\%) trong thiết lập hiện tại. Chênh lệch giữa LayoutXLM và Baseline còn khiêm tốn, nhưng Oracle OCR trên 168 mẫu MC-OCR có ground-truth OCR cho thấy Macro EM của LayoutXLM tăng từ 49,72\% khi dùng OCR thực tế lên 95,55\% khi dùng OCR hoàn hảo. Kết quả này chỉ ra OCR là nút thắt cổ chai lớn, đồng thời báo cáo công bố rõ các giới hạn về annotation không đồng nhất, bốn mẫu LayoutXLM có sai lệch hệ tọa độ, thiếu log huấn luyện đầy đủ và phạm vi latency chưa phải end-to-end từ ảnh thô.
+=======
+Kết quả được báo cáo theo hai chế độ: toàn bộ mẫu và present-only (chỉ xét mẫu có ground-truth khác rỗng). Trên present-only, \model{LayoutXLM} đạt kết quả tốt nhất với Macro EM 42,96\% và Macro NES 63,89\%; Baseline đạt 40,41\% và 55,47\%; còn \model{Donut} cho hiệu năng rất thấp (Macro EM 0,00\%) do bị model collapse khi huấn luyện end-to-end trên tập dữ liệu nhỏ. Thí nghiệm Oracle OCR trên 168 mẫu MC-OCR có ground-truth OCR cho thấy Macro EM present-only của LayoutXLM tăng từ 49,72\% khi dùng OCR thực tế lên 95,55\% khi dùng OCR hoàn hảo --- củng cố nhận định OCR là nút thắt cổ chai lớn nhất của pipeline. Toàn bộ mã nguồn của đồ án được công bố tại \url{https://github.com/Duc-AnhTp/receipt-vn-ie}.
+>>>>>>> ec28b02a0beeba1ef96bcb97c0583d324ca87f46
 
 \vspace{1em}
 \noindent\textbf{Từ khoá:} trích xuất thông tin, biên lai, Donut, LayoutXLM, OCR, tiếng Việt.

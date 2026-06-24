@@ -4,7 +4,11 @@
 \section{Kết quả thực nghiệm và đánh giá}
 \label{sec:results}
 
+<<<<<<< HEAD
 Chương này trình bày kết quả được tính lại trực tiếp từ các prediction artifact đóng băng trên 234 mẫu test. Các bảng metrics và latency được sinh tự động bởi script \path{scripts/generate_report_artifacts.py}; vì vậy số liệu trong báo cáo và artifact JSON có cùng nguồn. Cả ba phương pháp Baseline, \model{LayoutXLM} và \model{Donut} đều có mặt trong bảng định lượng; riêng Donut được diễn giải như một ca chẩn đoán model collapse của checkpoint hiện có.
+=======
+Toàn bộ kết quả dưới đây được tính trực tiếp từ các prediction artifact đóng băng trên 234 mẫu test. Các bảng metrics và latency được lấy từ artifact JSON cùng nguồn với báo cáo. Cả ba phương pháp Baseline, \model{LayoutXLM} và \model{Donut} đều có mặt trong bảng đối chiếu định lượng; riêng Donut được diễn giải như một ca chẩn đoán model collapse của checkpoint hiện có.
+>>>>>>> ec28b02a0beeba1ef96bcb97c0583d324ca87f46
 
 % ============================================================================
 \subsection{Kết quả trên toàn bộ mẫu và trên trường có mặt}
@@ -12,13 +16,19 @@ Chương này trình bày kết quả được tính lại trực tiếp từ c�
 
 \input{generated/results_tables}
 
+<<<<<<< HEAD
 \Cref{tab:all-results} phản ánh hành vi của các artifact trên toàn bộ test set, bao gồm trường hợp trường thông tin không có nhãn. \Cref{tab:present-results} loại các ground-truth rỗng theo từng trường và được dùng làm cơ sở chính để đánh giá khả năng trích xuất. \Cref{tab:coverage-results} bổ sung tỷ lệ prediction khác rỗng để phân biệt chất lượng với xu hướng trả về rỗng.
 
 Trên chế độ present-only, \model{LayoutXLM} đạt Macro EM 42,96\% và Macro NES 63,89\%, cao hơn Baseline tương ứng 40,41\% và 55,47\%. Khoảng cách Macro EM chỉ là 2,55 điểm phần trăm, nên kết luận phù hợp không phải LayoutXLM áp đảo Baseline, mà là LayoutXLM cải thiện ổn định hơn ở các trường cần ngữ cảnh/bố cục như tổng tiền và địa chỉ. \model{Donut} đạt Macro EM 0,00\% trong thiết lập hiện tại, phản ánh model collapse của checkpoint này thay vì kết luận phủ định toàn bộ hướng OCR-free.
+=======
+\Cref{tab:all-results} cho thấy hành vi của cả ba phương pháp trên toàn bộ test set, kể cả khi trường thông tin không có nhãn. \Cref{tab:present-results} loại bỏ các ground-truth rỗng theo từng trường, và đây là cơ sở chính để đánh giá khả năng trích xuất. \Cref{tab:coverage-results} bổ sung tỷ lệ prediction khác rỗng, giúp phân biệt giữa chất lượng thực sự và xu hướng trả về rỗng. \Cref{fig:present-only-em} minh họa kết quả Exact Match present-only theo từng trường.
+
+Ở chế độ present-only, \model{LayoutXLM} đạt kết quả tốt nhất với Macro EM 42,96\% và Macro NES 63,89\%, cao hơn Baseline (40,41\% và 55,47\%) và tốt hơn nhiều so với Donut (Macro EM 0,00\%, Macro NES 0,08\%). Dù Donut đã được cấp đủ 768 token giới hạn sinh, mô hình vẫn rơi vào trạng thái suy sụp (model collapse), sinh lặp từ liên tục, dẫn đến chất lượng rất kém khi huấn luyện trên tập biên lai nhỏ.
+>>>>>>> ec28b02a0beeba1ef96bcb97c0583d324ca87f46
 
 \input{generated/analysis_tables}
 
-Paired bootstrap trên chính 234 mẫu cho chênh lệch LayoutXLM trừ Baseline có khoảng 95\% dương đối với cả Macro EM và Macro NES. Đây chỉ là bất định lấy mẫu trên test set đóng băng; nó không loại bỏ sai lệch do cấu hình, dữ liệu huấn luyện hoặc annotation khác nhau. Sau khi loại bốn mẫu có sai lệch hệ tọa độ, thứ tự tổng thể không đổi: LayoutXLM vẫn có Macro EM/NES present-only cao hơn Baseline. Kết quả sensitivity không thay thế bảng 234 mẫu mà chỉ kiểm tra độ bền của nhận định.
+Kiểm tra bootstrap trên 234 mẫu cho thấy chênh lệch giữa LayoutXLM và Baseline đạt khoảng tin cậy 95\% dương với cả Macro EM và Macro NES. Tuy nhiên, kết quả này chưa loại trừ hoàn toàn các yếu tố nhiễu từ cấu hình, dữ liệu huấn luyện và cách gán nhãn khác nhau. Khi loại bỏ bốn mẫu bị sai lệch tọa độ, thứ tự hiệu năng của các mô hình vẫn không đổi: LayoutXLM đạt kết quả cao nhất, tiếp theo là Baseline và Donut. Phân tích này nhằm kiểm tra tính ổn định của nhận định, không thay thế cho kết quả đo chính thức trên toàn bộ test set.
 
 \begin{figure}[htbp]
   \centering
@@ -32,13 +42,20 @@ Paired bootstrap trên chính 234 mẫu cho chênh lệch LayoutXLM trừ Baseli
 \label{subsec:model_analysis}
 
 \begin{itemize}
+<<<<<<< HEAD
   \item \field{store\_name}: LayoutXLM đạt EM present-only 28,12\%, cao hơn Baseline 26,34\%. NES của LayoutXLM đạt 57,08\%, cho thấy nhiều prediction gần đúng nhưng chưa khớp hoàn toàn.
   \item \field{date}: Baseline đạt EM present-only 75,46\%, cao hơn LayoutXLM 60,19\%. Cấu trúc ngày phù hợp với regex, trong khi token classifier có thể chọn nhầm một chuỗi ngày khác trong tài liệu.
   \item \field{total}: LayoutXLM đạt EM present-only 71,89\%, so với 58,06\% của Baseline. Đây là trường LayoutXLM tạo khác biệt rõ nhất trong checkpoint hiện tại.
   \item \field{address}: Cả hai phương pháp còn yếu về exact match; LayoutXLM đạt 11,66\%, Baseline đạt 1,79\%. Tuy nhiên NES của LayoutXLM đạt 60,14\%, phản ánh nhiều trường hợp lấy được một phần địa chỉ.
+=======
+  \item \field{store\_name}: LayoutXLM đạt EM present-only 28,12\%, cao hơn Baseline 26,34\% và Donut 0,00\%. NES của LayoutXLM là 57,08\%, cho thấy nhiều prediction gần đúng nhưng chưa khớp hoàn toàn.
+  \item \field{date}: Baseline đạt EM present-only 75,46\%, cao hơn LayoutXLM 60,19\%. Cấu trúc ngày phù hợp với regex, trong khi token classifier có thể chọn nhầm một chuỗi ngày khác trong tài liệu.
+  \item \field{total}: LayoutXLM đạt EM present-only 71,89\%, so với 58,06\% của Baseline. Đây là trường LayoutXLM tạo khác biệt rõ nhất trong checkpoint hiện tại.
+  \item \field{address}: Cả Baseline lẫn LayoutXLM đều yếu về exact match; LayoutXLM đạt 11,66\%, Baseline đạt 1,79\%. Tuy nhiên NES của LayoutXLM đạt 60,14\%, phản ánh khá nhiều trường hợp lấy được một phần địa chỉ.
+>>>>>>> ec28b02a0beeba1ef96bcb97c0583d324ca87f46
 \end{itemize}
 
-Các nhận định trên là mô tả kết quả, không phải chứng minh cơ chế nhân quả. Ví dụ, chênh lệch ở \field{total} có thể liên quan đến bố cục, nhưng báo cáo chưa có ablation tách riêng text, layout và visual features.
+Những nhận xét trên dựa trên kết quả thực tế đo được, chưa đi sâu phân tích nguyên nhân. Để hiểu rõ hơn cơ chế đóng góp của từng thành phần, đồ án sẽ cần thực hiện các thí nghiệm ablation nhằm tách biệt tầm ảnh hưởng của văn bản, bố cục và đặc trưng hình ảnh.
 
 % ============================================================================
 \subsection{Latency của các thành phần đã ghi nhận}
@@ -46,25 +63,33 @@ Các nhận định trên là mô tả kết quả, không phải chứng minh c
 
 \input{generated/latency_table}
 
+<<<<<<< HEAD
 \Cref{tab:latency-comparison} cho thấy Baseline và LayoutXLM có thể so sánh trực tiếp ở phạm vi sau OCR cache; Donut được đặt cùng bảng như phép đo trực tiếp từ ảnh để người đọc thấy chi phí suy luận của checkpoint hiện có. Không thể suy ra latency sản xuất từ ảnh thô cho pipeline OCR-based khi thiếu phép đo PaddleOCR + VietOCR cùng điều kiện phần cứng.
+=======
+\Cref{tab:latency-comparison} cho thấy Baseline và LayoutXLM có thể so sánh trực tiếp ở phạm vi sau OCR cache; Donut được đặt trong cùng bảng như phép đo trực tiếp từ ảnh để người đọc thấy chi phí suy luận của checkpoint hiện có. Có thể thấy phần luật của Baseline nhẹ hơn bước suy luận và hậu xử lý LayoutXLM trong điều kiện đã ghi. Tuy nhiên, không thể suy ra latency sản xuất từ ảnh thô khi chưa đo PaddleOCR + VietOCR trên cùng điều kiện phần cứng.
+>>>>>>> ec28b02a0beeba1ef96bcb97c0583d324ca87f46
 
 % ============================================================================
-\subsection{Chẩn đoán artifact Donut}
-\label{subsec:donut_diagnostic}
+\subsection{Phân tích hiệu năng Donut và hiện tượng suy sụp}
+\label{subsec:donut_performance}
 
 \input{generated/diagnostic_tables}
 
+<<<<<<< HEAD
 Dù lượt prediction Donut truyền explicit \code{generation\_max\_length=768}, Macro EM present-only vẫn ở mức 0,00\%. Checkpoint config không lưu \code{max\_length}, nên bảng chẩn đoán chỉ ghi fallback metadata 20 token nếu không override; đây không phải giới hạn inference thực tế của artifact hiện tại. Khi xem chuỗi sinh thô, mô hình lặp từ và thiếu cấu trúc thẻ cần thiết, vì vậy kết quả này nên được hiểu là model collapse của checkpoint/thiết lập hiện tại, không phải kết luận rằng hướng OCR-free nói chung kém hiệu quả.
+=======
+Dù Donut đã được suy luận với \code{generation\_max\_length=768}, Macro EM present-only vẫn ở mức 0,00\% (Macro EM all-samples đạt 5,98\% nhờ các trường ground-truth rỗng). Khi xem các chuỗi sinh thô (\code{raw\_output}), mô hình liên tục lặp lại các từ vô nghĩa hoặc sinh thiếu cấu trúc thẻ cần thiết, khiến parser trả về rỗng cho đa số trường. Đây là dấu hiệu rõ của hiện tượng suy sụp mô hình (model collapse) — điều dễ xảy ra khi huấn luyện kiến trúc sinh chuỗi tự hồi quy (autoregressive) lớn trên lượng dữ liệu biên lai nhỏ và không đồng nhất.
+>>>>>>> ec28b02a0beeba1ef96bcb97c0583d324ca87f46
 
 % ============================================================================
 \subsection{Phân tích lỗi có thể tái lập}
 \label{subsec:error_analysis}
 
-Phân tích lỗi tự động sử dụng taxonomy trong \cref{tab:error-taxonomy-repro}. Mỗi prediction sai được gán đúng một nhóm theo thứ tự quy tắc trong mã nguồn. Đây là công cụ chẩn đoán nhất quán, không phải nhãn nguyên nhân hoàn hảo.
+Phân tích lỗi tự động dựa trên phân loại lỗi trong \cref{tab:error-taxonomy-repro}. Mỗi kết quả dự đoán sai được gán vào một nhóm lỗi dựa theo bộ quy tắc định sẵn trong mã nguồn. Đây là công cụ thống kê nhất quán nhằm hỗ trợ phân tích định lượng.
 
 \begin{table}[htbp]
   \centering
-  \caption{Taxonomy lỗi được sinh tự động từ prediction artifact.}
+  \caption{Phân loại lỗi được sinh tự động từ tệp kết quả dự đoán.}
   \label{tab:error-taxonomy-repro}
   \begin{tabular}{lp{10cm}}
     \toprule
@@ -81,12 +106,20 @@ Phân tích lỗi tự động sử dụng taxonomy trong \cref{tab:error-taxono
   \end{tabular}
 \end{table}
 
+<<<<<<< HEAD
 Với LayoutXLM, \code{EMPTY\_PRED}, \code{OCR\_MISS} và \code{MODEL\_BAD} đều xuất hiện; điều này phù hợp với nhận định rằng pipeline phụ thuộc vào OCR, nhưng taxonomy tự động chưa đủ để định lượng chính xác phần hao hụt do OCR. CSV Donut vẫn cho thấy nhiều prediction rỗng, nhưng phân bố này bị chi phối bởi hiện tượng sinh lặp/model collapse và chỉ có ý nghĩa chẩn đoán artifact.
+=======
+Với LayoutXLM, các lỗi \code{EMPTY\_PRED}, \code{OCR\_MISS} và \code{MODEL\_BAD} đều xuất hiện, củng cố nhận định rằng pipeline phụ thuộc nhiều vào chất lượng OCR. Tệp kết quả dự đoán của Donut có nhiều trường rỗng, phản ánh tình trạng lặp từ và thiếu thẻ đóng/mở của checkpoint.
+>>>>>>> ec28b02a0beeba1ef96bcb97c0583d324ca87f46
 
-Các khái niệm như hallucination hoặc lỗi BIO phân mảnh chỉ được dùng trong phân tích ví dụ định tính nếu có đối chiếu ảnh, chuỗi sinh và token labels. Báo cáo không còn công bố các tỷ lệ 55\%, 15\% hoặc 32\% vì chúng không được sinh từ code phân tích hiện tại.
+Các khái niệm hallucination và lỗi BIO phân mảnh chỉ dùng khi có đối chiếu cụ thể với ảnh, chuỗi sinh và token labels.
 
 % ============================================================================
+<<<<<<< HEAD
 \subsection{Oracle OCR và câu hỏi về ảnh hưởng của OCR}
+=======
+\subsection{Định lượng ảnh hưởng của OCR qua thí nghiệm Oracle OCR}
+>>>>>>> ec28b02a0beeba1ef96bcb97c0583d324ca87f46
 \label{subsec:oracle_ocr_results}
 
 RQ3 yêu cầu đo mức ảnh hưởng của OCR lên LayoutXLM. Thí nghiệm này chỉ so sánh trên 168 mẫu MC-OCR có \code{oracle\_ocr}, tức phần test có văn bản và hộp bao ground-truth để thay thế OCR cache. Subset này loại trừ 66 mẫu \code{self\_collected} không có OCR hoàn hảo; nếu chấm gộp cả 234 mẫu, các mẫu thiếu oracle sẽ bị trả rỗng và kéo sai lệch EM trung bình.
@@ -101,7 +134,7 @@ Kết quả này cho thấy OCR là nút thắt cổ chai lớn của pipeline L
 \subsection{Demo ứng dụng}
 \label{subsec:demo}
 
-Repository có ứng dụng Gradio cho phép chọn phương pháp, tải ảnh và xem JSON cùng latency của lượt chạy. Ứng dụng được khởi chạy bằng:
+Repository có ứng dụng Gradio cho phép chọn phương pháp, tải ảnh lên và xem JSON cùng latency của lượt chạy. Ứng dụng được khởi chạy bằng:
 \begin{lstlisting}[language=bash]
 python -m receipt_ie.app.gradio_app
 \end{lstlisting}

@@ -1,7 +1,7 @@
 # Cấu hình luật cho Baseline OCR + Rule-based
 heuristics:
   store_name:
-    max_lines_to_search: 4
+    max_lines_to_search: 5
     ignore_prefixes: ["cửa hàng", "cua hang", "siêu thị", "sieu thi", "mst", "mã số thuế"]
   
   date:
