@@ -37,6 +37,9 @@ class TestNormalizeText(unittest.TestCase):
         self.assertEqual(normalize_money("0115000"), "115000")
         self.assertEqual(normalize_money("Chỉ có chữ"), "")
         self.assertEqual(normalize_money("0"), "0")
+        
+    def test_normalize_money_filters_phone_number(self):
+        self.assertEqual(normalize_money("0912345678"), "")
 
 if __name__ == "__main__":
     unittest.main()

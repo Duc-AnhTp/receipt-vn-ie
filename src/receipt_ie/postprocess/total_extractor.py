@@ -47,7 +47,11 @@ def normalize_for_match(text: str) -> str:
 
 
 def is_probably_phone(number: str) -> bool:
-    return len(number) in {10, 11} and number.startswith(("0", "84"))
+    digits = re.sub(r"[^\d]", "", number or "")
+    return (
+        re.fullmatch(r"0[3-9]\d{8}", digits) is not None
+        or re.fullmatch(r"84[3-9]\d{8}", digits) is not None
+    )
 
 
 def is_probably_tax_code(number: str) -> bool:

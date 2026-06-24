@@ -96,6 +96,11 @@ def _is_noise_number(num: str) -> bool:
     return bool(PHONE_RE.fullmatch(num) or TAX_RE.fullmatch(num))
 
 
+def _canonical_money_digits(raw_digits: str) -> str:
+    stripped = raw_digits.lstrip("0")
+    return stripped if stripped else "0"
+
+
 def normalize_money(s: str) -> str:
     """
     Chuẩn hóa chuỗi số tiền về dạng chuỗi chỉ chứa chữ số nguyên.
@@ -104,27 +109,34 @@ def normalize_money(s: str) -> str:
     s = normalize_vietnamese_text(s).lower()
     has_total_keyword = bool(TOTAL_KEYWORD_RE.search(s))
 
-    # Loại bỏ các đơn vị tiền tệ và các từ khóa liên quan.
     s = re.sub(r"(vnđ|vnd|đồng|dong|đ)", "", s)
     s = TOTAL_KEYWORD_RE.sub("", s)
 
     nums = re.findall(r"\d[\d\.,\s]*", s)
-    candidates = []
+    candidates: list[tuple[str, str]] = []
+
     for raw_num in nums:
-        num = re.sub(r"[^\d]", "", raw_num).lstrip("0")
-        if not num:
-            if "0" in raw_num:
-                candidates.append("0")
+        raw_digits = re.sub(r"[^\d]", "", raw_num)
+        if not raw_digits:
             continue
-        candidates.append(num)
+
+        normalized_digits = _canonical_money_digits(raw_digits)
+        candidates.append((raw_digits, normalized_digits))
 
     if not candidates:
         return ""
 
-    non_noise = [num for num in candidates if not _is_noise_number(num)]
+    non_noise = [
+        normalized
+        for raw_digits, normalized in candidates
+        if not _is_noise_number(raw_digits)
+    ]
+
     if non_noise:
-        candidates = non_noise
-    elif not has_total_keyword:
+        valid_candidates = non_noise
+    elif has_total_keyword:
+        valid_candidates = [normalized for _, normalized in candidates]
+    else:
         return ""
 
-    return max(candidates, key=lambda num: (len(num), int(num)))
+    return max(valid_candidates, key=lambda num: (len(num), int(num)))
