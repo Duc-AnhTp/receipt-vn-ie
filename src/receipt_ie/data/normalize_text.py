@@ -135,7 +135,13 @@ def normalize_money(s: str) -> str:
     if non_noise:
         valid_candidates = non_noise
     elif has_total_keyword:
-        valid_candidates = [normalized for _, normalized in candidates]
+        valid_candidates = [
+            normalized
+            for raw_digits, normalized in candidates
+            if not _is_noise_number(raw_digits)
+        ]
+        if not valid_candidates:
+            return ""
     else:
         return ""
 

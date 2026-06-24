@@ -41,5 +41,13 @@ class TestNormalizeText(unittest.TestCase):
     def test_normalize_money_filters_phone_number(self):
         self.assertEqual(normalize_money("0912345678"), "")
 
+    def test_phone_not_returned_as_total_with_keyword(self):
+        self.assertEqual(normalize_money("Thanh toán 0912345678"), "")
+        self.assertEqual(normalize_money("Tổng thanh toán 0935.123.456"), "")
+
+    def test_total_extracted_correctly_when_phone_present(self):
+        self.assertEqual(normalize_money("Tổng: 85.000 Hotline: 0901234567"), "85000")
+        self.assertEqual(normalize_money("Total 115000 SĐT 0912345678"), "115000")
+
 if __name__ == "__main__":
     unittest.main()

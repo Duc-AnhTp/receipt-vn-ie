@@ -18,7 +18,7 @@ Trên chế độ present-only, \model{LayoutXLM} đạt Macro EM 42,96\% và Ma
 
 \input{generated/analysis_tables}
 
-Paired bootstrap cho thấy LayoutXLM hơn Baseline +2,55 điểm EM present-only, với CI 95\% [0,80; 4,32], và hơn +8,42 điểm NES, với CI 95\% [5,70; 11,22]. Tuy nhiên, kết quả này chưa loại trừ hoàn toàn các yếu tố nhiễu từ cấu hình, dữ liệu huấn luyện và cách gán nhãn khác nhau. Khi loại bỏ bốn mẫu bị sai lệch tọa độ, thứ tự hiệu năng của các mô hình vẫn không đổi: LayoutXLM đạt kết quả cao nhất, tiếp theo là Baseline và Donut. Phân tích này nhằm kiểm tra tính ổn định của nhận định, không thay thế cho kết quả đo chính thức trên toàn bộ test set.
+Paired bootstrap 10.000 lần trên 234 mẫu cho thấy LayoutXLM hơn Baseline +2,55 điểm Macro EM (CI 95\%: [0,80; 4,32], $P(\Delta>0)=99{,}71\%$) và +8,42 điểm Macro NES (CI 95\%: [5,70; 11,22]). Tuy nhiên, kết quả này chưa loại trừ hoàn toàn các yếu tố nhiễu từ cấu hình, dữ liệu huấn luyện và cách gán nhãn khác nhau. Khi loại bỏ bốn mẫu bị sai lệch tọa độ, thứ tự hiệu năng của các mô hình vẫn không đổi: LayoutXLM đạt kết quả cao nhất, tiếp theo là Baseline và Donut. Phân tích này nhằm kiểm tra tính ổn định của nhận định, không thay thế cho kết quả đo chính thức trên toàn bộ test set.
 
 \begin{figure}[htbp]
   \centering
