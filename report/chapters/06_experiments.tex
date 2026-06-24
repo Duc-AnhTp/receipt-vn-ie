@@ -11,11 +11,7 @@ Phần này trình bày cấu hình lưu trong repository, phạm vi dữ liệu
 
 \input{generated/artifact_validity_table}
 
-<<<<<<< HEAD
 Baseline, LayoutXLM và Donut đều có đủ 234 prediction, không có bản ghi \code{status=error} và được đưa vào bảng định lượng chính. Với LayoutXLM, bốn prediction cũ dùng hộp OCR trên ảnh resize nhưng chuẩn hóa tọa độ theo kích thước ảnh thô; báo cáo giữ nguyên artifact và bổ sung sensitivity check loại bốn ID này. Với Donut, checkpoint config không lưu \code{max\_length}, nên manifest ghi fallback metadata 20 token nếu không override; lượt prediction hiện tại truyền explicit \code{generation\_max\_length=768} vào \code{generate()}. SHA-256 trong bảng khóa đúng nội dung các artifact được phân tích.
-=======
-Cả ba phương pháp Baseline, LayoutXLM và Donut đều có đủ 234 bản ghi dự đoán trên tập test, không có bản ghi nào bị lỗi (\code{status=error}), và đều được đưa vào bảng kết quả để đảm bảo tính nhất quán khi đánh giá. Riêng LayoutXLM, đồ án bổ sung phân tích độ nhạy (sensitivity check) bằng cách loại bỏ bốn mẫu bị sai lệch tọa độ ảnh. Với Donut, metadata của tệp kết quả dự đoán ghi nhận tham số sinh \code{generation\_max\_length=768}; tuy nhiên đầu ra vẫn lặp từ mạnh và rất ít cặp thẻ đóng/mở hợp lệ, nên kết quả Donut được xem như một ca khảo sát checkpoint hiện có hơn là kết luận tổng quát về toàn bộ hướng tiếp cận OCR-free. Mã hash SHA-256 trong bảng giúp khóa và đối chiếu chính xác nội dung các tệp kết quả dự đoán được phân tích.
->>>>>>> ec28b02a0beeba1ef96bcb97c0583d324ca87f46
 
 % ============================================================================
 \subsection{Môi trường và cấu hình}
@@ -89,11 +85,7 @@ Artifact prediction chỉ cho phép rút ra kết luận về thành phần th�
 \begin{itemize}
   \item Baseline: thời gian áp dụng luật và hậu xử lý trên OCR cache.
   \item LayoutXLM: thời gian suy luận mô hình từ OCR cache.
-<<<<<<< HEAD
   \item Donut: thời gian suy luận trực tiếp từ ảnh; phép đo bị ảnh hưởng bởi sinh tự hồi quy dài/lặp của checkpoint hiện tại.
-=======
-  \item Donut: thời gian suy luận trực tiếp từ ảnh đầu vào (end-to-end từ ảnh sang chuỗi).
->>>>>>> ec28b02a0beeba1ef96bcb97c0583d324ca87f46
 \end{itemize}
 
 Thời gian chạy PaddleOCR và VietOCR từ ảnh thô không được ghi đồng nhất trong các prediction hiện có. Vì vậy, Baseline và LayoutXLM có thể so sánh trực tiếp với nhau ở phạm vi sau OCR cache, còn Donut được báo cáo riêng trong cùng bảng như thời gian suy luận trực tiếp từ ảnh. Báo cáo không cộng thêm một hằng số OCR giả định và không gọi các phép đo này là so sánh end-to-end đồng nhất từ ảnh thô.
@@ -108,3 +100,7 @@ Các thực nghiệm chạy lại trên Kaggle đã ghi nhận đầy đủ tệ
   \item \textbf{LayoutXLM (oracle\_ocr):} Chạy đầy đủ 80 bước (20 epochs) trên tập dữ liệu MC-OCR rút gọn có ground-truth OCR (256 mẫu train).
 \end{itemize}
 Các log huấn luyện chi tiết này hiện được lưu trong thư mục \code{outputs/training\_logs/} làm bằng chứng kiểm chứng và tái lập kết quả.
+
+\begin{notebox}[Tiêu chí checkpoint và artifact đã đóng băng]
+Mã huấn luyện \model{LayoutXLM} hiện tại đã được chỉnh để các lần huấn luyện sau chọn checkpoint tốt nhất theo entity-level F1 từ \code{seqeval}; fallback token-accuracy chỉ được phép bật bằng \code{--allow\_metric\_fallback} cho smoke test. Tuy nhiên, các bảng định lượng trong báo cáo vẫn lấy từ prediction artifact đã đóng băng và không rerun training trong đợt chốt này. Nếu artifact lịch sử được sinh từ checkpoint chọn theo loss, kết quả cần được diễn giải theo checkpoint/setting lịch sử đó thay vì ngầm hiểu là đã được sinh từ checkpoint chọn theo F1.
+\end{notebox}

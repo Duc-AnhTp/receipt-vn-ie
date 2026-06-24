@@ -209,9 +209,9 @@ Quy trình xử lý gồm hai bước chính:
 Cách trích xuất cho từng trường như sau:
 \begin{itemize}
   \item \textbf{Tên cửa hàng (\field{store\_name}):} Chấm điểm tối đa 5 dòng đầu theo vị trí, tỷ lệ chữ hoa và độ dài. Các dòng chứa từ khóa hóa đơn, mã số thuế, điện thoại hoặc địa chỉ, dòng quá ngắn và dòng có tỷ lệ chữ số cao bị loại.
-  \item \textbf{Ngày tháng (\field{date}):} Duyệt từ trên xuống, chuẩn hóa từng dòng và lấy ngày hợp lệ đầu tiên trong khoảng năm 2010--2030. Bộ chuẩn hóa hỗ trợ dấu \code{/}, \code{-}, \code{.} và năm hai chữ số.
+  \item \textbf{Ngày tháng (\field{date}):} Duyệt từ trên xuống, chuẩn hóa từng dòng và lấy ngày hợp lệ đầu tiên trong khoảng năm 1990--2040 theo hằng số \code{VALID\_YEAR\_RANGE}. Bộ chuẩn hóa hỗ trợ dấu \code{/}, \code{-}, \code{.} và năm hai chữ số.
   \item \textbf{Tổng tiền (\field{total}):} Duyệt từ cuối hóa đơn lên để ưu tiên từ khóa tổng tiền gần phần thanh toán. Với mỗi dòng có từ khóa, xét dòng đó và tối đa một dòng kế tiếp, lọc số điện thoại, mã số thuế, ngày và giá trị dưới 1.000 rồi chọn số tiền lớn nhất. Nếu không có từ khóa, thuật toán tìm ứng viên hợp lệ trong một phần ba cuối hóa đơn.
-  \item \textbf{Địa chỉ (\field{address}):} Tìm dòng có từ khóa địa chỉ nhưng không chứa ngày, điện thoại, mã số thuế hoặc từ khóa thanh toán. Nếu dòng kế tiếp không bị chặn và có nội dung đủ dài, nối thêm tối đa dòng này trước khi chuẩn hóa.
+  \item \textbf{Địa chỉ (\field{address}):} Tìm dòng có từ khóa địa chỉ nhưng không chứa ngày, điện thoại, mã số thuế hoặc từ khóa thanh toán. Nếu các dòng kế tiếp không bị chặn và có nội dung đủ dài, nối thêm tối đa ba dòng kế tiếp trước khi chuẩn hóa.
 \end{itemize}
 Các quy tắc trên được xây dựng dựa trên quan sát thực tế trên tập
 dữ liệu biên lai tiếng Việt. \Cref{tab:baseline_rules} tóm tắt các quy tắc
@@ -231,7 +231,7 @@ chính của từng trường.
     \addlinespace
     \field{date}
       & Tìm chuỗi khớp regex ngày tháng, bỏ qua các từ khoá:
-        \code{ngày}, \code{date}, \code{time}. \\
+        \code{ngày}, \code{date}, \code{time}, và chỉ giữ năm trong khoảng 1990--2040. \\
     \addlinespace
     \field{total}
       & Duyệt từ cuối lên, xét dòng có từ khóa và một dòng kế tiếp; nếu
@@ -239,7 +239,7 @@ chính của từng trường.
     \addlinespace
     \field{address}
       & Tìm dòng có từ khóa địa chỉ, loại ngữ cảnh bị chặn và nối tối đa
-        một dòng kế tiếp hợp lệ. \\
+        ba dòng kế tiếp hợp lệ. \\
     \bottomrule
   \end{tabularx}
 \end{table}
@@ -351,15 +351,9 @@ Quy trình suy luận:
   \item Kết quả được ghi vào tệp JSON.
 \end{enumerate}
 
-<<<<<<< HEAD
 \begin{warnbox}[Trạng thái artifact Donut]
 Checkpoint Donut hiện tại không lưu \code{max\_length} trong \code{generation\_config.json}; vì vậy manifest chỉ ghi fallback metadata là 20 token trong trường hợp không override. Lượt prediction được dùng trong báo cáo hiện tại có sidecar/code cho thấy đã truyền explicit \code{generation\_max\_length=768} vào \code{generate()}. Do đó, kết quả Donut phản ánh hiện tượng sinh lặp và thiếu cặp thẻ hợp lệ của checkpoint hiện có, thay vì được diễn giải như bằng chứng rằng inference thực tế bị giới hạn ở 20 token.
 \end{warnbox}
-=======
-\begin{notebox}[Cấu hình suy luận Donut]
-Checkpoint Donut hiện tại không lưu \code{max\_length} trong \code{generation\_config.json}; vì vậy manifest chỉ ghi nhận fallback metadata là 20 token trong trường hợp không override. Lượt prediction được dùng trong báo cáo hiện tại có sidecar/code cho thấy đã truyền explicit \code{generation\_max\_length=768} vào \code{generate()}. Do đó, kết quả Donut trong báo cáo phản ánh hiện tượng sinh lặp và thiếu cặp thẻ hợp lệ của checkpoint hiện có, thay vì được diễn giải như bằng chứng rằng inference thực tế bị giới hạn ở 20 token.
-\end{notebox}
->>>>>>> ec28b02a0beeba1ef96bcb97c0583d324ca87f46
 
 
 % ============================================================================

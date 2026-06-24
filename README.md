@@ -50,13 +50,9 @@ receipt-vn-ie/
 
 ## 🚀 Cài Đặt và Khởi Chạy
 
-<<<<<<< HEAD
 Yêu cầu Python >= 3.10 để khớp cấu hình trong `pyproject.toml`.
 
-=======
 ### 1. Chuẩn bị môi trường
-Khuyến nghị sử dụng môi trường ảo (Virtual Environment) hoặc Conda:
->>>>>>> ec28b02a0beeba1ef96bcb97c0583d324ca87f46
 ```bash
 git clone https://github.com/Duc-AnhTp/receipt-vn-ie.git
 cd receipt-vn-ie
@@ -114,23 +110,7 @@ bash scripts/06_error_analysis.sh     # Trích xuất và xuất file phân tíc
 
 Đánh giá trên tập test **234 mẫu**, phân chia theo tỷ lệ 70/15/15. Seed = 42.
 
-### 1. Kết quả Present-Only (Chỉ tính trên các trường tồn tại thực tế)
-*Đây là thang đo phản ánh chính xác nhất năng lực trích xuất khi trường thông tin có mặt trên hóa đơn.*
-
-| Phương pháp | Store EM | Date EM | Total EM | Address EM | Macro EM | Macro NES | Macro CER |
-|:---|---:|---:|---:|---:|---:|---:|---:|
-| **Baseline (Rule-based)** | 26.34 | 75.46 | 58.06 | 1.79 | **40.41** | 55.47 | 56.81 |
-| **Donut** | 0.00 | 0.00 | 0.00 | 0.00 | **0.00** | 0.08 | 334.39 |
-| **VietOCR + LayoutXLM** | 28.12 | 60.19 | 71.89 | 11.66 | **42.96** | 63.89 | 38.79 |
-
-### 2. Kết quả All-Samples (Tính trên toàn bộ mẫu, bao gồm cả trường rỗng)
-| Phương pháp | Store EM | Date EM | Total EM | Address EM | Macro EM | Macro NES | Macro CER |
-|:---|---:|---:|---:|---:|---:|---:|---:|
-| **Baseline (Rule-based)** | 25.21 | 74.79 | 54.27 | 4.70 | **39.74** | 54.00 | 57.71 |
-| **Donut** | 4.27 | 7.69 | 7.26 | 4.70 | **5.98** | 6.05 | 318.39 |
-| **VietOCR + LayoutXLM** | 29.06 | 61.11 | 71.37 | 13.68 | **43.80** | 63.74 | 38.82 |
-
-*(Đơn vị: %. Chênh lệch của Donut do mô hình gặp hiện tượng model collapse).*
+Kết quả chi tiết được sinh tự động trong `report/generated/results_tables.tex` và trình bày trong báo cáo PDF.
 
 ## 🌐 Chạy Web Demo (Gradio)
 

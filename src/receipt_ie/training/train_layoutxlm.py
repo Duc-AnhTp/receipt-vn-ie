@@ -104,18 +104,15 @@ def main():
     )
     parser.add_argument("--epochs", type=int, default=None, help="Ghi đè số epochs từ config file")
     parser.add_argument("--max_steps", type=int, default=None, help="Ghi đè số steps huấn luyện tối đa")
-<<<<<<< HEAD
     parser.add_argument(
         "--allow_metric_fallback",
         action="store_true",
         help="Chỉ dùng cho smoke test: fallback token accuracy nếu seqeval không khả dụng.",
     )
-=======
     parser.add_argument("--train_batch_size", type=int, default=None, help="Ghi đè batch size huấn luyện per device")
     parser.add_argument("--eval_batch_size", type=int, default=None, help="Ghi đè batch size đánh giá per device")
     parser.add_argument("--gradient_accumulation_steps", type=int, default=None, help="Ghi đè số bước tích lũy gradient")
     parser.add_argument("--gradient_checkpointing", action="store_true", default=None, help="Bật gradient checkpointing để tiết kiệm VRAM")
->>>>>>> ec28b02a0beeba1ef96bcb97c0583d324ca87f46
     args = parser.parse_args()
 
     global ALLOW_METRIC_FALLBACK
