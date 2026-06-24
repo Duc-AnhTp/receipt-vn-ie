@@ -49,8 +49,8 @@ import os, subprocess, shutil
 os.chdir("/kaggle/working")
 subprocess.run(["rm", "-rf", "receipt-vn-ie"], check=False)
 
-# 2. Clone code (nhánh mới)
-!git clone -b experiment/retrain-v2 https://github.com/Duc-AnhTp/receipt-vn-ie.git
+# 2. Clone code
+!git clone -b main https://github.com/Duc-AnhTp/receipt-vn-ie.git
 os.chdir("/kaggle/working/receipt-vn-ie")
 
 # 3. Liên kết dữ liệu
@@ -253,7 +253,7 @@ import os
 os.chdir("/kaggle/working")
 !rm -rf receipt-vn-ie
 
-!git clone -b experiment/retrain-v2 https://github.com/Duc-AnhTp/receipt-vn-ie.git
+!git clone -b main https://github.com/Duc-AnhTp/receipt-vn-ie.git
 os.chdir("/kaggle/working/receipt-vn-ie")
 
 # Liên kết dữ liệu
@@ -316,12 +316,11 @@ if state_files:
 ### Cell 4: Inference Oracle LayoutXLM
 
 > **⚠️ LƯU Ý:** Inference oracle cần đọc trường `oracle_ocr` từ test.jsonl thay vì `ocr_cache`.
-> Code inference hiện tại (`infer_layoutxlm.py`) CHƯA hỗ trợ mode oracle.
-> Cần viết script inference riêng hoặc sửa code trước khi push lên nhánh.
-> Xem phần "Chuẩn bị trước khi chạy" ở cuối tài liệu.
+> Pipeline hiện tại đã tích hợp sẵn script này.
 
 ```python
-# Script inference oracle (sau khi đã thêm vào repo)
+# Script inference oracle
+
 !python -m receipt_ie.inference.infer_layoutxlm_oracle \
   --checkpoint checkpoints/layoutxlm/receipt_ie/oracle_ocr/best_model \
   --test_jsonl data/processed/test.jsonl \
@@ -360,7 +359,7 @@ import os
 os.chdir("/kaggle/working")
 !rm -rf receipt-vn-ie
 
-!git clone -b experiment/retrain-v2 https://github.com/Duc-AnhTp/receipt-vn-ie.git
+!git clone -b main https://github.com/Duc-AnhTp/receipt-vn-ie.git
 os.chdir("/kaggle/working/receipt-vn-ie")
 
 # Liên kết dữ liệu
@@ -482,100 +481,16 @@ Sau khi `scripts/generate_report_artifacts.py` chạy xong, các file trong
 ```bash
 git add -A
 git commit -m "retrain v2: fix donut inference, add training logs, oracle ocr"
-git push origin experiment/retrain-v2
+git push origin main
 ```
 
----
 
-## Chuẩn bị trước khi chạy Notebook 2 (Oracle OCR)
-
-Code inference hiện tại (`infer_layoutxlm.py`) đọc OCR cache, **không hỗ trợ oracle mode**.
-Cần thêm script inference cho oracle. Có 2 cách:
-
-### Cách 1 (Đơn giản): Viết script nhỏ đọc `oracle_ocr` từ test.jsonl
-
-Tạo file `src/receipt_ie/inference/infer_layoutxlm_oracle.py` trước khi push nhánh:
-
-```python
-"""Inference LayoutXLM sử dụng oracle OCR (ground-truth text + boxes)."""
-import torch, json, time, os, argparse
-from pathlib import Path
-from PIL import Image
-from tqdm import tqdm
-
-from receipt_ie.inference.infer_layoutxlm import LayoutXLMExtractor
-from receipt_ie.inference.artifact_metadata import write_inference_sidecar
-
-
-def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--checkpoint", default="checkpoints/layoutxlm/receipt_ie/oracle_ocr/best_model")
-    parser.add_argument("--test_jsonl", default="data/processed/test.jsonl")
-    parser.add_argument("--output_jsonl", default="outputs/predictions/layoutxlm_oracle_test.jsonl")
-    parser.add_argument("--limit", type=int, default=None)
-    args = parser.parse_args()
-
-    extractor = LayoutXLMExtractor()
-    extractor.load(args.checkpoint)
-
-    samples = [json.loads(l) for l in open(args.test_jsonl, encoding="utf-8") if l.strip()]
-    if args.limit:
-        samples = samples[:args.limit]
-
-    # Chỉ xử lý mẫu có oracle_ocr
-    oracle_samples = [s for s in samples if s.get("oracle_ocr")]
-    print(f"Oracle OCR: {len(oracle_samples)}/{len(samples)} mẫu có dữ liệu")
-
-    out_path = Path(args.output_jsonl)
-    out_path.parent.mkdir(parents=True, exist_ok=True)
-
-    count = 0
-    with open(out_path, "w", encoding="utf-8") as out_f:
-        for sample in tqdm(samples, desc="Oracle Inference"):
-            record = {
-                "id": sample["id"], "method": "layoutxlm_oracle",
-                "prediction": {}, "normalized_prediction": {},
-                "latency_model_ms": 0.0, "latency_e2e_ms": 0.0,
-                "status": "ok", "error": None,
-            }
-            try:
-                oracle_data = sample.get("oracle_ocr", [])
-                if not oracle_data:
-                    # Mẫu không có oracle → trả rỗng (không dùng OCR cache)
-                    record["prediction"] = {"store_name": "", "date": "", "total": "", "address": ""}
-                    record["normalized_prediction"] = record["prediction"].copy()
-                else:
-                    img = Image.open(sample["image_path"]).convert("RGB")
-                    words = [w["text"] for w in oracle_data]
-                    boxes = [w["box"] for w in oracle_data]
-                    res = extractor.predict_from_ocr(img, words, boxes)
-                    record["prediction"] = res["prediction"]
-                    record["normalized_prediction"] = res["normalized_prediction"]
-                    record["latency_model_ms"] = round(res["latency_model_ms"], 2)
-                    record["latency_e2e_ms"] = round(res["latency_model_ms"], 2)
-            except Exception as e:
-                record["status"] = "error"
-                record["error"] = str(e)
-
-            out_f.write(json.dumps(record, ensure_ascii=False) + "\n")
-            count += 1
-
-    print(f"Saved {count} predictions to {args.output_jsonl}")
-
-
-if __name__ == "__main__":
-    main()
-```
-
-> **Push file này vào nhánh `experiment/retrain-v2` TRƯỚC KHI chạy Notebook 2.**
 
 ---
 
 ## Checklist tổng hợp
 
 ### Trước khi chạy Kaggle:
-- [ ] Push nhánh `experiment/retrain-v2` lên GitHub
-- [ ] Tạo file `infer_layoutxlm_oracle.py` (nếu làm Notebook 2)
 - [ ] Upload `donut_best.zip` lên Kaggle Dataset (nếu chưa có)
 
 ### Notebook 1 (BẮT BUỘC):

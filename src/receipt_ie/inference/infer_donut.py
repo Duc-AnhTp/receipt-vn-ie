@@ -47,9 +47,11 @@ class DonutExtractor(BaseExtractor):
         self,
         task_token: str = "<s_receipt_ie>",
         generation_max_length: int = DEFAULT_GENERATION_MAX_LENGTH,
+        num_beams: int = 2,
     ):
         self.task_token = task_token
         self.generation_max_length = int(generation_max_length)
+        self.num_beams = int(num_beams)
         self.model = None
         self.processor = None
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -107,10 +109,7 @@ class DonutExtractor(BaseExtractor):
         decoder_input_ids = decoder_input_ids.to(self.device)
         
         # 3. Sinh chuỗi XML kết quả
-        num_beams = getattr(self.model.generation_config, "num_beams", 2)
-        # Đảm bảo num_beams luôn >= 2 để kích hoạt Beam Search
-        if num_beams is None or num_beams < 2:
-            num_beams = 2
+        num_beams = self.num_beams
             
         with torch.no_grad():
             outputs = self.model.generate(
@@ -178,6 +177,12 @@ def parse_args():
         help="Explicit generation limit; default is 768 tokens.",
     )
     parser.add_argument(
+        "--num_beams",
+        type=int,
+        default=2,
+        help="Number of beams for generation.",
+    )
+    parser.add_argument(
         "--allow_overwrite",
         action="store_true",
         help="Allow overwriting an existing output artifact.",
@@ -211,6 +216,7 @@ def main():
     
     extractor = DonutExtractor(
         generation_max_length=args.generation_max_length,
+        num_beams=args.num_beams,
     )
     extractor.load(args.checkpoint)
     
@@ -276,6 +282,7 @@ def main():
         prediction_count=count,
         inference_arguments={
             "generation_max_length": args.generation_max_length,
+            "num_beams": args.num_beams,
             "task_token": extractor.task_token,
         },
     )

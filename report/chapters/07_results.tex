@@ -54,7 +54,7 @@ Những nhận xét trên dựa trên kết quả thực tế đo được, chư
 
 \input{generated/diagnostic_tables}
 
-Dù lượt prediction Donut truyền explicit \code{generation\_max\_length=768}, Macro EM present-only vẫn ở mức 0,00\%. Checkpoint config không lưu \code{max\_length}, nên bảng chẩn đoán chỉ ghi fallback metadata 20 token nếu không override; đây không phải giới hạn inference thực tế của artifact hiện tại. Khi xem chuỗi sinh thô, mô hình lặp từ và thiếu cấu trúc thẻ cần thiết, vì vậy kết quả này nên được hiểu là model collapse của checkpoint/thiết lập hiện tại, không phải kết luận rằng hướng OCR-free nói chung kém hiệu quả.
+Dù lượt prediction Donut truyền explicit \code{generation\_max\_length=768}, Macro EM present-only vẫn ở mức 0,00\%. Checkpoint config không lưu \code{max\_length}, nên bảng chẩn đoán chỉ ghi fallback metadata 20 token nếu không override; đây không phải giới hạn inference thực tế của artifact hiện tại. Khi xem chuỗi sinh thô, mô hình lặp từ và thiếu cấu trúc thẻ cần thiết, vì vậy kết quả này nên được hiểu là model collapse của checkpoint/thiết lập hiện tại. Điểm số của Donut ở đây chỉ có ý nghĩa như một thực nghiệm thất bại, không phải benchmark ngang hàng công bằng hay đại diện cho hướng tiếp cận OCR-free nói chung.
 
 % ============================================================================
 \subsection{Phân tích lỗi có thể tái lập}
@@ -89,7 +89,7 @@ Các khái niệm hallucination và lỗi BIO phân mảnh chỉ dùng khi có �
 \subsection{Oracle OCR và câu hỏi về ảnh hưởng của OCR}
 \label{subsec:oracle_ocr_results}
 
-RQ3 yêu cầu đo mức ảnh hưởng của OCR lên LayoutXLM. Thí nghiệm này chỉ so sánh trên 168 mẫu MC-OCR có \code{oracle\_ocr}, tức phần test có văn bản và hộp bao ground-truth để thay thế OCR cache. Subset này loại trừ 66 mẫu \code{self\_collected} không có OCR hoàn hảo; nếu chấm gộp cả 234 mẫu, các mẫu thiếu oracle sẽ bị trả rỗng và kéo sai lệch EM trung bình.
+RQ3 yêu cầu đo mức ảnh hưởng của OCR lên LayoutXLM. Thí nghiệm này được thực thi bằng kịch bản suy luận riêng \path{src/receipt_ie/inference/infer_layoutxlm_oracle.py}, đọc trực tiếp ground-truth OCR từ dataset để thay thế hoàn toàn đường ống OCR. Phép so sánh này chỉ dùng 168 mẫu MC-OCR có sẵn \code{oracle\_ocr}. Subset này phải loại trừ 66 mẫu \code{self\_collected} vì chúng không có OCR hoàn hảo; nếu chấm gộp cả 234 mẫu, các mẫu thiếu oracle sẽ trả rỗng và kéo sai lệch EM trung bình xuống.
 
 \input{generated/oracle_subset_table}
 

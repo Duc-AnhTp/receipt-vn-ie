@@ -11,7 +11,7 @@ Phần này trình bày cấu hình lưu trong repository, phạm vi dữ liệu
 
 \input{generated/artifact_validity_table}
 
-Baseline, LayoutXLM và Donut đều có đủ 234 prediction, không có bản ghi \code{status=error} và được đưa vào bảng định lượng chính. Với LayoutXLM, bốn prediction cũ dùng hộp OCR trên ảnh resize nhưng chuẩn hóa tọa độ theo kích thước ảnh thô; báo cáo giữ nguyên artifact và bổ sung sensitivity check loại bốn ID này. Với Donut, checkpoint config không lưu \code{max\_length}, nên manifest ghi fallback metadata 20 token nếu không override; lượt prediction hiện tại truyền explicit \code{generation\_max\_length=768} vào \code{generate()}. SHA-256 trong bảng khóa đúng nội dung các artifact được phân tích.
+Baseline, LayoutXLM và Donut đều có đủ 234 prediction, không có bản ghi \code{status=error} và được đưa vào bảng định lượng chính. Với LayoutXLM, bốn prediction cũ dùng hộp OCR trên ảnh resize nhưng chuẩn hóa tọa độ theo kích thước ảnh thô; báo cáo giữ nguyên artifact và bổ sung sensitivity check loại bốn ID này. Với Donut, checkpoint config không lưu \code{max\_length}, nên manifest ghi fallback metadata 20 token nếu không override; lượt prediction hiện tại truyền explicit \code{generation\_max\_length=768} vào \code{generate()}. Cần nhấn mạnh, Donut trong dự án này là một thử nghiệm chưa hội tụ và không ổn định do giới hạn tài nguyên huấn luyện, không phải đại diện công bằng cho toàn bộ hướng tiếp cận OCR-free. SHA-256 trong bảng khóa đúng nội dung các artifact được phân tích.
 
 % ============================================================================
 \subsection{Môi trường và cấu hình}

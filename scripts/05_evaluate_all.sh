@@ -3,12 +3,18 @@ set -euo pipefail
 
 echo "=== Derive evaluation artifacts from frozen predictions ==="
 
+PREDS=(
+  "outputs/predictions/baseline_test.jsonl"
+  "outputs/predictions/layoutxlm_test.jsonl"
+  "outputs/predictions/donut_test.jsonl"
+)
+if [ -f "outputs/predictions/layoutxlm_oracle_test.jsonl" ]; then
+  PREDS+=("outputs/predictions/layoutxlm_oracle_test.jsonl")
+fi
+
 python -m receipt_ie.metrics.summarize_outputs \
   --gold data/processed/test.jsonl \
-  --pred \
-    outputs/predictions/baseline_test.jsonl \
-    outputs/predictions/layoutxlm_test.jsonl \
-    outputs/predictions/donut_test.jsonl \
+  --pred "${PREDS[@]}" \
   --metrics_output outputs/metrics/combined_metrics.json \
   --latency_output outputs/metrics/latency_by_method.json
 
