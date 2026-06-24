@@ -112,7 +112,7 @@ def normalize_money(s: str) -> str:
     s = re.sub(r"(vnđ|vnd|đồng|dong|đ)", "", s)
     s = TOTAL_KEYWORD_RE.sub("", s)
 
-    nums = re.findall(r"\d[\d\.,\s]*", s)
+    nums = re.findall(r"\d[\d\.,]*", s)
     candidates: list[tuple[str, str]] = []
 
     for raw_num in nums:

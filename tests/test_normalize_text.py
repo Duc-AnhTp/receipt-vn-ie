@@ -49,5 +49,8 @@ class TestNormalizeText(unittest.TestCase):
         self.assertEqual(normalize_money("Tổng: 85.000 Hotline: 0901234567"), "85000")
         self.assertEqual(normalize_money("Total 115000 SĐT 0912345678"), "115000")
 
+    def test_total_does_not_concat_money_and_phone_when_only_space_between(self):
+        self.assertEqual(normalize_money("Total 115000 0912345678"), "115000")
+
 if __name__ == "__main__":
     unittest.main()
