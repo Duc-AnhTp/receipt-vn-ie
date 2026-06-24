@@ -1,12 +1,12 @@
 \section{Phương pháp thực hiện}
 \label{sec:methodology}
 
-Báo cáo sử dụng ba hướng tiếp cận (pipeline) khác nhau cho bài toán trích xuất thông tin biên lai tiếng Việt: phương pháp Baseline dựa trên biểu thức chính quy, mô hình sinh End-to-End Donut, và mô hình phân loại chuỗi LayoutXLM kết hợp với VietOCR. Phần này đi vào thiết kế và cách hoạt động cụ thể của từng pipeline.
+Báo cáo so sánh ba hướng tiếp cận (pipeline) khác nhau cho bài toán trích xuất thông tin biên lai tiếng Việt: phương pháp Baseline dựa trên luật, mô hình sinh end-to-end Donut, và mô hình đa phương thức LayoutXLM kết hợp với VietOCR. Nội dung tiếp theo trình bày chi tiết thiết kế và quy trình hoạt động của từng pipeline.
 
 \subsection{Tổng quan kiến trúc hệ thống}
 \label{subsec:system_overview}
 
-Hệ thống được thiết kế theo dạng module hóa, cho phép kiểm thử và so sánh từng kiến trúc một cách độc lập. Sơ đồ tổng quan được thể hiện trong \cref{fig:pipeline_overview}.
+Hệ thống được cấu trúc theo dạng các module độc lập, cho phép kiểm thử và đánh giá từng kiến trúc một cách riêng biệt. Sơ đồ tổng quan của các pipeline được thể hiện trong \cref{fig:pipeline_overview}.
 Đầu vào là ảnh biên lai, đầu ra là tệp JSON chứa bốn trường:
 \field{store\_name}, \field{date}, \field{total}, \field{address}.
 
@@ -275,7 +275,7 @@ Ví dụ chuỗi đích cho một biên lai:
 \subsubsection{Cấu hình huấn luyện}
 \label{subsubsec:donut_training}
 
-Các siêu tham số được cấu hình để phù hợp với GPU Tesla T4 16GB. Cụ thể, batch size thực tế là 2, kết hợp với tích lũy gradient 8 bước để đạt batch size hiệu dụng bằng 16. Cấu hình này được chọn dựa trên tài nguyên phần cứng sẵn có và chưa được tối ưu hóa siêu tham số sâu hơn.
+Cấu hình siêu tham số huấn luyện được thiết lập tương thích với tài nguyên GPU Tesla T4 16GB. Cụ thể, batch size thực tế được đặt là 2 kết hợp với tích lũy gradient 8 bước nhằm đạt batch size hiệu dụng bằng 16. Thiết lập này chủ yếu dựa trên giới hạn phần cứng sẵn có và chưa trải qua các lượt tối ưu hóa tham số nâng cao.
 \Cref{tab:donut_config} liệt kê cấu hình huấn luyện của mô hình
 \model{Donut}.
 

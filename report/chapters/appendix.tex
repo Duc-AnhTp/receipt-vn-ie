@@ -3,7 +3,7 @@
 \section{Mẫu dữ liệu JSONL thống nhất}
 \label{appendix:jsonl}
 
-Phụ lục này trình bày cấu trúc dữ liệu tệp tin JSONL thống nhất được thiết kế để chuẩn hóa đầu vào cho toàn bộ các pipeline xử lý và huấn luyện trong đồ án. Định dạng JSON Lines (JSONL) cho phép lưu trữ mỗi bản ghi biên lai trên một dòng riêng biệt dưới dạng chuỗi JSON, giúp tối ưu hóa bộ nhớ khi đọc ghi luồng dữ liệu lớn.
+Phụ lục này trình bày cấu trúc dữ liệu của tệp tin JSONL thống nhất nhằm chuẩn hóa đầu vào cho toàn bộ các pipeline xử lý và huấn luyện trong đồ án. Định dạng JSON Lines (JSONL) hỗ trợ lưu trữ mỗi bản ghi biên lai trên một dòng riêng biệt dưới dạng chuỗi JSON, giúp tối ưu hóa bộ nhớ khi đọc ghi luồng dữ liệu lớn.
 
 Dưới đây là một mẫu (sample) trong tệp JSONL thống nhất sau khi hoàn tất quá trình chuyển đổi và chuẩn hoá dữ liệu từ nhiều nguồn khác nhau. Mỗi dòng trong tệp JSONL tương ứng với một biên lai, bao gồm đường dẫn ảnh, kích thước, nhãn gốc (\code{raw\_target}) và nhãn đã chuẩn hoá (\code{target}).
 
@@ -72,7 +72,7 @@ receipt-vn-ie/
 \section{Cấu hình huấn luyện đầy đủ}
 \label{appendix:configs}
 
-Phần này trình bày các tệp cấu hình YAML quan trọng được lưu trong thư mục \code{configs/}. Với Donut và LayoutXLM, đây là cấu hình huấn luyện/suy luận được đối chiếu trong báo cáo. Với Baseline, tệp YAML ghi lại luật heuristic trong repo; artifact đánh giá hiện tại vẫn lấy một số mặc định trực tiếp từ mã nguồn, được ghi chú riêng ở cuối mục.
+Dưới đây là các tệp cấu hình YAML được lưu trữ trong thư mục \code{configs/}. Với Donut và LayoutXLM, đây là các cấu hình huấn luyện và suy luận tương ứng. Với Baseline, tệp YAML ghi lại các quy tắc heuristic đang áp dụng; các chi tiết đánh giá cụ thể khác được ghi chú riêng ở cuối mục.
 
 \subsection{Cấu hình \model{Donut} (\code{donut.yaml})}
 \label{appendix:config-donut}

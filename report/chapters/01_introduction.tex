@@ -2,7 +2,7 @@
 \section{Tổng quan đề tài}
 \label{sec:introduction}
 
-Chương này giới thiệu bối cảnh của đề tài, lý do chọn bài toán tự động xử lý biên lai tiếng Việt, các câu hỏi nghiên cứu, mục tiêu đo lường, phạm vi hệ thống và những đóng góp thực tiễn đạt được.
+Báo cáo này tập trung vào bài toán trích xuất thông tin then chốt từ biên lai tiếng Việt. Dưới đây là bối cảnh đề tài, câu hỏi nghiên cứu, mục tiêu đo lường, phạm vi triển khai cùng cấu trúc tổng quát của đồ án.
 
 \subsection{Đặt vấn đề}
 \label{subsec:problem-statement}
@@ -15,15 +15,15 @@ Hiện tại có hai hướng tiếp cận chính cho bài toán này:
   \item \textbf{Pipeline không dùng OCR trung gian} (như mô hình sinh end-to-end \model{Donut}~\cite{kim2022donut}): Dùng mạng Transformer sinh trực tiếp chuỗi có cấu trúc từ ảnh đầu vào, không cần module nhận dạng văn bản trung gian.
 \end{itemize}
 
-So sánh hai hướng tiếp cận này trên cùng tập kiểm thử sẽ cho thấy ưu nhược điểm của từng checkpoint. Dù vậy, một phép so sánh kiến trúc hoàn toàn công bằng còn cần kiểm soát cả lượng dữ liệu và mức annotation giống nhau.
+So sánh hai hướng tiếp cận này trên cùng tập kiểm thử sẽ làm rõ ưu nhược điểm của từng mô hình trong thực tế. Dù vậy, để so sánh hoàn toàn công bằng giữa các kiến trúc, cần kiểm soát cả lượng dữ liệu và mức độ gán nhãn đồng nhất.
 
 \subsection{Câu hỏi nghiên cứu}
 \label{subsec:research-questions}
 
 Đồ án đặt ra bốn câu hỏi nghiên cứu chính để định hướng thực nghiệm và đánh giá:
 \begin{itemize}
-  \item \textbf{RQ1:} Trong điều kiện dữ liệu có OCR thực tế, mô hình OCR-based \model{LayoutXLM} cải thiện như thế nào so với Baseline dựa trên luật?
-  \item \textbf{RQ2:} Mô hình OCR-free \model{Donut} hoạt động ra sao khi huấn luyện trên tập biên lai tiếng Việt nhỏ và không đồng nhất?
+  \item \textbf{RQ1:} Trong điều kiện dữ liệu thực tế, mô hình dựa trên OCR \model{LayoutXLM} cải thiện hiệu năng như thế nào so với Baseline dựa trên luật?
+  \item \textbf{RQ2:} Mô hình không dùng OCR trung gian \model{Donut} hoạt động ra sao khi huấn luyện trên tập biên lai tiếng Việt nhỏ và không đồng nhất?
   \item \textbf{RQ3:} Chất lượng OCR ảnh hưởng đến hiệu năng của \model{LayoutXLM} ở mức nào?
   \item \textbf{RQ4:} Chi phí suy luận của từng pipeline khác nhau ra sao trong phạm vi thành phần đã được ghi nhận?
 \end{itemize}
@@ -38,7 +38,7 @@ Hiệu năng các phương pháp được đo trên cùng tập kiểm thử đ�
   \item \textbf{Exact Match (EM):} Tỷ lệ dự đoán khớp chính xác tuyệt đối từng ký tự với nhãn thật sau chuẩn hóa.
   \item \textbf{Normalized Edit Similarity (NES):} Đo độ tương đồng chuỗi ký tự dựa trên khoảng cách Levenshtein chuẩn hóa.
   \item \textbf{Character Error Rate (CER):} Tỷ lệ lỗi ký tự, đo lường chi tiết sai lệch chữ viết.
-  \item \textbf{Latency thành phần:} Thời gian được ghi trong prediction artifact; phạm vi bắt đầu khác nhau giữa pipeline OCR-based và Donut.
+  \item \textbf{Latency thành phần:} Thời gian được ghi trong prediction artifact; phạm vi bắt đầu khác nhau giữa pipeline dựa trên OCR và Donut.
 \end{itemize}
 
 \subsection{Phạm vi đề tài}

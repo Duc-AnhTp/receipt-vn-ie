@@ -1,7 +1,7 @@
 \section{Cơ sở lý thuyết}
 \label{sec:theory}
 
-Để giải thích vì sao đồ án chọn Baseline, Donut và LayoutXLM, chương này tóm tắt các khái niệm cần dùng: OCR, KIE/DIE, mô hình OCR-free, mô hình OCR-based và các thước đo đánh giá chuỗi.
+Để giải thích cơ sở lựa chọn các phương pháp Baseline, Donut và LayoutXLM, nội dung dưới đây tóm tắt các khái niệm nền tảng: trích xuất thông tin tài liệu, OCR, mô hình không dùng OCR trung gian, mô hình dựa trên OCR và các thước đo đánh giá chuỗi.
 
 \subsection{Bài toán trích xuất thông tin tài liệu}
 \label{subsec:kie_problem}
@@ -13,7 +13,7 @@ Trích xuất thông tin tài liệu (Document Information Extraction - DIE) hay
 \subsection{Các công trình nghiên cứu liên quan}
 \label{subsec:related_work}
 
-Với biên lai, chỉ nhận dạng được chữ là chưa đủ. Mô hình còn phải biết dòng nào là tổng tiền, dòng nào là địa chỉ và khi nào một thực thể bị tách qua nhiều dòng. \cref{tab:method-comparison} so sánh ba hướng tiếp cận được khảo sát trong đồ án cùng giả thuyết thực nghiệm.
+Với biên lai, chỉ nhận dạng được chữ là chưa đủ. Mô hình còn phải xác định dòng nào là tổng tiền, dòng nào là địa chỉ và khi nào một thực thể bị tách qua nhiều dòng. \cref{tab:method-comparison} so sánh ba hướng tiếp cận được khảo sát trong đồ án cùng giả thuyết thực nghiệm.
 
 \begin{table}[htbp]
   \centering
@@ -46,14 +46,14 @@ Các nghiên cứu và công trình liên quan trực tiếp đến đồ án g�
 \begin{itemize}
   \item \textbf{MC-OCR 2021:} Cuộc thi xử lý biên lai chụp di động do Zalo AI tổ chức~\cite{mcocr2021}, cung cấp bộ dữ liệu biên lai tiếng Việt thực tế làm nguồn dữ liệu chính cho đồ án. Các giải pháp top đầu thường kết hợp bộ phát hiện chữ (DBNet, YOLO) với bộ nhận dạng mạnh, cùng các luật hậu xử lý phức tạp.
   \item \textbf{CORD:} Bộ dữ liệu biên lai quốc tế Consolidated Receipt Dataset~\cite{park2019cord}, được dùng làm benchmark chính cho các kiến trúc hiểu tài liệu end-to-end.
-  \item \textbf{LayoutLM và LayoutLMv3:} Các mô hình tiền huấn luyện đa phương thức của Microsoft~\cite{xu2020layoutlm, huang2022layoutlmv3}. \model{LayoutXLM}~\cite{xu2021layoutxlm} là phiên bản đa ngôn ngữ dựa trên XLM-RoBERTa, là thành phần chính trong pipeline OCR-based tiếng Việt của đồ án.
+  \item \textbf{LayoutLM và LayoutLMv3:} Các mô hình tiền huấn luyện đa phương thức của Microsoft~\cite{xu2020layoutlm, huang2022layoutlmv3}. \model{LayoutXLM}~\cite{xu2021layoutxlm} là phiên bản đa ngôn ngữ dựa trên XLM-RoBERTa, là thành phần chính trong pipeline dựa trên OCR tiếng Việt của đồ án.
   \item \textbf{TrOCR:} Mô hình nhận dạng chữ viết (Text Recognition) dựa hoàn toàn trên kiến trúc Transformer Encoder-Decoder~\cite{li2023trocr}. TrOCR nhận đầu vào là ảnh dòng chữ được cắt từ bộ phát hiện chữ và giải mã thành văn bản, đạt hiệu năng cao nhờ cơ chế tự chú ý.
 \end{itemize}
 
 \subsection{Nhận dạng ký tự quang học (OCR)}
 \label{subsec:ocr}
 
-Hệ thống OCR hiện đại thường gồm hai giai đoạn: phát hiện văn bản và nhận dạng chữ viết. Trong pipeline OCR-based của đồ án, module OCR có nhiệm vụ trích xuất văn bản thô cùng tọa độ 2D từ ảnh biên lai, làm đầu vào cho \model{LayoutXLM}.
+Hệ thống OCR thông dụng thường gồm hai giai đoạn: phát hiện văn bản và nhận dạng chữ viết. Trong pipeline dựa trên OCR của đồ án, module OCR có nhiệm vụ trích xuất văn bản thô cùng tọa độ 2D từ ảnh biên lai làm đầu vào cho \model{LayoutXLM}.
 
 \subsubsection{Phát hiện văn bản với PaddleOCR}
 \label{subsubsec:paddleocr}
@@ -70,11 +70,15 @@ trong đó $P_{i,j}$ là bản đồ xác suất chứa ký tự, $T_{i,j}$ là 
 
 Ảnh các dòng chữ sau khi phát hiện được đưa vào \model{VietOCR}~\cite{vietocr2020}. Cấu hình \path{vgg_transformer} dùng mạng CNN họ VGG trích xuất đặc trưng thị giác, sau đó biến đổi bản đồ đặc trưng thành chuỗi để Transformer encoder--decoder sinh văn bản Unicode tiếng Việt theo cơ chế tự hồi quy.
 
-Tại bước giải mã thứ $t$, mô hình dự đoán ký tự tiếp theo dựa trên đặc trưng ảnh $\mathbf{x}$ và các ký tự đích trước đó. Hàm mất mát là cross-entropy theo chuỗi, có label smoothing khi huấn luyện:
+Hàm mất mát của VietOCR là cross-entropy theo chuỗi. Với chuỗi đích
+$y = (y_1, y_2, \dots, y_T)$, mô hình tối ưu xác suất sinh ký tự tiếp theo
+dựa trên đặc trưng ảnh và các ký tự đã sinh trước đó:
 \begin{equation}
-  \mathcal{L}_{\text{VietOCR}}
-  = -\sum_{t=1}^{T}\log P(y_t \mid y_{< t}, \mathbf{x}).
-  \label{eq:vietocr_loss}
+\mathcal{L}_{\text{VietOCR}}
+=
+-\sum_{t=1}^{T}
+\log P(y_t \mid y_{< t}, \mathbf{x}).
+\label{eq:vietocr_loss}
 \end{equation}
 Do đó VietOCR trong đồ án không dùng hàm mất mát CTC. Điểm này quan trọng khi phân tích lỗi: kết quả nhận dạng phụ thuộc vào giải mã tuần tự chứ không chỉ vào căn chỉnh đơn điệu giữa đặc trưng ảnh và ký tự.
 

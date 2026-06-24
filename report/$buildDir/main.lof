@@ -1,0 +1,6 @@
+\babel@toc {vietnamese}{}\relax 
+\babel@toc {vietnamese}{}\relax 
+\contentsline {figure}{\numberline {2.1}{\ignorespaces Kiến trúc tổng quan mô hình \textsc {Donut}: Vision Encoder (Swin Transformer) trích xuất đặc trưng thị giác $\mathbf {z}$ và Text Decoder (mBART) sinh chuỗi kết quả tự hồi quy~\blx@tocontentsinit {0}\cite {kim2022donut}.}}{15}{figure.caption.4}%
+\contentsline {figure}{\numberline {5.1}{\ignorespaces Sơ đồ tổng quan kiến trúc ba pipeline trích xuất thông tin biên lai.}}{24}{figure.caption.14}%
+\contentsline {figure}{\numberline {7.1}{\ignorespaces So sánh Exact Match trên các mẫu có ground-truth khác rỗng. Hình được sinh từ metrics JSON.}}{36}{figure.caption.27}%
+\contentsline {figure}{\numberline {E.1}{\ignorespaces Giao diện Gradio trong một lượt chạy thực tế, so sánh kết quả của Baseline, \textsc {Donut} và VietOCR~+~\textsc {LayoutXLM}.}}{52}{figure.caption.37}%

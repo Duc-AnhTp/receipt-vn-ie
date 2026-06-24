@@ -1,0 +1,28 @@
+\babel@toc {vietnamese}{}\relax 
+\babel@toc {vietnamese}{}\relax 
+\contentsline {table}{\numberline {1.1}{\ignorespaces Mô tả các trường thông tin trong phạm vi trích xuất.}}{10}{table.caption.2}%
+\contentsline {table}{\numberline {2.1}{\ignorespaces So sánh đặc tính và giả thuyết kiểm chứng của ba hướng tiếp cận.}}{13}{table.caption.3}%
+\contentsline {table}{\numberline {2.2}{\ignorespaces Hệ thống nhãn \gls {bio} cho 4 trường thông tin trích xuất.}}{17}{table.caption.5}%
+\contentsline {table}{\numberline {3.1}{\ignorespaces Các trường chính trong schema JSONL.}}{19}{table.caption.6}%
+\contentsline {table}{\numberline {3.2}{\ignorespaces Phân bố mẫu trong các tệp processed.}}{20}{table.caption.7}%
+\contentsline {table}{\numberline {3.3}{\ignorespaces Mức annotation theo split.}}{20}{table.caption.8}%
+\contentsline {table}{\numberline {3.4}{\ignorespaces Số mẫu có ground-truth rỗng trên 234 mẫu test.}}{20}{table.caption.9}%
+\contentsline {table}{\numberline {4.1}{\ignorespaces Các phép tăng cường dữ liệu được cài đặt cho hai mô hình.}}{21}{table.caption.10}%
+\contentsline {table}{\numberline {4.2}{\ignorespaces Ví dụ chuẩn hoá văn bản theo trường thông tin.}}{22}{table.caption.13}%
+\contentsline {table}{\numberline {5.1}{\ignorespaces Quy tắc trích xuất cho từng trường thông tin trong pipeline baseline.}}{25}{table.caption.15}%
+\contentsline {table}{\numberline {5.2}{\ignorespaces Cấu hình huấn luyện mô hình \textsc {Donut}.}}{27}{table.caption.16}%
+\contentsline {table}{\numberline {5.3}{\ignorespaces Ví dụ tối giản về gán nhãn \gls {bio} cho một chuỗi OCR.}}{29}{table.caption.17}%
+\contentsline {table}{\numberline {5.4}{\ignorespaces Cấu hình huấn luyện mô hình \textsc {LayoutXLM}.}}{29}{table.caption.18}%
+\contentsline {table}{\numberline {6.1}{\ignorespaces Trạng thái bằng chứng của các prediction artifact đã khóa bằng SHA-256.}}{31}{table.caption.19}%
+\contentsline {table}{\numberline {6.2}{\ignorespaces Cấu hình huấn luyện được khai báo cho Donut và LayoutXLM.}}{32}{table.caption.20}%
+\contentsline {table}{\numberline {6.3}{\ignorespaces Số mẫu có thể sử dụng ở từng giai đoạn.}}{32}{table.caption.21}%
+\contentsline {table}{\numberline {7.1}{\ignorespaces Kết quả trên toàn bộ 234 mẫu kiểm thử của các artifact hợp lệ. Macro là trung bình không trọng số của bốn trường.}}{34}{table.caption.22}%
+\contentsline {table}{\numberline {7.2}{\ignorespaces Kết quả present-only của các artifact hợp lệ: mỗi trường chỉ được chấm trên mẫu có ground-truth khác rỗng.}}{35}{table.caption.23}%
+\contentsline {table}{\numberline {7.3}{\ignorespaces Độ phủ prediction và số mẫu đánh giá. Số mẫu present-only lần lượt là 224, 216, 217 và 223 cho bốn trường.}}{35}{table.caption.24}%
+\contentsline {table}{\numberline {7.4}{\ignorespaces Paired bootstrap present-only cho chênh lệch LayoutXLM trừ Baseline, seed 20260620, 50,000 lần lấy mẫu.}}{35}{table.caption.25}%
+\contentsline {table}{\numberline {7.5}{\ignorespaces Phân tích độ nhạy present-only sau khi loại bốn mẫu có sai lệch hệ tọa độ ảnh/OCR ($n=230$).}}{35}{table.caption.26}%
+\contentsline {table}{\numberline {7.6}{\ignorespaces Latency trung bình của các phương pháp đã ghi nhận. Phép đo của Baseline và LayoutXLM bắt đầu sau OCR cache; Donut bắt đầu trực tiếp từ ảnh đầu vào.}}{37}{table.caption.28}%
+\contentsline {table}{\numberline {7.7}{\ignorespaces Thông tin bổ sung về artifact Donut (generation length analysis).}}{37}{table.caption.29}%
+\contentsline {table}{\numberline {7.8}{\ignorespaces Phân loại lỗi được sinh tự động từ tệp kết quả dự đoán.}}{38}{table.caption.30}%
+\contentsline {table}{\numberline {7.9}{\ignorespaces So sánh \textsc {LayoutXLM} với OCR thực tế và Oracle OCR trên 168 mẫu MC-OCR có ground-truth OCR. Các số liệu là present-only; số mẫu theo bốn trường lần lượt là 158, 151, 151 và 157.}}{39}{table.caption.31}%
+\contentsline {table}{\numberline {D.1}{\ignorespaces Ví dụ kết quả trích xuất thực tế so với nhãn ground-truth trên tập test.}}{51}{table.caption.36}%

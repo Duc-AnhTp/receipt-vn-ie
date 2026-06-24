@@ -1,0 +1,95 @@
+\babel@toc {vietnamese}{}\relax 
+\babel@toc {vietnamese}{}\relax 
+\contentsline {section}{Lời cảm ơn}{1}{Doc-Start}%
+\contentsline {section}{Danh mục hình ảnh}{5}{Doc-Start}%
+\contentsline {section}{Danh mục bảng biểu}{6}{Doc-Start}%
+\contentsline {section}{Danh mục từ viết tắt}{7}{section*.1}%
+\contentsline {section}{Tóm tắt}{8}{section*.1}%
+\contentsline {section}{\numberline {1}Tổng quan đề tài}{9}{section.1}%
+\contentsline {subsection}{\numberline {1.1}Đặt vấn đề}{9}{subsection.1.1}%
+\contentsline {subsection}{\numberline {1.2}Câu hỏi nghiên cứu}{9}{subsection.1.2}%
+\contentsline {subsection}{\numberline {1.3}Mục tiêu và chỉ số đo lường}{9}{subsection.1.3}%
+\contentsline {subsection}{\numberline {1.4}Phạm vi đề tài}{10}{subsection.1.4}%
+\contentsline {subsection}{\numberline {1.5}Đóng góp thực tiễn}{10}{subsection.1.5}%
+\contentsline {subsection}{\numberline {1.6}Cấu trúc báo cáo}{10}{subsection.1.6}%
+\contentsline {section}{\numberline {2}Cơ sở lý thuyết}{12}{section.2}%
+\contentsline {subsection}{\numberline {2.1}Bài toán trích xuất thông tin tài liệu}{12}{subsection.2.1}%
+\contentsline {subsection}{\numberline {2.2}Các công trình nghiên cứu liên quan}{12}{subsection.2.2}%
+\contentsline {subsection}{\numberline {2.3}Nhận dạng ký tự quang học (OCR)}{14}{subsection.2.3}%
+\contentsline {subsubsection}{\numberline {2.3.1}Phát hiện văn bản với PaddleOCR}{14}{subsubsection.2.3.1}%
+\contentsline {subsubsection}{\numberline {2.3.2}Nhận dạng văn bản tiếng Việt với VietOCR}{14}{subsubsection.2.3.2}%
+\contentsline {subsection}{\numberline {2.4}Mô hình Donut (OCR-free)}{14}{subsection.2.4}%
+\contentsline {subsubsection}{\numberline {2.4.1}Kiến trúc tổng quan}{15}{subsubsection.2.4.1}%
+\contentsline {subsubsection}{\numberline {2.4.2}Phân biệt khái niệm Warm-up trong Donut}{15}{subsubsection.2.4.2}%
+\contentsline {subsection}{\numberline {2.5}Mô hình LayoutXLM (OCR-based)}{15}{subsection.2.5}%
+\contentsline {subsubsection}{\numberline {2.5.1}Nhúng đa phương thức (Multimodal Embedding)}{16}{subsubsection.2.5.1}%
+\contentsline {subsubsection}{\numberline {2.5.2}Spatial-aware Self-Attention}{16}{subsubsection.2.5.2}%
+\contentsline {subsubsection}{\numberline {2.5.3}Gán nhãn BIO (BIO Tagging)}{16}{subsubsection.2.5.3}%
+\contentsline {subsection}{\numberline {2.6}Các độ đo đánh giá và quy ước xử lý rỗng}{16}{subsection.2.6}%
+\contentsline {subsubsection}{\numberline {2.6.1}Exact Match (EM)}{17}{subsubsection.2.6.1}%
+\contentsline {subsubsection}{\numberline {2.6.2}Normalized Edit Similarity (NES)}{17}{subsubsection.2.6.2}%
+\contentsline {subsubsection}{\numberline {2.6.3}Character Error Rate (CER)}{17}{subsubsection.2.6.3}%
+\contentsline {subsubsection}{\numberline {2.6.4}Hai chế độ tổng hợp kết quả}{18}{subsubsection.2.6.4}%
+\contentsline {section}{\numberline {3}Tập dữ liệu}{19}{section.3}%
+\contentsline {subsection}{\numberline {3.1}Nguồn dữ liệu}{19}{subsection.3.1}%
+\contentsline {subsection}{\numberline {3.2}Schema JSONL thống nhất}{19}{subsection.3.2}%
+\contentsline {subsection}{\numberline {3.3}Chia dữ liệu và chống rò rỉ}{19}{subsection.3.3}%
+\contentsline {subsection}{\numberline {3.4}Mức annotation và dữ liệu huấn luyện}{20}{subsection.3.4}%
+\contentsline {subsection}{\numberline {3.5}Giá trị ground-truth rỗng trên test}{20}{subsection.3.5}%
+\contentsline {subsection}{\numberline {3.6}Kiểm tra hợp lệ}{20}{subsection.3.6}%
+\contentsline {section}{\numberline {4}Tiền xử lý dữ liệu}{21}{section.4}%
+\contentsline {subsection}{\numberline {4.1}Tiền xử lý ảnh (Image Preprocessing)}{21}{subsection.4.1}%
+\contentsline {subsection}{\numberline {4.2}Tăng cường dữ liệu (Data Augmentation)}{21}{subsection.4.2}%
+\contentsline {subsection}{\numberline {4.3}Chuẩn hoá văn bản (Text Normalization)}{22}{subsection.4.3}%
+\contentsline {paragraph}{1. Chuẩn hóa chung (General Normalization)}{22}{paragraph*.11}%
+\contentsline {paragraph}{2. Chuẩn hóa theo trường (Field-specific Normalization)}{22}{paragraph*.12}%
+\contentsline {subsection}{\numberline {4.4}Xây dựng OCR Cache}{22}{subsection.4.4}%
+\contentsline {subsection}{\numberline {4.5}Trạng thái khảo sát tiền xử lý OCR}{23}{subsection.4.5}%
+\contentsline {section}{\numberline {5}Phương pháp thực hiện}{24}{section.5}%
+\contentsline {subsection}{\numberline {5.1}Tổng quan kiến trúc hệ thống}{24}{subsection.5.1}%
+\contentsline {subsection}{\numberline {5.2}Baseline: OCR + Trích xuất dựa trên luật (Rule-based)}{24}{subsection.5.2}%
+\contentsline {subsubsection}{\numberline {5.2.1}Pipeline tổng quan}{25}{subsubsection.5.2.1}%
+\contentsline {subsubsection}{\numberline {5.2.2}Quy tắc trích xuất cụ thể}{25}{subsubsection.5.2.2}%
+\contentsline {subsection}{\numberline {5.3}Donut: End-to-End OCR-free}{26}{subsection.5.3}%
+\contentsline {subsubsection}{\numberline {5.3.1}Chuẩn bị dữ liệu}{26}{subsubsection.5.3.1}%
+\contentsline {subsubsection}{\numberline {5.3.2}Cấu hình huấn luyện}{27}{subsubsection.5.3.2}%
+\contentsline {subsubsection}{\numberline {5.3.3}Suy luận (Inference)}{27}{subsubsection.5.3.3}%
+\contentsline {subsection}{\numberline {5.4}VietOCR + LayoutXLM: OCR-based Layout-aware}{28}{subsection.5.4}%
+\contentsline {subsubsection}{\numberline {5.4.1}Chuẩn bị dữ liệu}{28}{subsubsection.5.4.1}%
+\contentsline {subsubsection}{\numberline {5.4.2}Cấu hình huấn luyện}{28}{subsubsection.5.4.2}%
+\contentsline {subsubsection}{\numberline {5.4.3}Suy luận và hậu xử lý (Inference \& Post-processing)}{30}{subsubsection.5.4.3}%
+\contentsline {subsection}{\numberline {5.5}Hậu xử lý chung (Post-processing)}{30}{subsection.5.5}%
+\contentsline {section}{\numberline {6}Thiết lập thực nghiệm}{31}{section.6}%
+\contentsline {subsection}{\numberline {6.1}Trạng thái tệp kết quả dự đoán}{31}{subsection.6.1}%
+\contentsline {subsection}{\numberline {6.2}Môi trường và cấu hình}{31}{subsection.6.2}%
+\contentsline {subsection}{\numberline {6.3}Phạm vi dữ liệu của từng pipeline}{32}{subsection.6.3}%
+\contentsline {subsection}{\numberline {6.4}Quy trình suy luận và đánh giá}{32}{subsection.6.4}%
+\contentsline {subsection}{\numberline {6.5}Phạm vi phép đo latency}{33}{subsection.6.5}%
+\contentsline {subsection}{\numberline {6.6}Trạng thái bằng chứng huấn luyện}{33}{subsection.6.6}%
+\contentsline {section}{\numberline {7}Kết quả thực nghiệm và đánh giá}{34}{section.7}%
+\contentsline {subsection}{\numberline {7.1}Kết quả trên toàn bộ mẫu và trên trường có mặt}{34}{subsection.7.1}%
+\contentsline {subsection}{\numberline {7.2}Phân tích theo trường}{36}{subsection.7.2}%
+\contentsline {subsection}{\numberline {7.3}Latency của các thành phần đã ghi nhận}{37}{subsection.7.3}%
+\contentsline {subsection}{\numberline {7.4}Phân tích hiệu năng Donut và hiện tượng suy sụp}{37}{subsection.7.4}%
+\contentsline {subsection}{\numberline {7.5}Phân tích lỗi có thể tái lập}{37}{subsection.7.5}%
+\contentsline {subsection}{\numberline {7.6}Oracle OCR và câu hỏi về ảnh hưởng của OCR}{38}{subsection.7.6}%
+\contentsline {subsection}{\numberline {7.7}Demo ứng dụng}{39}{subsection.7.7}%
+\contentsline {section}{\numberline {8}Kết luận và hướng phát triển}{40}{section.8}%
+\contentsline {subsection}{\numberline {8.1}Trả lời câu hỏi nghiên cứu}{40}{subsection.8.1}%
+\contentsline {paragraph}{RQ1: LayoutXLM cải thiện như thế nào so với Baseline?}{40}{paragraph*.32}%
+\contentsline {paragraph}{RQ2: Donut OCR-free hoạt động ra sao trên dữ liệu nhỏ?}{40}{paragraph*.33}%
+\contentsline {paragraph}{RQ3: OCR ảnh hưởng đến LayoutXLM ở mức nào?}{40}{paragraph*.34}%
+\contentsline {paragraph}{RQ4: Latency khác nhau ra sao trong phạm vi đo hiện tại?}{40}{paragraph*.35}%
+\contentsline {subsection}{\numberline {8.2}Các yếu tố ảnh hưởng đến độ tin cậy của kết quả}{40}{subsection.8.2}%
+\contentsline {subsection}{\numberline {8.3}Đóng góp và hạn chế}{41}{subsection.8.3}%
+\contentsline {subsection}{\numberline {8.4}Hướng phát triển}{41}{subsection.8.4}%
+\contentsline {section}{Tài liệu tham khảo}{44}{Item.30}%
+\contentsline {section}{\numberline {A}Mẫu dữ liệu JSONL thống nhất}{45}{appendix.A}%
+\contentsline {section}{\numberline {B}Cấu trúc mã nguồn}{46}{appendix.B}%
+\contentsline {section}{\numberline {C}Cấu hình huấn luyện đầy đủ}{47}{appendix.C}%
+\contentsline {subsection}{\numberline {C.1}Cấu hình \textsc {Donut} (\texttt {donut.yaml})}{47}{subsection.C.1}%
+\contentsline {subsection}{\numberline {C.2}Cấu hình \textsc {LayoutXLM} (\texttt {layoutxlm.yaml})}{48}{subsection.C.2}%
+\contentsline {subsection}{\numberline {C.3}Cấu hình luật heuristic (\texttt {baseline.yaml})}{49}{subsection.C.3}%
+\contentsline {section}{\numberline {D}Mẫu kết quả trích xuất thực tế}{51}{appendix.D}%
+\contentsline {section}{\numberline {E}Giao diện Demo Gradio}{52}{appendix.E}%
+\contentsline {subsection}{\numberline {E.1}Hướng dẫn cài đặt và chạy demo}{52}{subsection.E.1}%

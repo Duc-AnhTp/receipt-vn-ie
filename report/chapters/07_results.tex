@@ -1,7 +1,7 @@
 \section{Kết quả thực nghiệm và đánh giá}
 \label{sec:results}
 
-Chương này trình bày kết quả được tính lại trực tiếp từ các prediction artifact đóng băng trên 234 mẫu test. Các bảng metrics và latency được sinh tự động bởi script \path{scripts/generate_report_artifacts.py}; vì vậy số liệu trong báo cáo và artifact JSON có cùng nguồn. Cả ba phương pháp Baseline, \model{LayoutXLM} và \model{Donut} đều có mặt trong bảng định lượng; riêng Donut được diễn giải như một ca chẩn đoán model collapse của checkpoint hiện có.
+Kết quả dưới đây được tính lại trực tiếp từ các prediction artifact đóng băng trên 234 mẫu test. Các bảng metrics và latency được sinh tự động bởi script \path{scripts/generate_report_artifacts.py} nhằm đảm bảo tính đồng nhất giữa báo cáo và các tệp JSON kết quả. Cả ba phương pháp Baseline, \model{LayoutXLM} và \model{Donut} đều có mặt trong bảng định lượng; riêng Donut được phân tích cụ thể dưới dạng một ca chẩn đoán lỗi hội tụ (model collapse) của checkpoint hiện có.
 
 \subsection{Kết quả trên toàn bộ mẫu và trên trường có mặt}
 \label{subsec:main_results}
